@@ -537,66 +537,52 @@ export default function SalesTaskManager() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
-              <div className="px-6 py-4 bg-accent text-white flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-3">
-                   <div className="p-2 bg-white/10 rounded-lg">
-                      <Plus size={18} />
+              <div className="px-5 py-3.5 bg-accent text-white flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-2.5">
+                   <div className="p-1.5 bg-white/10 rounded-lg">
+                      <Plus size={16} />
                    </div>
-                   <h3 className="text-lg font-black tracking-tight leading-none">
+                   <h3 className="text-base font-black tracking-tight leading-none">
                      {editingTask ? '업무 상세 수정' : '신규 업무 등록'}
                    </h3>
                 </div>
                 <button 
                   onClick={() => setIsModalOpen(false)} 
-                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
+                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
               <form onSubmit={handleSaveTask} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                <div className="p-6 space-y-4">
-                  {/* Row 1: Task Name */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">업무명 *</label>
-                    <input 
-                      autoFocus
-                      required
-                      type="text" 
-                      value={formData.taskName}
-                      onChange={e => setFormData({...formData, taskName: e.target.value})}
-                      placeholder="수행할 업무 제목을 입력하세요"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all shadow-inner placeholder:text-slate-300"
-                    />
-                  </div>
-
-                  {/* Row 2: Target / Category */}
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="p-5 space-y-3.5">
+                  {/* Row 1: Target / Category */}
+                  <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1 relative">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">업무 대상 (보호소/파트너) *</label>
                       <div className="relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         <input 
                           type="text"
-                          placeholder="검색하거나 직접 입력하세요..."
+                          placeholder="보호소 또는 파트너 검색..."
                           value={shelterSearch}
                           onFocus={() => setIsShelterDropdownOpen(true)}
                           onChange={e => {
                             setShelterSearch(e.target.value);
                             setIsShelterDropdownOpen(true);
                           }}
-                          className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                          className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
                         />
                         
                         <AnimatePresence>
                           {isShelterDropdownOpen && (
                             <motion.div 
-                              initial={{ opacity: 0, y: -10 }}
+                              initial={{ opacity: 0, y: -5 }}
                               animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar p-1"
+                              exit={{ opacity: 0, y: -5 }}
+                              className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-40 overflow-y-auto custom-scrollbar p-1"
                             >
                               {filteredTargetsForSelect.length > 0 ? (
                                 filteredTargetsForSelect.map(s => (
@@ -609,7 +595,7 @@ export default function SalesTaskManager() {
                                       setIsShelterDropdownOpen(false);
                                     }}
                                     className={cn(
-                                      "w-full px-3 py-2 text-left hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group",
+                                      "w-full px-2.5 py-1.5 text-left hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group",
                                       formData.shelterId === s.id && "bg-accent/5 text-accent"
                                     )}
                                   >
@@ -617,11 +603,11 @@ export default function SalesTaskManager() {
                                       <span className="text-[11px] font-bold">{s.name}</span>
                                       <span className="text-[9px] text-slate-400 font-medium">{s.region}</span>
                                     </div>
-                                    {formData.shelterId === s.id && <CheckCircle2 size={12} />}
+                                    {formData.shelterId === s.id && <CheckCircle2 size={10} />}
                                   </button>
                                 ))
                               ) : (
-                                <div className="px-4 py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">검색 결과가 없습니다</div>
+                                <div className="px-4 py-4 text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest">검색 결과가 없습니다</div>
                               )}
                             </motion.div>
                           )}
@@ -634,27 +620,24 @@ export default function SalesTaskManager() {
                         required
                         value={formData.category}
                         onChange={e => setFormData({...formData, category: e.target.value as SalesTaskCategory})}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
                       >
                         {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                   </div>
 
-                  {/* Row 3: Schedule / Priority */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Row 2: Status / Priority */}
+                  <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">마감 기한 *</label>
-                      <div className="relative">
-                        <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input 
-                          required
-                          type="date" 
-                          value={formData.deadline}
-                          onChange={e => setFormData({...formData, deadline: e.target.value})}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
-                        />
-                      </div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">진행 상태</label>
+                      <select 
+                        value={formData.status}
+                        onChange={e => setFormData({...formData, status: e.target.value as SalesTaskStatus})}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
+                      >
+                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">우선 순위</label>
@@ -665,7 +648,7 @@ export default function SalesTaskManager() {
                             type="button"
                             onClick={() => setFormData({...formData, priority: p})}
                             className={cn(
-                              "py-1.5 rounded-lg text-[10px] font-black transition-all",
+                              "py-1 rounded-lg text-[9px] font-black transition-all",
                               formData.priority === p 
                                 ? "bg-white text-slate-800 shadow-sm" 
                                 : "text-slate-400 hover:text-slate-600"
@@ -678,24 +661,41 @@ export default function SalesTaskManager() {
                     </div>
                   </div>
 
-                  {/* Row 4: Status / Recurring */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Row 3: Task Name */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">업무명 *</label>
+                    <input 
+                      autoFocus
+                      required
+                      type="text" 
+                      value={formData.taskName}
+                      onChange={e => setFormData({...formData, taskName: e.target.value})}
+                      placeholder="수행할 업무 제목을 입력하세요"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all shadow-inner placeholder:text-slate-300"
+                    />
+                  </div>
+
+                  {/* Row 4: Schedule / Recurring */}
+                  <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">진행 상태</label>
-                      <select 
-                        value={formData.status}
-                        onChange={e => setFormData({...formData, status: e.target.value as SalesTaskStatus})}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
-                      >
-                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">마감 기한 *</label>
+                      <div className="relative">
+                        <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input 
+                          required
+                          type="date" 
+                          value={formData.deadline}
+                          onChange={e => setFormData({...formData, deadline: e.target.value})}
+                          className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">반복 업무 설정</label>
                       <select 
                         value={formData.recurring}
                         onChange={e => setFormData({...formData, recurring: e.target.value as RecurringType})}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
                       >
                         <option value="None">안 함</option>
                         <option value="Weekly">매주</option>
@@ -706,22 +706,22 @@ export default function SalesTaskManager() {
 
                   {/* Row 5: Detailed Content */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">세부 내용</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">세부 업무 내용</label>
                     <textarea 
                       value={formData.description}
                       onChange={e => setFormData({...formData, description: e.target.value})}
-                      placeholder="특이사항이나 구체적인 업무 내용을 입력하세요..."
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none h-20 placeholder:text-slate-300"
+                      placeholder="상담 기록이나 특이사항을 기재하세요."
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none h-16 placeholder:text-slate-300"
                     />
                   </div>
 
                   {/* Row 6: Subtasks / Partners */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3.5">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">세부 체크리스트</label>
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2 max-h-32 overflow-y-auto">
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5 max-h-24 overflow-y-auto custom-scrollbar">
                         {formData.subTasks?.map((st, idx) => (
-                          <div key={st.id} className="flex items-center gap-2">
+                          <div key={st.id} className="flex items-center gap-1.5">
                              <input 
                                type="text"
                                value={st.title}
@@ -730,7 +730,7 @@ export default function SalesTaskManager() {
                                  next[idx].title = e.target.value;
                                  setFormData({...formData, subTasks: next});
                                }}
-                               className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-medium outline-none"
+                               className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-medium outline-none"
                              />
                              <button 
                                type="button"
@@ -744,15 +744,15 @@ export default function SalesTaskManager() {
                         <button 
                           type="button"
                           onClick={() => setFormData({...formData, subTasks: [...(formData.subTasks || []), { id: `st-${Date.now()}`, title: '', isCompleted: false }]})}
-                          className="text-[10px] font-black text-indigo-500 flex items-center gap-1 hover:underline"
+                          className="text-[9px] font-black text-indigo-500 flex items-center gap-1 hover:underline ml-1 mt-1"
                         >
-                          <Plus size={12} /> 항목 추가
+                          <Plus size={10} /> 세부 항목 추가
                         </button>
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">협력 파트너 (선택)</label>
-                      <div className="grid grid-cols-1 gap-1 p-3 bg-slate-50 rounded-xl border border-slate-100 max-h-32 overflow-y-auto">
+                      <div className="grid grid-cols-1 gap-1 p-2.5 bg-slate-50 rounded-xl border border-slate-100 max-h-24 overflow-y-auto custom-scrollbar">
                         {PARTNER_MASTER_DATA.map(p => (
                           <button
                             key={p.id}
@@ -763,17 +763,17 @@ export default function SalesTaskManager() {
                               setFormData({...formData, partnerIds: next});
                             }}
                             className={cn(
-                              "flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all text-left",
-                              formData.partnerIds?.includes(p.id) ? "bg-white border-indigo-200 shadow-sm" : "bg-transparent border-transparent"
+                              "flex items-center gap-2 px-1.5 py-1 rounded-lg border transition-all text-left",
+                              formData.partnerIds?.includes(p.id) ? "bg-white border-indigo-100 shadow-sm" : "bg-transparent border-transparent"
                             )}
                           >
                              <div className={cn(
-                               "w-3 h-3 rounded flex items-center justify-center border",
+                               "w-2.5 h-2.5 rounded flex items-center justify-center border",
                                formData.partnerIds?.includes(p.id) ? "bg-indigo-500 border-indigo-500" : "bg-white border-slate-300"
                              )}>
-                               {formData.partnerIds?.includes(p.id) && <CheckSquare className="text-white" size={10} />}
+                               {formData.partnerIds?.includes(p.id) && <CheckSquare className="text-white" size={8} />}
                              </div>
-                             <span className={cn("text-[10px] font-bold", formData.partnerIds?.includes(p.id) ? "text-indigo-600" : "text-slate-400")}>{p.name}</span>
+                             <span className={cn("text-[9px] font-bold truncate", formData.partnerIds?.includes(p.id) ? "text-indigo-600" : "text-slate-400")}>{p.name}</span>
                           </button>
                         ))}
                       </div>
@@ -781,17 +781,17 @@ export default function SalesTaskManager() {
                   </div>
                 </div>
 
-                <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3 sticky bottom-0">
+                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 sticky bottom-0 shrink-0">
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 font-black text-xs rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]"
+                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 font-black text-[12px] rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]"
                   >
                     취소
                   </button>
                   <button 
                     type="submit"
-                    className="flex-[2] py-3 bg-accent text-white font-black text-xs rounded-xl shadow-lg shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    className="flex-[2] py-3 bg-accent text-white font-black text-[12px] rounded-xl shadow-lg shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
                   >
                     {editingTask ? '변경 사항 저장' : '업무 등록 완료'}
                   </button>

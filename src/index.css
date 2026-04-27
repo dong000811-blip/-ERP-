@@ -15,13 +15,24 @@
 }
 
 @layer base {
+  html {
+     font-size: 14px;
+     height: 100%;
+  }
+
   body {
     @apply bg-slate-100 text-slate-800 antialiased;
+    height: 100%;
+    margin: 0;
+  }
+
+  #root {
+    height: 100%;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;

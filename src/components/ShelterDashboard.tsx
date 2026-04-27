@@ -79,14 +79,14 @@ const SidebarItem = ({ icon: Icon, active = false, label, onClick }: { icon: any
   <div 
     onClick={onClick}
     className={cn(
-      "p-3 rounded-lg flex items-center gap-3 transition-all duration-200 group cursor-pointer",
+      "p-2.5 rounded-lg flex items-center gap-2.5 transition-all duration-200 group cursor-pointer",
       active 
         ? "bg-[#F0FDF4] border-l-4 border-accent text-accent shadow-sm" 
         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
     )}
   >
-    <Icon size={20} className={cn(active ? "text-accent" : "text-slate-400 group-hover:text-slate-500")} />
-    <span className={cn("text-sm font-medium", active ? "font-semibold" : "")}>{label}</span>
+    <Icon size={18} className={cn(active ? "text-accent" : "text-slate-400 group-hover:text-slate-500")} />
+    <span className={cn("text-[13px] font-medium", active ? "font-semibold" : "")}>{label}</span>
   </div>
 );
 
@@ -94,7 +94,7 @@ const Card = ({ children, className }: { children: React.ReactNode, className?: 
   <motion.div 
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className={cn("bg-white rounded-xl p-5 shadow-sm border border-slate-200", className)}
+    className={cn("bg-white rounded-xl p-4 shadow-sm border border-slate-200", className)}
   >
     {children}
   </motion.div>
@@ -356,43 +356,43 @@ const DashboardView = ({
   const ongoingCount = projects.filter(p => p.status === 'Ongoing').length;
   
   return (
-    <div className="space-y-6">
-      <section className="grid grid-cols-4 gap-4">
+    <div className="space-y-4">
+      <section className="grid grid-cols-4 gap-3">
         {/* ... stats cards ... */}
-        <Card className="h-28 flex flex-col justify-between border-l-4 border-l-[#2D336B]">
+        <Card className="h-24 flex flex-col justify-between border-l-4 border-l-[#2D336B] p-3.5">
           <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">활성 파트너</p>
-            <div className="text-2xl font-black text-slate-800">{shelters.length} 보호소</div>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">활성 파트너</p>
+            <div className="text-xl font-black text-slate-800">{shelters.length} 보호소</div>
           </div>
           <div className="text-[10px] text-green-500 flex items-center font-bold">
             +12.5% <span className="text-slate-400 font-normal ml-1">전월 대비</span>
           </div>
         </Card>
 
-        <Card className="h-28 flex flex-col justify-between border-l-4 border-l-[#FF9F1C]">
+        <Card className="h-24 flex flex-col justify-between border-l-4 border-l-[#FF9F1C] p-3.5">
           <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">진행 중 프로젝트</p>
-            <div className="text-2xl font-black text-slate-800">{ongoingCount} 건</div>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">진행 중 프로젝트</p>
+            <div className="text-xl font-black text-slate-800">{ongoingCount} 건</div>
           </div>
           <div className="text-[10px] text-[#FF9F1C] flex items-center font-bold">
             진행 중 <span className="text-slate-400 font-normal ml-1">실시간 데이터</span>
           </div>
         </Card>
 
-        <Card className="h-28 flex flex-col justify-between">
+        <Card className="h-24 flex flex-col justify-between p-3.5">
           <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">배송 대기</p>
-            <div className="text-2xl font-black text-slate-800">12 건</div>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">배송 대기</p>
+            <div className="text-xl font-black text-slate-800">12 건</div>
           </div>
           <div className="text-[10px] text-blue-500 flex items-center font-bold">
             배송 중 <span className="text-slate-400 font-normal ml-1">물류 활성화</span>
           </div>
         </Card>
 
-        <Card className="h-28 flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10">
+        <Card className="h-24 flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-3.5">
           <div>
-            <p className="text-slate-300 text-[10px] font-bold uppercase tracking-wider mb-1">네트워크 안정성</p>
-            <div className="text-2xl font-black">92.8%</div>
+            <p className="text-slate-300 text-[10px] font-bold uppercase tracking-wider mb-0.5">네트워크 안정성</p>
+            <div className="text-xl font-black">92.8%</div>
           </div>
           <div className="text-[10px] text-white/50 font-normal">
             운영 효율 지수
@@ -400,33 +400,33 @@ const DashboardView = ({
         </Card>
       </section>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {/* View Switcher Toggle */}
         <div className="flex justify-start">
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 shadow-inner border border-slate-200">
             <button 
               onClick={() => setViewMode('map')}
               className={cn(
-                "px-4 py-1.5 rounded-lg text-xs font-black flex items-center gap-2 transition-all",
+                "px-3 py-1 rounded-lg text-[11px] font-black flex items-center gap-1.5 transition-all",
                 viewMode === 'map' ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              <MapIcon size={14} /> Map
+              <MapIcon size={12} /> Map
             </button>
             <button 
               onClick={() => setViewMode('calendar')}
               className={cn(
-                "px-4 py-1.5 rounded-lg text-xs font-black flex items-center gap-2 transition-all",
+                "px-3 py-1 rounded-lg text-[11px] font-black flex items-center gap-1.5 transition-all",
                 viewMode === 'calendar' ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              <Calendar size={14} /> Calendar
+              <Calendar size={12} /> Calendar
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-6 min-h-[500px]">
-          <div className="col-span-8 h-full relative">
+        <div className="grid grid-cols-12 gap-4 min-h-[400px]">
+          <div className="col-span-8 h-[450px] relative">
             <AnimatePresence mode="wait">
               {viewMode === 'map' ? (
                 <motion.div 
