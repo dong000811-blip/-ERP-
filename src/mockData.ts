@@ -29,6 +29,33 @@ export interface Shelter {
   painPoints: string;
 }
 
+export type SalesTaskCategory = '방문 영업' | '유선 상담' | '물류 협의' | '이벤트 기획' | '기타';
+export type SalesTaskPriority = '높음' | '보통' | '낮음';
+export type SalesTaskStatus = '대기' | '진행중' | '보류' | '완료';
+
+export interface SubTask {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+}
+
+export type RecurringType = 'None' | 'Weekly' | 'Monthly';
+
+export interface SalesTask {
+  id: string;
+  shelterId: string;
+  category: SalesTaskCategory;
+  taskName: string;
+  description: string;
+  partnerIds: string[]; // Linked to partner master data
+  deadline: string;
+  priority: SalesTaskPriority;
+  status: SalesTaskStatus;
+  subTasks?: SubTask[];
+  recurring?: RecurringType;
+  createdAt: string;
+}
+
 export interface Donation {
   id: string;
   date: string;
@@ -142,4 +169,48 @@ export const CONTACT_HISTORY = [
   { id: '1', shelterId: '1', date: '2024-04-10', message: '초기 미팅 완료. 고기호성 사료 요구사항 논의.' },
   { id: '2', shelterId: '1', date: '2024-04-15', message: '샘플 배송됨. 직원들로부터 긍정적인 피드백 받음.' },
   { id: '3', shelterId: '1', date: '2024-04-20', message: '월 1톤 이상 배송에 대한 파트너십 계약 체결.' },
+];
+
+export const MOCK_SALES_TASKS: SalesTask[] = [
+  {
+    id: 't1',
+    shelterId: '1',
+    category: '방문 영업',
+    taskName: '펫밸런스 입고 후 샘플 증정 및 피드백 수집',
+    description: '신규 라인업 펫밸런스 사료 입고 확인 및 보호소 관리자 피드백 수집',
+    partnerIds: ['P001'],
+    deadline: '2024-05-10',
+    priority: '높음',
+    status: '대기',
+    subTasks: [
+      { id: 'st1', title: '샘플 박스 준비', isCompleted: true },
+      { id: 'st2', title: '설문지 출력', isCompleted: false },
+      { id: 'st3', title: '차량 배차 확인', isCompleted: false }
+    ],
+    createdAt: '2024-04-25'
+  },
+  {
+    id: 't2',
+    shelterId: '2',
+    category: '유선 상담',
+    taskName: '의료 비품 리스트 규모 파악 및 견적 안내',
+    description: '삼송 보호소 필요 의료 비품 리스트 수령 및 물류팀 협의',
+    partnerIds: [],
+    deadline: '2024-04-20', // Overdue
+    priority: '보통',
+    status: '진행중',
+    createdAt: '2024-04-15'
+  },
+  {
+    id: 't3',
+    shelterId: '1',
+    category: '물류 협의',
+    taskName: '정기 배송 일정 조정',
+    description: '월간 배송량을 1.5톤으로 증량하기 위한 일정 조율',
+    partnerIds: ['P003'],
+    deadline: '2024-05-15',
+    priority: '낮음',
+    status: '완료',
+    createdAt: '2024-04-20'
+  }
 ];

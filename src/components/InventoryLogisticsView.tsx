@@ -18,9 +18,21 @@ import {
   FileText,
   Database,
   Trash2,
-  Edit2
+  Edit2,
+  TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
 import { cn } from '../lib/utils';
 import { INVENTORY_LEDGER_DATA, InventoryEntry } from '../inventoryLedgerData';
 import { MOCK_SHELTERS } from '../mockData';
@@ -100,6 +112,42 @@ export default function InventoryLogisticsView() {
       ...data
     })).filter(b => b.quantity !== 0);
   }, [ledger, selectedShelterId, focusedShelterId]);
+
+  // Annual Logistics Chart Data
+  const chartData = useMemo(() => {
+    const targetShelterId = focusedShelterId || selectedShelterId;
+    const targets = targetShelterId === '전체' ? ledger : ledger.filter(e => e.shelterId === targetShelterId);
+    
+    // Initialize last 12 months
+    const data: Record<string, { month: string; Inbound: number; Outbound: number }> = {};
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${d.getFullYear().toString().slice(-2)}.${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      data[monthKey] = { month: monthKey, Inbound: 0, Outbound: 0 };
+    }
+
+    targets.forEach(entry => {
+      const date = new Date(entry.date);
+      const monthKey = `${date.getFullYear().toString().slice(-2)}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      if (data[monthKey]) {
+        if (entry.type === '입고') {
+          data[monthKey].Inbound += entry.quantity;
+        } else {
+          data[monthKey].Outbound += entry.quantity;
+        }
+      }
+    });
+
+    return Object.values(data);
+  }, [ledger, selectedShelterId, focusedShelterId]);
+
+  const focusedShelterName = useMemo(() => {
+    const id = focusedShelterId || selectedShelterId;
+    if (id === '전체') return '전체 보호소';
+    return MOCK_SHELTERS.find(s => s.id === id.replace('SHT-', ''))?.name || '기타 보호소';
+  }, [focusedShelterId, selectedShelterId]);
 
   const shelterSummary = useMemo(() => {
     const summary: Record<string, Record<string, { quantity: number; spec: string }>> = {};
@@ -314,70 +362,129 @@ export default function InventoryLogisticsView() {
       </div>
 
       {/* Summary Widgets */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-black text-slate-700 tracking-tight">
-              {focusedShelterId ? (
-                <>
-                  <span className="text-indigo-600">{MOCK_SHELTERS.find(s => s.id === focusedShelterId.replace('SHT-', ''))?.name}</span>
-                  <span className="text-slate-400 mx-2">-</span>
-                  <span>실시간 품목별 잔고</span>
-                </>
-              ) : selectedShelterId === '전체' ? (
-                "전체 보호소 통합 잔고 현황"
-              ) : (
-                <>
-                  <span className="text-indigo-600">{MOCK_SHELTERS.find(s => s.id === selectedShelterId.replace('SHT-', ''))?.name}</span>
-                  <span className="text-slate-400 mx-2">-</span>
-                  <span>보호소 잔고 현황</span>
-                </>
-              )}
-            </h3>
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Real-time Balance Widget */}
+        <Card className="lg:col-span-4 flex flex-col h-[200px]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                <Database size={14} />
+              </div>
+              <h3 className="text-xs font-black text-slate-800 tracking-tight">
+                <span className="text-indigo-600 mr-1">[{focusedShelterName}]</span> 
+                실시간 잔고
+              </h3>
+            </div>
             {focusedShelterId && (
               <button 
                 onClick={() => setFocusedShelterId(null)}
-                className="text-[10px] font-bold text-slate-400 hover:text-indigo-500 underline underline-offset-2 flex items-center gap-1"
+                className="text-[9px] font-bold text-slate-400 hover:text-indigo-500 flex items-center gap-1"
               >
-                <ArrowLeft size={10} /> 전체보기로 돌아가기
+                <ArrowLeft size={10} /> 초기화
               </button>
             )}
           </div>
-        </div>
-        <div className="grid grid-cols-4 gap-4">
-          {balancesByItem.length > 0 ? (
-            balancesByItem.slice(0, 4).map((item, idx) => (
-              <Card key={idx} className={cn(
-                "relative overflow-hidden group transition-all duration-500",
-                focusedShelterId ? "border-indigo-200 bg-indigo-50/10 shadow-md shadow-indigo-100/20" : ""
-              )}>
-                <div className="absolute top-0 right-0 p-2 text-slate-100 group-hover:text-amber-500/10 transition-colors">
-                  <Box size={60} strokeWidth={1} />
-                </div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.name}</p>
-                <div className="flex items-end justify-between">
-                  <div className="text-2xl font-black text-slate-800 tracking-tight">
-                    {item.quantity.toLocaleString()} <span className="text-sm font-bold text-slate-400">kg</span>
+
+          <div className="flex-1 overflow-auto custom-scrollbar pr-1">
+            {balancesByItem.length > 0 ? (
+              <div className="space-y-1.5">
+                {balancesByItem.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-slate-50/50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-all group">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-700 tracking-tight">{item.name}</span>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase">{item.spec}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[11px] font-black text-slate-800 tabular-nums">
+                        {item.quantity.toLocaleString()} <span className="text-[9px] text-slate-400 ml-0.5">kg</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                    {item.spec}
-                  </span>
-                </div>
-                <div className="mt-3 pt-3 border-t border-slate-50 flex items-center gap-1.5">
-                  <div className={cn("w-1.5 h-1.5 rounded-full", focusedShelterId ? "bg-indigo-500 animate-pulse" : "bg-emerald-500")} />
-                  <span className="text-[10px] font-bold text-slate-400">
-                    {focusedShelterId ? "실시간 연동 잔고" : "현재 배송 대기 잔고"}
-                  </span>
-                </div>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-4 py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
-              <AlertCircle className="text-slate-300" size={32} />
-              <p className="text-xs font-bold text-slate-400 tracking-tight">현재 대기 중인 잔고 데이터가 없습니다.</p>
+                ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center opacity-40">
+                <Box size={24} className="text-slate-300 mb-1" />
+                <p className="text-[9px] font-bold text-slate-400 italic">표시할 잔고가 없습니다</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="mt-2 pt-2 border-t border-slate-50 flex items-center gap-1.5 shrink-0">
+            <div className={cn("w-1 h-1 rounded-full animate-pulse", focusedShelterId ? "bg-indigo-500" : "bg-emerald-500")} />
+            <span className="text-[9px] font-bold text-slate-400 italic">
+              {focusedShelterId ? "개별 연동 데이터" : "전체 선택된 통합 데이터"}
+            </span>
+          </div>
+        </Card>
+
+        {/* Annual Logistics Chart Widget */}
+        <Card className="lg:col-span-8 h-[200px] flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
+                <TrendingUp size={14} />
+              </div>
+              <h3 className="text-xs font-black text-slate-800 tracking-tight">연간 입출고 추이 (최근 12개월)</h3>
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#007bff]" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Inbound</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#dc3545]" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Outbound</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: -5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tickCount={4}
+                  tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-xl overflow-hidden">
+                          <p className="text-[9px] font-black text-slate-400 mb-1 px-1">{payload[0].payload.month}</p>
+                          <div className="space-y-1 border-t border-slate-50 pt-1">
+                            {payload.map((p: any, idx: number) => (
+                              <div key={idx} className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-1 h-1 rounded-full" style={{ backgroundColor: p.color }} />
+                                  <span className="text-[10px] font-black text-slate-600">{p.name === 'Inbound' ? '입고' : '출고'}</span>
+                                </div>
+                                <span className="text-[10px] font-black text-slate-800 tracking-tight">{p.value.toLocaleString()}kg</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar name="Inbound" dataKey="Inbound" fill="#007bff" radius={[2, 2, 0, 0]} barSize={8} />
+                <Bar name="Outbound" dataKey="Outbound" fill="#dc3545" radius={[2, 2, 0, 0]} barSize={8} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
       </section>
 
       {/* Table/Ledger */}
@@ -414,9 +521,9 @@ export default function InventoryLogisticsView() {
 
         <div className="flex-1 overflow-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-20 border-b border-slate-100">
+            <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-20 border-b-2 border-slate-200 shadow-sm">
               <tr>
-                <th className="px-6 py-5 w-12">
+                <th className="px-6 py-5 w-12 bg-slate-50 sticky top-0 z-30">
                    <button 
                      onClick={toggleSelectAll}
                      className={cn(
@@ -429,14 +536,14 @@ export default function InventoryLogisticsView() {
                      {selectedIds.size === filteredLedger.length && filteredLedger.length > 0 && <CheckCircle2 size={12} />}
                    </button>
                 </th>
-                <th className="px-6 py-5">일자</th>
-                <th className="px-6 py-5">구분</th>
-                <th className="px-6 py-5">보호소명</th>
-                <th className="px-6 py-5">품목</th>
-                <th className="px-6 py-5 text-right">배송비(VAT포함)</th>
-                <th className="px-6 py-5 text-right">수량(kg)</th>
-                <th className="px-6 py-5 text-right">잔고(kg)</th>
-                <th className="px-6 py-5 text-right">관 리</th>
+                <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">일자</th>
+                <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">구분</th>
+                <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">보호소명</th>
+                <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">품목</th>
+                <th className="px-6 py-5 text-right bg-slate-50 sticky top-0 z-20">배송비(VAT포함)</th>
+                <th className="px-6 py-5 text-right bg-slate-50 sticky top-0 z-20">수량(kg)</th>
+                <th className="px-6 py-5 text-right bg-slate-50 sticky top-0 z-20">잔고(kg)</th>
+                <th className="px-6 py-5 text-right bg-slate-50 sticky top-0 z-20">관 리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -603,12 +710,12 @@ export default function InventoryLogisticsView() {
 
                  <div className="flex-1 overflow-auto custom-scrollbar border border-slate-100 rounded-3xl">
                     <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-50/50 sticky top-0 z-10 border-b border-slate-100">
+                      <thead className="bg-slate-50 sticky top-0 z-10 border-b-2 border-slate-200 shadow-sm">
                         <tr>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">보호소명</th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">품목명</th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">규격</th>
-                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">현재 총 잔고</th>
+                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">보호소명</th>
+                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">품목명</th>
+                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-slate-50 sticky top-0 z-10">규격</th>
+                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">현재 총 잔고</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">

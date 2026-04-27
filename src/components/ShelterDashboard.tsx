@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -26,7 +26,11 @@ import {
   MapPin,
   Phone,
   Database,
-  Briefcase
+  Briefcase,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  MessageSquare as MsgIcon
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -46,6 +50,7 @@ import ProjectCalendar from './ProjectCalendar';
 import ProjectsView from './ProjectsView';
 import InventoryLogisticsView from './InventoryLogisticsView';
 import PartnerManagement from './PartnerManagement';
+import SalesTaskManager from './SalesTaskManager';
 import { 
   LIVE_EVENTS, 
   LEAD_SHELTERS, 
@@ -57,10 +62,13 @@ import {
   MOCK_DONATIONS, 
   MOCK_DELIVERIES, 
   CONTACT_HISTORY,
+  MOCK_SALES_TASKS,
   Shelter,
   Donation,
-  Delivery
+  Delivery,
+  SalesTask
 } from '../mockData';
+import { PARTNER_MASTER_DATA } from '../partnerMasterData';
 import { useShelters } from '../context/ShelterContext';
 import { PROJECT_DATA, Project } from '../projectData';
 import { cn } from '../lib/utils';
@@ -92,6 +100,244 @@ const Card = ({ children, className }: { children: React.ReactNode, className?: 
   </motion.div>
 );
 
+// --- Action Items Related Components ---
+
+const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => void }) => {
+  const [tasks, setTasks] = useState<SalesTask[]>(MOCK_SALES_TASKS);
+  const { shelters } = useShelters();
+
+  const sortedTasks = useMemo(() => {
+    return [...tasks]
+      .filter(t => t.status !== '완료')
+      .sort((a, b) => {
+        const now = new Date();
+        const dateA = new Date(a.deadline);
+        const dateB = new Date(b.deadline);
+        
+        const isOverdueA = dateA < now ? 1 : 0;
+        const isOverdueB = dateB < now ? 1 : 0;
+        if (isOverdueA !== isOverdueB) return isOverdueB - isOverdueA;
+
+        const priorityMap = { '높음': 3, '보통': 2, '낮음': 1 };
+        if (priorityMap[a.priority] !== priorityMap[b.priority]) {
+          return priorityMap[b.priority] - priorityMap[a.priority];
+        }
+
+        const hasPartnerA = a.partnerIds.length > 0 ? 1 : 0;
+        const hasPartnerB = b.partnerIds.length > 0 ? 1 : 0;
+        return hasPartnerB - hasPartnerA;
+      });
+  }, [tasks]);
+
+  const handleToggle = (id: string) => {
+    // Simulated delay for animation
+    setTimeout(() => {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: '완료' } : t));
+    }, 400);
+  };
+
+  const isOverdue = (deadline: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(deadline) < today;
+  };
+
+  return (
+    <div className="space-y-4 overflow-y-auto max-h-[420px] pr-2 custom-scrollbar">
+      <AnimatePresence>
+        {sortedTasks.map(task => {
+          const shelter = shelters.find(s => s.id === task.shelterId);
+          const overdue = isOverdue(task.deadline);
+          
+          return (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              layout
+              className="group flex items-start gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-accent/20 transition-all cursor-pointer"
+              onClick={() => onTaskClick(task)}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggle(task.id);
+                }}
+                className={cn(
+                  "mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                  "border-slate-200 text-transparent hover:border-accent hover:bg-accent/5"
+                )}
+              >
+                <CheckCircle2 size={12} />
+              </button>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start mb-0.5">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest",
+                    overdue ? "text-red-500" : "text-slate-400"
+                  )}>
+                    {task.category}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Clock size={10} className={cn(overdue ? "text-red-500" : "text-slate-300")} />
+                    <span className={cn(
+                      "text-[10px] font-mono font-bold tracking-tighter",
+                      overdue ? "text-red-500 underline decoration-red-200 decoration-2" : "text-slate-400"
+                    )}>
+                      {task.deadline}
+                    </span>
+                  </div>
+                </div>
+                <h4 className="text-xs font-bold text-slate-800 leading-tight mb-1 truncate">
+                  {task.taskName}
+                </h4>
+                <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                      <MapPin size={10} />
+                      <span className="truncate max-w-[120px]">{shelter?.name}</span>
+                   </div>
+                   {task.priority === '높음' && (
+                     <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                   )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+      {sortedTasks.length === 0 && (
+        <div className="py-12 text-center">
+          <CheckCircle2 size={32} className="mx-auto text-green-200 mb-2" />
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">모든 업무를 완료했습니다!</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TaskDrawer = ({ task, onClose }: { task: SalesTask | null, onClose: () => void }) => {
+  const { shelters } = useShelters();
+  const shelter = task ? shelters.find(s => s.id === task.shelterId) : null;
+  const overdue = task ? new Date(task.deadline) < new Date() : false;
+
+  return (
+    <AnimatePresence>
+      {task && (
+        <>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed top-0 right-0 w-[480px] h-full bg-white shadow-2xl z-[101] flex flex-col border-l border-slate-200"
+          >
+            <div className="p-6 bg-[#2D336B] text-white flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Briefcase size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black tracking-tight">{task.taskName}</h3>
+                  <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">테스크 상세 정보</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all active:scale-90"
+              >
+                <Plus className="rotate-45" size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+              <section className="space-y-4">
+                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <FileText size={14} /> 업무 개요
+                </h5>
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col gap-4">
+                   <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase">전략적 카테고리</span>
+                      <span className="text-xs font-black text-accent">{task.category}</span>
+                   </div>
+                   <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                     "{task.description || '세부 정보가 입력되지 않았습니다.'}"
+                   </p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h5 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                  <Users size={14} /> 담당 파트너 정보
+                </h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">대상 보호소</p>
+                    <p className="text-sm font-black text-slate-800">{shelter?.name || 'Unknown'}</p>
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold">
+                       <MapPin size={12} /> {shelter?.region}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">대표자</p>
+                    <p className="text-sm font-black text-slate-800">{shelter?.representative || 'Unknown'}</p>
+                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
+                       <Phone size={12} /> {shelter?.representativePhone || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+                {task.partnerIds.length > 0 && (
+                  <div className="mt-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
+                     <p className="text-[9px] font-black text-indigo-400 uppercase mb-3">연결된 물류/이벤트 파트너</p>
+                     <div className="flex flex-wrap gap-2">
+                       {task.partnerIds.map(pid => {
+                         const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
+                         return (
+                           <div key={pid} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                              <span className="text-[11px] font-bold text-slate-700">{partner?.name}</span>
+                              <ExternalLink size={10} className="text-slate-300" />
+                           </div>
+                         );
+                       })}
+                     </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="space-y-4">
+                <h5 className="text-[10px] font-black text-[#FF9F1C] uppercase tracking-widest flex items-center gap-2">
+                  <MsgIcon size={14} /> 업무 메모 및 협의 사항
+                </h5>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none min-h-[120px]"
+                  placeholder="클라이언트와의 미팅 내용이나 내부 전달 사항을 자유롭게 기록하세요..."
+                />
+              </section>
+            </div>
+
+            <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
+               <button className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-black text-xs rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]">
+                 수정하기
+               </button>
+               <button className="flex-2 py-4 bg-[#FF9F1C] text-white font-black text-xs rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-[0.98]">
+                 완료 처리하기
+               </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
 // --- View 1: Dashboard ---
 
 const DashboardView = ({ 
@@ -105,6 +351,7 @@ const DashboardView = ({
 }) => {
   const { shelters } = useShelters();
   const [viewMode, setViewMode] = useState<'map' | 'calendar'>('map');
+  const [selectedTaskForDrawer, setSelectedTaskForDrawer] = useState<SalesTask | null>(null);
   
   const ongoingCount = projects.filter(p => p.status === 'Ongoing').length;
   
@@ -208,37 +455,22 @@ const DashboardView = ({
           </div>
 
           <div className="col-span-4 flex flex-col gap-4">
-            <Card className="flex-1">
-              <h3 className="text-sm font-bold text-slate-700 mb-4">기부 및 실시간 이벤트</h3>
-              <div className="space-y-3 overflow-y-auto max-h-[380px] pr-2 custom-scrollbar">
-                <div className="p-3 bg-accent/5 border border-accent/20 rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-xs font-bold text-accent italic">최근 활동</p>
-                    <span className="text-[8px] bg-accent text-white px-1.5 py-0.5 rounded font-bold uppercase">업데이트</span>
-                  </div>
-                  <p className="text-[10px] text-slate-600 font-bold">왕왕랜드 1,660kg 수령</p>
-                  <p className="text-[9px] text-slate-400 italic">고기호성 사료 배송 성공적으로 완료됨.</p>
+            <Card className="flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 tracking-tight">Action Items</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 underline decoration-accent/30 decoration-2">업무 우선순위 지능형 관리</p>
                 </div>
-                
-                {LIVE_EVENTS.map(event => (
-                  <div key={event.id} className={cn(
-                    "p-3 rounded-lg border transition-all cursor-pointer hover:bg-slate-50/80",
-                    event.id === '1' ? "bg-red-50 border-red-100" : "bg-slate-50/50 border-slate-100"
-                  )}>
-                    <div className="flex justify-between items-center mb-1">
-                      <p className={cn("text-xs font-bold", event.id === '1' ? "text-red-700" : "text-slate-700")}>
-                        {event.eventName}
-                      </p>
-                      {event.id === '1' && (
-                        <span className="text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded animate-pulse uppercase font-bold">Live</span>
-                      )}
-                    </div>
-                    <p className={cn("text-[10px]", event.id === '1' ? "text-red-600" : "text-slate-500")}>
-                      {event.shelterName}
-                    </p>
-                  </div>
-                ))}
+                <div className="w-8 h-8 rounded-full bg-accent/5 flex items-center justify-center text-accent">
+                   <TrendingUp size={16} />
+                </div>
               </div>
+              
+              <ActionItemsWidget onTaskClick={setSelectedTaskForDrawer} />
+              <TaskDrawer 
+                task={selectedTaskForDrawer} 
+                onClose={() => setSelectedTaskForDrawer(null)} 
+              />
             </Card>
 
             <Card className="h-24 bg-slate-900 text-white border-none flex items-center gap-4">
@@ -535,23 +767,40 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
               {/* History Timeline */}
               <section className="space-y-5">
                 <h4 className="text-[10px] font-black text-[#FF9F1C] uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Activity size={12} /> 영업 및 활동 기록
+                  <Activity size={12} /> 영업 및 활동 기록 히스토리
                 </h4>
-                <div className="relative pl-6 space-y-6 border-l border-slate-100 ml-2">
-                   {[
-                     { date: selectedShelter.lastContactDate, msg: '공급망 관련 최신 후속 통화 완료.' },
-                     { date: '2024-03-12', msg: '현장 방문 완료. 운영상 문제점 논의.' },
-                     { date: '2024-01-05', msg: '지역 네트워킹 이벤트를 통한 초기 리드 확보.' }
-                   ].map((item, idx) => (
-                     <div key={idx} className="relative">
-                        <div className="absolute -left-[30px] top-1 w-3 h-3 rounded-full bg-white border-2 border-[#FF9F1C] shadow-sm shadow-orange-200"></div>
-                        <div>
-                          <p className="text-[9px] font-black text-slate-400 tracking-tighter mb-1">{item.date}</p>
-                          <p className="text-[11px] text-slate-600 leading-relaxed font-medium bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">
-                            {item.msg}
-                          </p>
-                        </div>
-                     </div>
+                <div className="relative pl-6 space-y-6 border-l border-slate-100 ml-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                   { ( [
+                      ...CONTACT_HISTORY.filter(h => h.shelterId === selectedShelter.id).map(h => ({ date: h.date, msg: h.message, type: 'contact', status: undefined })),
+                      ...MOCK_SALES_TASKS.filter(t => t.shelterId === selectedShelter.id).map(t => ({ date: t.deadline, msg: `[${t.category}] ${t.taskName}`, type: 'task', status: t.status }))
+                     ] as any[] )
+                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                     .map((item, idx) => (
+                      <div key={idx} className="relative">
+                         <div className={cn(
+                           "absolute -left-[30px] top-1 w-3 h-3 rounded-full bg-white border-2 shadow-sm",
+                           item.type === 'task' ? "border-indigo-500 shadow-indigo-200" : "border-[#FF9F1C] shadow-orange-200"
+                         )}></div>
+                         <div>
+                           <div className="flex items-center justify-between mb-1">
+                             <p className="text-[9px] font-black text-slate-400 tracking-tighter">{item.date}</p>
+                             {item.type === 'task' && (
+                               <span className={cn(
+                                 "text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter",
+                                 item.status === '완료' ? "bg-green-50 text-green-600 border border-green-100" : "bg-slate-100 text-slate-500 border border-slate-200"
+                               )}>
+                                 {item.status === '완료' ? '완료' : '진행중'}
+                               </span>
+                             )}
+                           </div>
+                           <p className={cn(
+                             "text-[11px] leading-relaxed font-medium p-2 rounded-lg border",
+                             item.type === 'task' ? "bg-indigo-50/30 border-indigo-100/50 text-indigo-700" : "bg-slate-50/50 border-slate-100/50 text-slate-600"
+                           )}>
+                             {item.msg}
+                           </p>
+                         </div>
+                      </div>
                    ))}
                 </div>
               </section>
@@ -795,7 +1044,7 @@ const LogisticsView = () => {
 
 export default function ShelterDashboard() {
   const { shelters } = useShelters();
-  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'logistics' | 'inventory' | 'settings' | 'products' | 'partners'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'logistics' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales'>('dashboard');
   const [crmFilter, setCrmFilter] = useState('');
   const [projects, setProjects] = useState<Project[]>(PROJECT_DATA);
 
@@ -829,6 +1078,7 @@ export default function ShelterDashboard() {
       case 'logistics': return <LogisticsView />;
       case 'partners': return <PartnerManagement />;
       case 'products': return <ProductRegistry />;
+      case 'sales': return <SalesTaskManager />;
       case 'settings': return <div className="p-10 text-center flex flex-col items-center justify-center h-full"><Settings size={48} className="text-slate-100 mb-4 animate-spin-slow" /><h3 className="text-slate-400 font-bold uppercase tracking-widest">환경 설정 콘솔</h3><p className="text-xs text-slate-300 mt-2 italic">모듈 유지 관리 중...</p></div>;
       default: return null;
     }
@@ -856,10 +1106,10 @@ export default function ShelterDashboard() {
             onClick={() => setActiveView('dashboard')}
           />
           <SidebarItem 
-            icon={Users} 
-            active={activeView === 'crm'} 
-            label="보호소 관리 (CRM)" 
-            onClick={() => { setActiveView('crm'); setCrmFilter(''); }}
+            icon={Activity} 
+            active={activeView === 'sales'} 
+            label="영업 및 협력 관리" 
+            onClick={() => setActiveView('sales')}
           />
           <SidebarItem 
             icon={Briefcase} 
@@ -881,6 +1131,12 @@ export default function ShelterDashboard() {
           />
           
           <div className="pt-6 pb-2 px-3 text-[10px] font-black text-slate-300 uppercase tracking-widest">기초 정보 관리 (Master Data)</div>
+          <SidebarItem 
+            icon={Users} 
+            active={activeView === 'crm'} 
+            label="보호소 등록/관리" 
+            onClick={() => { setActiveView('crm'); setCrmFilter(''); }}
+          />
           <SidebarItem 
             icon={Database} 
             active={activeView === 'products'} 
@@ -933,13 +1189,14 @@ export default function ShelterDashboard() {
           <div className="flex items-center gap-4">
              <div className="w-1.5 h-6 bg-accent rounded-full shadow-[0_0_8px_rgba(128,188,189,0.5)]"></div>
              <h1 className="text-xl font-black text-slate-800 tracking-tight capitalize antialiased">
-                {activeView === 'crm' ? '보호소 관리 (CRM)' : 
+                {activeView === 'crm' ? '보호소 마스터 명부' : 
                  activeView === 'donations' ? '프로젝트 생애주기 관리' : 
                  activeView === 'inventory' ? '보호소별 수불부 관리' : 
                  activeView === 'logistics' ? '출고 및 물류 이행' : 
                  activeView === 'partners' ? '파트너 마스터 관리' : 
                  activeView === 'dashboard' ? '대시보드 개요' :
                  activeView === 'products' ? '상품 기초 데이터 등록' :
+                 activeView === 'sales' ? '영업 및 협력 테스크 관리' :
                  activeView.replace(/([A-Z])/g, ' $1').trim()}
              </h1>
           </div>

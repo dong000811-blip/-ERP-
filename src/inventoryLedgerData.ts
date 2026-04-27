@@ -120,5 +120,18 @@ export const INVENTORY_LEDGER_DATA: InventoryEntry[] = [
     balance: 0,
     manager: '박민준',
     remarks: '총 500kg 일괄 출고 완료'
-  }
+  },
+  // Historical data for charts
+  { id: 'H-1', date: '2025-05-10', type: '입고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1200, balance: 1200, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-2', date: '2025-06-15', type: '출고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 800, balance: 400, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-3', date: '2025-07-20', type: '입고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1500, balance: 1900, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-4', date: '2025-08-05', type: '출고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1000, balance: 900, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-5', date: '2025-09-12', type: '입고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 2000, balance: 2900, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-6', date: '2025-10-25', type: '출고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1800, balance: 1100, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-7', date: '2025-11-15', type: '입고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1400, balance: 2500, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-8', date: '2025-12-05', type: '출고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1200, balance: 1300, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-9', date: '2026-01-10', type: '입고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1800, balance: 3100, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-10', date: '2026-02-20', type: '출고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1500, balance: 1600, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-11', date: '2026-03-15', type: '입고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 2200, balance: 3800, manager: '시스템', remarks: '이월 데이터' },
+  { id: 'H-12', date: '2026-03-25', type: '출고', shelterId: 'SHT-001', shelterName: '왕왕랜드', itemName: '넥스트 펫밸런스 어덜트', specification: '10kg', quantity: 1800, balance: 2000, manager: '시스템', remarks: '이월 데이터' }
 ];

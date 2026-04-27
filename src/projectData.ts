@@ -21,6 +21,7 @@ export interface Project {
   description: string;
   type: 'logistics' | 'sales' | 'event';
   performance?: ProjectPerformance;
+  partnerIds?: string[];
 }
 
 export const PROJECT_DATA: Project[] = [

@@ -11,6 +11,7 @@ import {
   CheckCircle2, 
   Clock, 
   AlertCircle,
+  Users,
   MoreVertical,
   LayoutGrid,
   ChevronDown,
@@ -26,6 +27,7 @@ import { cn } from '../lib/utils';
 import { PROJECT_DATA, Project, ProjectPerformance } from '../projectData';
 import { MOCK_SHELTERS } from '../mockData';
 import { MASTER_PRODUCT_DATA } from '../masterProductData';
+import { PARTNER_MASTER_DATA } from '../partnerMasterData';
 
 interface ProjectFormData {
   projectName: string;
@@ -35,6 +37,7 @@ interface ProjectFormData {
   description: string;
   status: Project['status'];
   type: Project['type'];
+  partnerIds: string[];
 }
 
 interface ProjectsViewProps {
@@ -58,8 +61,12 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
     endDate: '',
     description: '',
     status: 'Upcoming',
-    type: 'event'
+    type: 'event',
+    partnerIds: []
   });
+
+  const [partnerSearch, setPartnerSearch] = useState('');
+  const [isPartnerDropdownOpen, setIsPartnerDropdownOpen] = useState(false);
 
   const [perfFormData, setPerfFormData] = useState<ProjectPerformance>({
     productId: '',
@@ -109,6 +116,14 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
       .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   }, [projects, shelterFilter, statusFilter]);
 
+  const filteredPartners = useMemo(() => {
+    return PARTNER_MASTER_DATA.filter(p => 
+      p.name.toLowerCase().includes(partnerSearch.toLowerCase()) ||
+      p.id.toLowerCase().includes(partnerSearch.toLowerCase()) ||
+      p.type.toLowerCase().includes(partnerSearch.toLowerCase())
+    );
+  }, [partnerSearch]);
+
   const handleOpenModal = (project?: Project) => {
     if (project) {
       setEditingProjectId(project.id);
@@ -119,7 +134,8 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
         endDate: project.endDate,
         description: project.description,
         status: project.status,
-        type: project.type
+        type: project.type,
+        partnerIds: project.partnerIds || []
       });
     } else {
       setEditingProjectId(null);
@@ -130,7 +146,8 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
         endDate: '',
         description: '',
         status: 'Upcoming',
-        type: 'event'
+        type: 'event',
+        partnerIds: []
       });
     }
     setIsModalOpen(true);
@@ -157,7 +174,8 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
             endDate: formData.endDate,
             description: formData.description,
             status: formData.status,
-            type: formData.type
+            type: formData.type,
+            partnerIds: formData.partnerIds
           };
         }
         return p;
@@ -173,7 +191,8 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
         endDate: formData.endDate,
         status: formData.status,
         description: formData.description,
-        type: formData.type
+        type: formData.type,
+        partnerIds: formData.partnerIds
       };
       setProjects(prev => [newProject, ...prev]);
       showToast('새 프로젝트가 등록되었습니다.');
@@ -419,6 +438,35 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
                                       </p>
                                     </div>
 
+                                    {/* Participating Partners */}
+                                    <div className="space-y-1.5">
+                                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Users size={12} className="text-indigo-500" />
+                                        참여 협력 파트너
+                                      </h4>
+                                      <div className="flex flex-wrap gap-2">
+                                        {project.partnerIds && project.partnerIds.length > 0 ? (
+                                          project.partnerIds.map(pid => {
+                                            const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
+                                            return (
+                                              <div key={pid} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-100 rounded-lg shadow-sm">
+                                                <div className={cn(
+                                                  "w-1.5 h-1.5 rounded-full",
+                                                  partner?.type === 'Corporate' ? "bg-indigo-500" : "bg-slate-400"
+                                                )} />
+                                                <span className="text-xs font-bold text-slate-700">{partner?.name || pid}</span>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                                  {partner?.specialties[0]?.replace(' 지원', '') || (partner?.type === 'Corporate' ? '기업' : '개인')}
+                                                </span>
+                                              </div>
+                                            );
+                                          })
+                                        ) : (
+                                          <p className="text-[10px] font-bold text-slate-400 italic">등록된 파트너가 없습니다.</p>
+                                        )}
+                                      </div>
+                                    </div>
+
                                     {project.status === 'Completed' && (
                                       <div className="space-y-1.5">
                                         <div className="flex justify-between items-center mb-1">
@@ -658,21 +706,6 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">상태 *</label>
-                    <select 
-                      required
-                      value={formData.status}
-                      onChange={e => setFormData({...formData, status: e.target.value as any})}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all cursor-pointer"
-                    >
-                      <option value="Upcoming">진행 예정</option>
-                      <option value="Ongoing">진행 중</option>
-                      <option value="Completed">완료</option>
-                    </select>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -706,6 +739,128 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
                     placeholder="프로젝트의 목적, 지원 내용 등을 입력하세요."
                     className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all resize-none"
                   />
+                </div>
+
+                {/* Partners & Status Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr,180px] gap-6 items-start">
+                  {/* Partner Multi-Select */}
+                  <div className="space-y-1.5 relative">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 h-[14px] flex items-center">협력 파트너 <span className="opacity-50 text-[9px] ml-1">(선택)</span></label>
+                    
+                    <div className="relative">
+                      <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input 
+                        type="text" 
+                        value={partnerSearch}
+                        onFocus={() => setIsPartnerDropdownOpen(true)}
+                        onChange={e => {
+                          setPartnerSearch(e.target.value);
+                          setIsPartnerDropdownOpen(true);
+                        }}
+                        placeholder="파트너명 또는 ID 검색..."
+                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
+                      />
+                      
+                      {/* Selected Partner Tags */}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {formData.partnerIds.map(pid => {
+                          const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
+                          if (!partner) return null;
+                          const displaySpecialty = partner.specialties[0]?.replace(' 지원', '') || (partner.type === 'Corporate' ? '기업' : '개인');
+                          return (
+                            <span key={pid} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-[10px] font-black text-[#2D336B]">
+                              [{displaySpecialty}] {partner.name}
+                              <button 
+                                type="button"
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  partnerIds: prev.partnerIds.filter(id => id !== pid)
+                                }))}
+                                className="hover:text-red-500 transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+
+                      {/* Dropdown */}
+                      <AnimatePresence>
+                        {isPartnerDropdownOpen && partnerSearch && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar"
+                          >
+                            {filteredPartners.length > 0 ? (
+                              filteredPartners
+                                .filter(p => !formData.partnerIds.includes(p.id))
+                                .map(partner => (
+                                  <button
+                                    key={partner.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        partnerIds: [...prev.partnerIds, partner.id]
+                                      }));
+                                      setPartnerSearch('');
+                                      setIsPartnerDropdownOpen(false);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between group"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="text-xs font-black text-slate-700">
+                                        <span className="text-indigo-500 mr-1">
+                                          [{partner.specialties[0]?.replace(' 지원', '') || (partner.type === 'Corporate' ? '기업' : '개인')}]
+                                        </span>
+                                        {partner.name}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-slate-400">{partner.id} · {partner.specialties.join(', ')}</span>
+                                    </div>
+                                    <Plus size={14} className="text-slate-200 group-hover:text-indigo-400" />
+                                  </button>
+                                ))
+                            ) : (
+                              <div className="px-4 py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
+                                검색 결과가 없습니다
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {isPartnerDropdownOpen && partnerSearch && (
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsPartnerDropdownOpen(false)}
+                      />
+                    )}
+                  </div>
+
+                  {/* Status Options Button Group */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 h-[14px] flex items-center">프로젝트 상태</label>
+                    <div className="flex bg-slate-50 p-1 rounded-xl h-[46px] items-center gap-1">
+                      {(['Upcoming', 'Ongoing', 'Completed'] as Project['status'][]).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setFormData({...formData, status: s})}
+                          className={cn(
+                            "flex-1 h-full text-[9px] font-black rounded-lg transition-all",
+                            formData.status === s 
+                              ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-100" 
+                              : "text-slate-400 hover:text-slate-600"
+                          )}
+                        >
+                          {s === 'Upcoming' ? '진행 예정' : s === 'Ongoing' ? '진행 중' : '완료'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <button 
