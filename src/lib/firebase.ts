@@ -4,13 +4,30 @@ import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import firebaseConfig from "../../firebase-applet-config.json";
 
+// Safeguard: Check if critical config members are present
+const requiredFields: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', 'appId'];
+const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
+
+if (missingFields.length > 0) {
+  const msg = `CRITICAL: Firebase configuration is missing required fields: ${missingFields.join(", ")}`;
+  console.error(msg, firebaseConfig);
+  if (typeof window !== 'undefined') {
+    alert(msg);
+  }
+}
+
 // Debug: Log the config being used (redacted sensitive parts if necessary, but here we want to be sure)
-console.log("Initializing Firebase with project:", firebaseConfig.projectId);
+console.log("Attempting Firebase initialization for project:", firebaseConfig.projectId);
 
 let app: FirebaseApp;
 if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-  console.log("Firebase App initialized successfully.");
+  try {
+    app = initializeApp(firebaseConfig);
+    console.log("Firebase App initialized successfully.");
+  } catch (err) {
+    console.error("Firebase App initialization FAILED:", err);
+    throw err;
+  }
 } else {
   app = getApp();
   console.log("Using existing Firebase App.");

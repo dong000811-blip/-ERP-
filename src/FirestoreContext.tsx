@@ -83,16 +83,25 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const uid = currentUser.uid;
 
     const unsubscibers = [
-      onSnapshot(query(collection(db, 'projects'), where('userId', '==', uid), orderBy('startDate', 'desc')), 
-        (s) => setProjects(s.docs.map(d => ({ ...d.data(), id: d.id } as Project))),
+      onSnapshot(query(collection(db, 'projects'), where('userId', '==', uid)), 
+        (s) => {
+          const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as Project));
+          setProjects(docs.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')));
+        },
         (e) => handleFirestoreError(e, OperationType.GET, 'projects')
       ),
-      onSnapshot(query(collection(db, 'tasks'), where('userId', '==', uid), orderBy('deadline', 'asc')), 
-        (s) => setTasks(s.docs.map(d => ({ ...d.data(), id: d.id } as SalesTask))),
+      onSnapshot(query(collection(db, 'tasks'), where('userId', '==', uid)), 
+        (s) => {
+          const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as SalesTask));
+          setTasks(docs.sort((a, b) => (a.deadline || '').localeCompare(b.deadline || '')));
+        },
         (e) => handleFirestoreError(e, OperationType.GET, 'tasks')
       ),
-      onSnapshot(query(collection(db, 'logs'), where('userId', '==', uid), orderBy('date', 'desc')), 
-        (s) => setLogs(s.docs.map(d => ({ ...d.data(), id: d.id } as ActivityLog))),
+      onSnapshot(query(collection(db, 'logs'), where('userId', '==', uid)), 
+        (s) => {
+          const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as ActivityLog));
+          setLogs(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
+        },
         (e) => handleFirestoreError(e, OperationType.GET, 'logs')
       ),
       onSnapshot(query(collection(db, 'partners'), where('userId', '==', uid)), 
@@ -103,16 +112,22 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (s) => setProducts(s.docs.map(d => ({ ...d.data(), id: d.id } as Product))),
         (e) => handleFirestoreError(e, OperationType.GET, 'products')
       ),
-      onSnapshot(query(collection(db, 'donations'), where('userId', '==', uid), orderBy('date', 'desc')), 
-        (s) => setDonations(s.docs.map(d => ({ ...d.data(), id: d.id } as Donation))),
+      onSnapshot(query(collection(db, 'donations'), where('userId', '==', uid)), 
+        (s) => {
+          const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as Donation));
+          setDonations(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
+        },
         (e) => handleFirestoreError(e, OperationType.GET, 'donations')
       ),
       onSnapshot(query(collection(db, 'deliveries'), where('userId', '==', uid)), 
         (s) => setDeliveries(s.docs.map(d => ({ ...d.data(), id: d.id } as Delivery))),
         (e) => handleFirestoreError(e, OperationType.GET, 'deliveries')
       ),
-      onSnapshot(query(collection(db, 'inventory'), where('userId', '==', uid), orderBy('date', 'desc')), 
-        (s) => setInventory(s.docs.map(d => ({ ...d.data(), id: d.id } as InventoryEntry))),
+      onSnapshot(query(collection(db, 'inventory'), where('userId', '==', uid)), 
+        (s) => {
+          const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as InventoryEntry));
+          setInventory(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
+        },
         (e) => handleFirestoreError(e, OperationType.GET, 'inventory')
       )
     ];
@@ -144,26 +159,35 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const updateDocument = async (col: string, id: string, data: any) => {
     try {
+      console.log(`[Firestore UPDATE START] Collection: ${col}, ID: ${id}`, data);
       await updateDoc(doc(db, col, id), data);
+      console.log(`[Firestore UPDATE SUCCESS] Document ${id} in ${col} updated.`);
     } catch (error) {
+      console.error(`[Firestore UPDATE FAIL] Error updating ${id} in ${col}:`, error);
       handleFirestoreError(error, OperationType.WRITE, col);
     }
   };
 
   const deleteDocument = async (col: string, id: string) => {
     try {
+      console.log(`[Firestore DELETE START] Collection: ${col}, ID: ${id}`);
       await deleteDoc(doc(db, col, id));
+      console.log(`[Firestore DELETE SUCCESS] Document ${id} in ${col} deleted.`);
     } catch (error) {
+      console.error(`[Firestore DELETE FAIL] Error deleting ${id} in ${col}:`, error);
       handleFirestoreError(error, OperationType.WRITE, col);
     }
   };
 
   const deleteDocuments = async (col: string, ids: string[]) => {
     try {
+      console.log(`[Firestore BATCH DELETE START] Collection: ${col}, IDs:`, ids);
       const batch = writeBatch(db);
       ids.forEach(id => batch.delete(doc(db, col, id)));
       await batch.commit();
+      console.log(`[Firestore BATCH DELETE SUCCESS] ${ids.length} docs deleted from ${col}.`);
     } catch (error) {
+      console.error(`[Firestore BATCH DELETE FAIL] Error in batch delete for ${col}:`, error);
       handleFirestoreError(error, OperationType.WRITE, col);
     }
   };

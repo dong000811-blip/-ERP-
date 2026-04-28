@@ -10,6 +10,9 @@ import { ShelterProvider } from './context/ShelterContext';
 import { FirestoreProvider } from './FirestoreContext';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { APIProvider } from '@vis.gl/react-google-maps';
+
+const API_KEY = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY;
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -35,11 +38,21 @@ export default function App() {
     return <Login />;
   }
 
-  return (
+  const content = (
     <FirestoreProvider>
       <ShelterProvider>
         <ShelterDashboard />
       </ShelterProvider>
     </FirestoreProvider>
   );
+
+  if (API_KEY) {
+    return (
+      <APIProvider apiKey={API_KEY} libraries={['places']}>
+        {content}
+      </APIProvider>
+    );
+  }
+
+  return content;
 }

@@ -55,8 +55,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsLoading(true);
     const q = query(
       collection(db, 'shelters'), 
-      where('userId', '==', currentUser.uid),
-      orderBy('lastContactDate', 'desc')
+      where('userId', '==', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -65,7 +64,8 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
         id: doc.id
       })) as Shelter[];
       
-      setShelters(shelterData);
+      // Client-side sorting substitute for server-side orderBy
+      setShelters(shelterData.sort((a, b) => (b.lastContactDate || '').localeCompare(a.lastContactDate || '')));
       setIsLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'shelters');
@@ -78,10 +78,17 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     if (!API_KEY || !address) return null;
     try {
+      console.log(`[Geocoding] Fetching coordinates for: ${address}`);
       const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${API_KEY}`);
       const data = await response.json();
       if (data.status === 'OK' && data.results.length > 0) {
-        return data.results[0].geometry.location;
+        const location = data.results[0].geometry.location;
+        console.log(`[Geocoding SUCCESS] Result:`, location);
+        return location;
+      } else if (data.status === 'ZERO_RESULTS') {
+        console.warn(`[Geocoding] No results found for address: ${address}`);
+      } else {
+        console.error(`[Geocoding ERROR] Status: ${data.status}`);
       }
     } catch (error) {
       console.error('Geocoding error:', error);
@@ -102,6 +109,13 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       console.log('Processing geocoding for address:', newShelterData.detailedAddress);
       const coords = await geocodeAddress(newShelterData.detailedAddress || '');
+      
+      if (!coords && newShelterData.detailedAddress) {
+        alert('입력하신 주소의 좌표를 찾을 수 없습니다. 정확한 주소를 입력했는지 확인해 주세요.');
+        // We continue with region default if strictly necessary, but better to stop if user expects precise placement.
+        // For now, let's allow fallback to region center but warn.
+      }
+
       const regionCenter = REGIONAL_SHELTER_DATA.find(r => r.region === newShelterData.region) || REGIONAL_SHELTER_DATA[0];
 
       const id = `SHT-${Math.random().toString(36).substr(2, 7).toUpperCase()}`;
@@ -127,8 +141,10 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const updateShelter = async (id: string, updates: Partial<Shelter>) => {
     try {
+      console.log(`[Shelter UPDATE START] Attempting to update shelter: ${id}`, updates);
       let newCoords = null;
       if (updates.detailedAddress) {
+        console.log(`[Shelter UPDATE] Geocoding new address: ${updates.detailedAddress}`);
         newCoords = await geocodeAddress(updates.detailedAddress);
       }
 
@@ -139,27 +155,35 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       await updateDoc(doc(db, 'shelters', id), finalUpdates);
+      console.log(`[Shelter UPDATE SUCCESS] Shelter ${id} updated.`);
     } catch (error) {
+      console.error(`[Shelter UPDATE FAIL] Error updating shelter ${id}:`, error);
       handleFirestoreError(error, OperationType.WRITE, 'shelters');
     }
   };
 
   const deleteShelter = async (id: string) => {
     try {
+      console.log(`[Shelter DELETE START] Attempting to delete shelter: ${id}`);
       await deleteDoc(doc(db, 'shelters', id));
+      console.log(`[Shelter DELETE SUCCESS] Shelter ${id} deleted.`);
     } catch (error) {
+      console.error(`[Shelter DELETE FAIL] Error deleting shelter ${id}:`, error);
       handleFirestoreError(error, OperationType.WRITE, 'shelters');
     }
   };
 
   const deleteShelters = async (ids: string[]) => {
     try {
+      console.log(`[Shelter BATCH DELETE START] Attempting to delete shelters:`, ids);
       const batch = writeBatch(db);
       ids.forEach(id => {
         batch.delete(doc(db, 'shelters', id));
       });
       await batch.commit();
+      console.log(`[Shelter BATCH DELETE SUCCESS] ${ids.length} shelters deleted.`);
     } catch (error) {
+      console.error(`[Shelter BATCH DELETE FAIL] Error during batch delete:`, error);
       handleFirestoreError(error, OperationType.WRITE, 'shelters');
     }
   };

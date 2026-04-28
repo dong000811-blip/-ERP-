@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { 
   LayoutDashboard, 
   Map as MapIcon, 
@@ -601,6 +602,50 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
 
   const [selectedShelterIds, setSelectedShelterIds] = useState<Set<string>>(new Set());
 
+  // Google Places Autocomplete
+  const placesLibrary = useMapsLibrary('places');
+  const autoCompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!placesLibrary || !inputRef.current || !isModalOpen) return;
+
+    autoCompleteRef.current = new placesLibrary.Autocomplete(inputRef.current, {
+      fields: ['formatted_address', 'geometry', 'address_components'],
+      componentRestrictions: { country: 'kr' }
+    });
+
+    autoCompleteRef.current.addListener('place_changed', () => {
+      const place = autoCompleteRef.current?.getPlace();
+      if (place?.formatted_address) {
+        setFormData(prev => ({
+          ...prev,
+          detailedAddress: place.formatted_address || ''
+        }));
+        
+        // Try to auto-detect region from address components
+        const cityComponent = place.address_components?.find(c => 
+          c.types.includes('administrative_area_level_1')
+        );
+        if (cityComponent) {
+          const regionName = cityComponent.long_name;
+          const matchedRegion = REGIONAL_SHELTER_DATA.find(r => 
+            regionName.includes(r.region) || r.region.includes(regionName)
+          );
+          if (matchedRegion) {
+            setFormData(prev => ({ ...prev, region: matchedRegion.region }));
+          }
+        }
+      }
+    });
+
+    return () => {
+      if (autoCompleteRef.current) {
+        google.maps.event.clearInstanceListeners(autoCompleteRef.current);
+      }
+    };
+  }, [placesLibrary, isModalOpen]);
+
   // Form State
   const [formData, setFormData] = useState<AddShelterFormData>({
     name: '',
@@ -1029,13 +1074,14 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                   </div>
 
                   <div className="space-y-[0.375rem] flex flex-col">
-                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">상세 주소</label>
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">상세 주소 (정확한 위치를 위해 입력하세요)</label>
                     <input 
+                      ref={inputRef}
                       type="text" 
                       value={formData.detailedAddress}
                       onChange={e => setFormData({...formData, detailedAddress: e.target.value})}
-                      placeholder="상세 주소를 기재하세요"
-                      className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                      placeholder="상세 주소를 검색하거나 입력하세요"
+                      className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:font-normal"
                     />
                   </div>
 

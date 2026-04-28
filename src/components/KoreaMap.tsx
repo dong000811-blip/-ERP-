@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow } from '@vis.gl/react-google-maps';
+import { useState, useEffect } from 'react';
+import { Map, AdvancedMarker, Pin, InfoWindow, useMap } from '@vis.gl/react-google-maps';
 import { REGIONAL_SHELTER_DATA } from '../constants';
 import { AlertCircle, Map as MapIcon, ArrowRight, Home } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -11,9 +11,35 @@ const API_KEY = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY;
 export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string) => void }) {
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
   const { shelters } = useShelters();
+  const map = useMap();
+
+  // Auto-center and fit bounds
+  useEffect(() => {
+    if (!map || shelters.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    shelters.forEach(s => {
+      if (s.lat && s.lng) {
+        bounds.extend({ lat: s.lat, lng: s.lng });
+      }
+    });
+
+    // If only one shelter, center and zoom in more
+    if (shelters.length === 1) {
+      map.setCenter({ lat: shelters[0].lat, lng: shelters[0].lng });
+      map.setZoom(13);
+    } else {
+      map.fitBounds(bounds, 50); // padding 50px
+    }
+  }, [map, shelters]);
 
   const handleShelterClick = (shelterId: string, region: string) => {
     setSelectedShelterId(shelterId);
+    const shelter = shelters.find(s => s.id === shelterId);
+    if (shelter && map) {
+      map.panTo({ lat: shelter.lat, lng: shelter.lng });
+      map.setZoom(15);
+    }
   };
 
   if (!API_KEY) {
@@ -44,7 +70,6 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
 
   return (
     <div className="relative w-full h-full min-h-[450px] rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <APIProvider apiKey={API_KEY}>
         <Map
           defaultCenter={{ lat: 36.5, lng: 127.8 }}
           defaultZoom={7}
@@ -103,7 +128,6 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
             </InfoWindow>
           )}
         </Map>
-      </APIProvider>
 
       {/* Overlays */}
       <div className="absolute top-6 left-6 z-10 pointer-events-none flex flex-col gap-3">
