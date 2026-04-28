@@ -159,14 +159,23 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
 
   if (mapError) {
     return (
-      <div className="relative w-full h-full min-h-[450px] flex flex-col items-center justify-center bg-rose-50 rounded-xl border border-dashed border-rose-300 p-10 text-center">
+      <div className="relative w-full h-[450px] min-h-[450px] flex flex-col items-center justify-center bg-rose-50 rounded-xl border border-dashed border-rose-300 p-10 text-center">
         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
           <AlertCircle className="text-rose-500" size={32} />
         </div>
         <h3 className="text-sm font-bold text-rose-700 mb-2">지도 로드 실패</h3>
-        <p className="text-xs text-rose-400 max-w-[280px] leading-relaxed">
+        <p className="text-xs text-rose-400 max-w-[280px] leading-relaxed mb-6">
           {mapError}
         </p>
+        <button 
+          onClick={() => {
+            sessionStorage.removeItem('naver_map_retry_count');
+            window.location.reload();
+          }}
+          className="px-6 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-black transition-all shadow-lg active:scale-95"
+        >
+          인증 다시 시도
+        </button>
       </div>
     );
   }
