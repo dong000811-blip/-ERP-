@@ -22,6 +22,7 @@ export interface Partner {
   
   // Corporate specific
   businessNumber?: string;
+  organizationType?: string;
   managerName?: string;
   managerPosition?: string;
   billingEmail?: string;

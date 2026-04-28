@@ -252,12 +252,45 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
   };
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
   const deleteProject = (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
     showToast('프로젝트가 삭제되었습니다.');
     setExpandedProjectId(null);
     setDeleteConfirmId(null);
+    setSelectedProjectIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    if (window.confirm(`선택한 ${selectedProjectIds.size}개의 프로젝트를 정말 삭제하시겠습니까?`)) {
+      setProjects(prev => prev.filter(p => !selectedProjectIds.has(p.id)));
+      setSelectedProjectIds(new Set());
+      showToast('성공적으로 삭제되었습니다.');
+      setExpandedProjectId(null);
+    }
+  };
+
+  const toggleSelectProject = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedProjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProjectIds.size === filteredProjects.length && filteredProjects.length > 0) {
+      setSelectedProjectIds(new Set());
+    } else {
+      setSelectedProjectIds(new Set(filteredProjects.map(p => p.id)));
+    }
   };
 
   const getStatusBadge = (status: Project['status']) => {
@@ -344,22 +377,45 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
           </div>
         </div>
         
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-[#2D336B] hover:bg-[#1E234A] text-white px-6 py-2.5 rounded-xl text-[11px] font-black flex items-center gap-2 shadow-lg shadow-indigo-900/10 transition-all active:scale-95"
-        >
-          <Plus size={16} /> 신규 프로젝트 등록
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedProjectIds.size > 0 && (
+            <button 
+              onClick={handleDeleteSelected}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-6 py-2.5 rounded-xl text-[11px] font-black flex items-center gap-2 border border-rose-100 transition-all active:scale-95 shadow-sm"
+            >
+              <Trash2 size={16} /> 선택된 {selectedProjectIds.size}개 삭제
+            </button>
+          )}
+          <button 
+            onClick={() => handleOpenModal()}
+            className="bg-[#2D336B] hover:bg-[#1E234A] text-white px-6 py-2.5 rounded-xl text-[11px] font-black flex items-center gap-2 shadow-lg shadow-indigo-900/10 transition-all active:scale-95"
+          >
+            <Plus size={16} /> 신규 프로젝트 등록
+          </button>
+        </div>
       </div>
 
       {/* Project Table */}
       <div className="flex-1 overflow-hidden bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col">
         <div className="overflow-x-auto overflow-y-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[900px] table-fixed">
-            <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-10">
               <tr>
-                <th className="w-[5%] px-4 py-5"></th>
-                <th className="w-[40%] px-4 py-5">프로젝트명</th>
+                <th className="w-[4%] px-4 py-5 text-center">
+                  <button 
+                    onClick={toggleSelectAll}
+                    className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                      selectedProjectIds.size === filteredProjects.length && filteredProjects.length > 0
+                        ? "bg-indigo-600 border-indigo-600 text-white" 
+                        : "bg-white border-slate-300 text-transparent"
+                    )}
+                  >
+                    <CheckCircle2 size={12} />
+                  </button>
+                </th>
+                <th className="w-[4%] px-4 py-5"></th>
+                <th className="w-[37%] px-4 py-5">프로젝트명</th>
                 <th className="w-[20%] px-4 py-5">대상 보호소</th>
                 <th className="w-[20%] px-4 py-5 text-center">진행 기간</th>
                 <th className="w-[15%] px-4 py-5 text-center">상태</th>
@@ -369,16 +425,31 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
               {filteredProjects.map(project => {
                 const isExpanded = expandedProjectId === project.id;
                 const perf = project.performance ? calculatePerf(project.performance) : null;
+                const isSelected = selectedProjectIds.has(project.id);
                 
                 return (
                   <React.Fragment key={project.id}>
                     <tr 
                       className={cn(
                         "hover:bg-slate-50/50 transition-all cursor-pointer group",
-                        isExpanded && "bg-slate-50/80"
+                        isExpanded && "bg-slate-50/80",
+                        isSelected && "bg-indigo-50/30"
                       )}
                       onClick={() => setExpandedProjectId(isExpanded ? null : project.id)}
                     >
+                      <td className="px-4 py-6 text-center">
+                        <button 
+                          onClick={(e) => toggleSelectProject(project.id, e)}
+                          className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                            isSelected 
+                              ? "bg-indigo-600 border-indigo-600 text-white" 
+                              : "bg-white border-slate-200 text-transparent group-hover:border-indigo-300"
+                          )}
+                        >
+                          <CheckCircle2 size={12} />
+                        </button>
+                      </td>
                       <td className="px-4 py-6 text-center">
                         <button className="text-slate-300 group-hover:text-slate-500 transition-colors">
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -417,7 +488,7 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
                     <AnimatePresence>
                       {isExpanded && (
                         <tr>
-                          <td colSpan={5} className="bg-slate-50/30 px-8 py-0">
+                          <td colSpan={6} className="bg-slate-50/30 px-8 py-0">
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: "auto", opacity: 1 }}
@@ -575,39 +646,6 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
                                   >
                                     <Edit2 size={12} /> 프로젝트 수정
                                   </button>
-                                  {deleteConfirmId === project.id ? (
-                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
-                                      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest mr-2">정말 삭제하시겠습니까?</span>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          deleteProject(project.id);
-                                        }}
-                                        className="px-4 py-2 bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all"
-                                      >
-                                        확인
-                                      </button>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setDeleteConfirmId(null);
-                                        }}
-                                        className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
-                                      >
-                                        취소
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteConfirmId(project.id);
-                                      }}
-                                      className="px-4 py-2 bg-white hover:bg-red-50 rounded-xl text-slate-500 hover:text-red-500 border border-slate-100 shadow-sm transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
-                                    >
-                                      <Trash2 size={12} /> 프로젝트 삭제
-                                    </button>
-                                  )}
                                 </div>
                               </div>
                             </motion.div>

@@ -83,7 +83,10 @@ export default function PartnerManagement() {
     accountNumber: '',
     accountHolder: '',
     resourcesMemo: '',
+    organizationType: '기업',
   };
+
+  const organizationTypes = ['기업', '봉사단체', '비영리단체', '지자체', '기타'];
 
   const [formData, setFormData] = useState<Partial<Partner>>(initialFormState);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -93,13 +96,7 @@ export default function PartnerManagement() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
     if (!formData.name) errors.name = '이름/기업명을 입력해주세요.';
-    if (!formData.contact) errors.contact = '연락처를 입력해주세요.';
-    if (!formData.specialties || formData.specialties.length === 0) errors.specialties = '전문 분야를 하나 이상 선택해주세요.';
     
-    if (formData.type === 'Corporate') {
-      if (!formData.businessNumber) errors.businessNumber = '사업자 번호를 입력해주세요.';
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -539,104 +536,114 @@ export default function PartnerManagement() {
                        <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-widest">기본 식별 정보</h4>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                          {formData.type === 'Individual' ? '이름' : '법인/단체명'} <span className="text-rose-500">*</span>
-                        </label>
-                        <input 
-                          type="text" 
-                          required
-                          value={formData.name || ''}
-                          onChange={e => setFormData({...formData, name: e.target.value})}
-                          placeholder={formData.type === 'Individual' ? '홍길동' : '(주)넥스트 로지스틱스'}
-                          className={cn(
-                            "w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all",
-                            formErrors.name && "border-rose-200 bg-rose-50/30"
-                          )}
-                        />
-                        {formErrors.name && <p className="text-[9px] font-bold text-rose-500 pl-1">! {formErrors.name}</p>}
-                      </div>
-
-                      {formData.type === 'Individual' ? (
+                      <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">생년월일</label>
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                            {formData.type === 'Individual' ? '이름' : '법인/단체명'} <span className="text-rose-500">*</span>
+                          </label>
                           <input 
-                            type="date" 
-                            value={formData.birthDate || ''}
-                            onChange={e => setFormData({...formData, birthDate: e.target.value})}
-                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all"
+                            type="text" 
+                            required
+                            value={formData.name || ''}
+                            onChange={e => setFormData({...formData, name: e.target.value})}
+                            placeholder={formData.type === 'Individual' ? '홍길동' : '(주)넥스트 로지스틱스'}
+                            className={cn(
+                              "w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all",
+                              formData.name ? "bg-white" : ""
+                            )}
                           />
                         </div>
-                      ) : (
-                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">사업자 등록 번호 <span className="text-rose-500">*</span></label>
-                            <input 
-                              type="text" 
-                              required
-                              value={formData.businessNumber || ''}
-                              onChange={e => setFormData({...formData, businessNumber: e.target.value})}
-                              placeholder="000-00-00000"
-                              className={cn(
-                                "w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono",
-                                formErrors.businessNumber && "border-rose-200 bg-rose-50/30"
-                              )}
-                            />
-                         </div>
-                      )}
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">연락처 <span className="text-rose-500">*</span></label>
-                        <input 
-                          type="tel" 
-                          required
-                          value={formData.contact || ''}
-                          onChange={e => setFormData({...formData, contact: e.target.value})}
-                          placeholder="010-0000-0000"
-                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">활동 주요 지역</label>
-                        <select 
-                          value={formData.region}
-                          onChange={e => setFormData({...formData, region: e.target.value})}
-                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all"
-                        >
-                          {regions.map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    {formData.type === 'Corporate' && (
-                       <div className="grid grid-cols-2 gap-6">
+                        {formData.type === 'Individual' ? (
                           <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">담당자 성함 및 직급</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">생년월일</label>
                             <input 
-                              type="text" 
-                              value={formData.managerName || ''}
-                              onChange={e => setFormData({...formData, managerName: e.target.value})}
-                              placeholder="홍길동 팀장"
-                              className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
+                              type="date" 
+                              value={formData.birthDate || ''}
+                              onChange={e => setFormData({...formData, birthDate: e.target.value})}
+                              className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all"
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">계산서 발행용 이메일</label>
-                            <div className="relative">
-                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+                        ) : (
+                           <div className="space-y-1.5">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">단체 유형</label>
+                              <select 
+                                value={formData.organizationType}
+                                onChange={e => setFormData({...formData, organizationType: e.target.value})}
+                                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all"
+                              >
+                                {organizationTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                              </select>
+                           </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                            {formData.type === 'Individual' ? '연락처' : '대표 연락처'}
+                          </label>
+                          <input 
+                            type="tel" 
+                            value={formData.contact || ''}
+                            onChange={e => setFormData({...formData, contact: e.target.value})}
+                            placeholder="010-0000-0000"
+                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">활동 주요 지역</label>
+                          <select 
+                            value={formData.region}
+                            onChange={e => setFormData({...formData, region: e.target.value})}
+                            className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all"
+                          >
+                            {regions.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      {formData.type === 'Corporate' && (
+                         <>
+                         <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">사업자 등록 번호</label>
+                               <input 
+                                 type="text" 
+                                 value={formData.businessNumber || ''}
+                                 onChange={e => setFormData({...formData, businessNumber: e.target.value})}
+                                 placeholder="000-00-00000"
+                                 className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
+                               />
+                            </div>
+                            <div className="space-y-1.5">
+                               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">계산서 발행용 이메일</label>
+                               <div className="relative">
+                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+                                 <input 
+                                   type="email" 
+                                   value={formData.billingEmail || ''}
+                                   onChange={e => setFormData({...formData, billingEmail: e.target.value})}
+                                   placeholder="billing@company.com"
+                                   className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
+                                 />
+                               </div>
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">담당자 성함 및 직급</label>
                               <input 
-                                type="email" 
-                                value={formData.billingEmail || ''}
-                                onChange={e => setFormData({...formData, billingEmail: e.target.value})}
-                                placeholder="billing@company.com"
-                                className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
+                                type="text" 
+                                value={formData.managerName || ''}
+                                onChange={e => setFormData({...formData, managerName: e.target.value})}
+                                placeholder="홍길동 팀장"
+                                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/30 outline-none transition-all font-mono"
                               />
                             </div>
-                          </div>
-                       </div>
-                    )}
+                         </div>
+                         </>
+                      )}
                   </div>
 
                   {/* Expertise Section */}
@@ -732,7 +739,11 @@ export default function PartnerManagement() {
               <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
                 <button 
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setFormData(initialFormState);
+                    setEditingPartner(null);
+                  }}
                   className="px-6 py-3.5 text-slate-400 font-black text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
                 >
                   취소
@@ -740,7 +751,13 @@ export default function PartnerManagement() {
                 <button 
                   form="partner-form"
                   type="submit"
-                  className="px-8 py-3.5 bg-[#2D336B] hover:bg-[#1E234A] text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-900/10 transition-all active:scale-[0.98] flex items-center gap-2"
+                  disabled={!formData.name}
+                  className={cn(
+                    "px-8 py-3.5 rounded-2xl text-xs font-black shadow-lg transition-all active:scale-[0.98] flex items-center gap-2",
+                    formData.name 
+                      ? "bg-[#2D336B] hover:bg-[#1E234A] text-white shadow-indigo-900/10" 
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                  )}
                 >
                   {editingPartner ? '저장하기' : '파트너 등록 완료'}
                 </button>

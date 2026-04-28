@@ -104,38 +104,31 @@ const Card = ({ children, className }: { children: React.ReactNode, className?: 
 
 // --- Action Items Related Components ---
 
-const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => void }) => {
+const TodayFocusWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => void }) => {
   const [tasks, setTasks] = useState<SalesTask[]>(MOCK_SALES_TASKS);
   const { shelters } = useShelters();
 
-  const sortedTasks = useMemo(() => {
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const filteredTasks = useMemo(() => {
     return [...tasks]
-      .filter(t => t.status !== '완료')
+      .filter(t => {
+        if (t.status === '완료') return false;
+        const deadline = new Date(t.deadline);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return deadline <= today;
+      })
       .sort((a, b) => {
-        const now = new Date();
-        const dateA = new Date(a.deadline);
-        const dateB = new Date(b.deadline);
-        
-        const isOverdueA = dateA < now ? 1 : 0;
-        const isOverdueB = dateB < now ? 1 : 0;
-        if (isOverdueA !== isOverdueB) return isOverdueB - isOverdueA;
-
         const priorityMap = { '높음': 3, '보통': 2, '낮음': 1 };
-        if (priorityMap[a.priority] !== priorityMap[b.priority]) {
-          return priorityMap[b.priority] - priorityMap[a.priority];
-        }
-
-        const hasPartnerA = a.partnerIds.length > 0 ? 1 : 0;
-        const hasPartnerB = b.partnerIds.length > 0 ? 1 : 0;
-        return hasPartnerB - hasPartnerA;
+        return priorityMap[b.priority] - priorityMap[a.priority];
       });
   }, [tasks]);
 
-  const handleToggle = (id: string) => {
-    // Simulated delay for animation
-    setTimeout(() => {
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: '완료' } : t));
-    }, 400);
+  const handleToggle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Simulated completion logic
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: '완료' } : t));
   };
 
   const isOverdue = (deadline: string) => {
@@ -145,29 +138,30 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
   };
 
   return (
-    <div className="space-y-[1rem] overflow-y-auto pr-[0.5rem] custom-scrollbar flex-1 min-h-0">
-      <AnimatePresence>
-        {sortedTasks.map(task => {
+    <div className="space-y-[0.75rem] overflow-y-auto pr-[0.5rem] custom-scrollbar flex-1 min-h-0">
+      <AnimatePresence mode="popLayout">
+        {filteredTasks.map(task => {
           const shelter = shelters.find(s => s.id === task.shelterId);
           const overdue = isOverdue(task.deadline);
           
           return (
             <motion.div
               key={task.id}
-              initial={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95, x: -10 }}
               layout
-              className="group flex items-start gap-[0.75rem] p-[0.75rem] bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-accent/20 transition-all cursor-pointer"
+              className={cn(
+                "group flex items-start gap-[0.75rem] p-[0.75rem] bg-white border border-slate-100 rounded-xl hover:shadow-md transition-all cursor-pointer",
+                overdue && "border-red-100 bg-red-50/10"
+              )}
               onClick={() => onTaskClick(task)}
             >
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggle(task.id);
-                }}
+                onClick={(e) => handleToggle(task.id, e)}
                 className={cn(
                   "mt-[0.125rem] flex-shrink-0 w-[1.25rem] h-[1.25rem] rounded-full border-2 flex items-center justify-center transition-all",
-                  "border-slate-200 text-transparent hover:border-accent hover:bg-accent/5"
+                  "border-slate-200 text-transparent hover:border-accent hover:bg-accent/5",
+                  overdue && "border-red-200"
                 )}
               >
                 <CheckCircle2 size={12} />
@@ -175,48 +169,123 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
               
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start mb-[0.125rem]">
-                  <span className={cn(
-                    "text-[0.625rem] font-black uppercase tracking-widest",
-                    overdue ? "text-red-500" : "text-slate-400"
-                  )}>
-                    {task.category}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {overdue && <span className="px-1.5 py-0.5 bg-red-500 text-white text-[0.625rem] font-black rounded uppercase">긴급</span>}
+                    <span className={cn(
+                      "text-[0.625rem] font-black uppercase tracking-widest",
+                      overdue ? "text-red-500" : "text-slate-400"
+                    )}>
+                      {task.category}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-[0.25rem]">
                     <Clock size={10} className={cn(overdue ? "text-red-500" : "text-slate-300")} />
                     <span className={cn(
-                      "text-[0.625rem] font-mono font-bold tracking-tighter",
-                      overdue ? "text-red-500 underline decoration-red-200 decoration-2" : "text-slate-400"
+                      "text-[0.625rem] font-mono font-bold tracking-tighter text-slate-400",
+                      overdue && "text-red-500 font-black"
                     )}>
-                      {task.deadline}
+                      {task.deadline === todayStr ? 'Today' : task.deadline}
                     </span>
                   </div>
                 </div>
-                <h4 className="text-[0.75rem] font-bold text-slate-800 leading-tight mb-[0.25rem] truncate">
+                <h4 className="text-[0.75rem] font-bold text-slate-800 leading-tight mb-[0.125rem] truncate">
                   {task.taskName}
                 </h4>
-                <div className="flex items-center gap-[0.5rem]">
-                   <div className="flex items-center gap-[0.25rem] text-[0.625rem] font-medium text-slate-400">
-                      <MapPin size={10} />
-                      <span className="truncate max-w-[7.5rem]">{shelter?.name}</span>
-                   </div>
-                   {task.priority === '높음' && (
-                     <span className="flex-shrink-0 w-[0.375rem] h-[0.375rem] rounded-full bg-red-500 animate-pulse" />
-                   )}
+                <div className="flex items-center gap-[0.5rem] text-[0.625rem] font-medium text-slate-400">
+                  <MapPin size={10} />
+                  <span className="truncate">{shelter?.name}</span>
                 </div>
               </div>
             </motion.div>
           );
         })}
       </AnimatePresence>
-      {sortedTasks.length === 0 && (
-        <div className="py-[3rem] text-center">
-          <CheckCircle2 size={32} className="mx-auto text-green-200 mb-[0.5rem]" />
-          <p className="text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">모든 업무를 완료했습니다!</p>
+      {filteredTasks.length === 0 && (
+        <div className="h-full flex flex-col items-center justify-center py-[2rem] text-center">
+          <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500 mb-2">
+            <ShieldCheck size={20} />
+          </div>
+          <p className="text-[0.75rem] font-black text-slate-800 uppercase tracking-tight">여유로운 시간입니다!</p>
+          <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-1">오늘 예정된 급한 업무가 없습니다</p>
         </div>
       )}
     </div>
   );
 };
+
+const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => void }) => {
+  const { shelters } = useShelters();
+  
+  const activities = useMemo(() => {
+    const history = CONTACT_HISTORY.map(h => ({
+      id: h.id,
+      date: h.date,
+      message: h.message,
+      type: 'contact',
+      category: '상담/컨택',
+      shelterId: h.shelterId
+    }));
+
+    const taskEvents = MOCK_SALES_TASKS.map(t => ({
+      id: t.id,
+      date: t.deadline,
+      message: t.taskName,
+      type: 'task',
+      category: t.category,
+      shelterId: t.shelterId,
+      originalTask: t
+    }));
+
+    return [...history, ...taskEvents]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, []);
+
+  const getIcon = (category: string) => {
+    if (category.includes('방문') || category.includes('현장')) return <MapPin size={14} className="text-emerald-500" />;
+    if (category.includes('유선') || category.includes('상담')) return <Phone size={14} className="text-blue-500" />;
+    if (category.includes('물류') || category.includes('배송')) return <Truck size={14} className="text-amber-500" />;
+    return <Activity size={14} className="text-slate-400" />;
+  };
+
+  return (
+    <div className="space-y-[0.75rem] overflow-y-auto pr-[0.5rem] custom-scrollbar flex-1 min-h-0">
+      <div className="relative pl-[1.25rem]">
+        <div className="absolute left-[0.4375rem] top-0 bottom-0 w-[0.125rem] bg-slate-100" />
+        
+        {activities.map((activity, idx) => {
+          const shelter = shelters.find(s => s.id === activity.shelterId);
+          return (
+            <div 
+              key={`${activity.id}-${idx}`} 
+              className="relative mb-[1rem] group cursor-pointer"
+              onClick={() => {
+                if ('originalTask' in activity) onTaskClick(activity.originalTask as SalesTask);
+              }}
+            >
+              <div className="absolute -left-[1.25rem] top-[0.25rem] w-[0.875rem] h-[0.875rem] rounded-full border-2 border-white bg-slate-200 group-hover:bg-accent group-hover:scale-110 transition-all z-10" />
+              
+              <div className="p-[0.75rem] bg-slate-50/50 border border-slate-100 rounded-xl group-hover:bg-white group-hover:shadow-md group-hover:border-accent/10 transition-all">
+                <div className="flex justify-between items-center mb-[0.25rem]">
+                  <div className="flex items-center gap-[0.375rem]">
+                    {getIcon(activity.category)}
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activity.category}</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-300">{activity.date}</span>
+                </div>
+                <p className="text-[0.75rem] font-bold text-slate-700 leading-tight mb-[0.25rem]">{activity.message}</p>
+                <div className="flex items-center gap-[0.25rem] text-[0.625rem] font-bold text-slate-400">
+                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                  <span className="truncate">{shelter?.name}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 
 const TaskDrawer = ({ task, onClose }: { task: SalesTask | null, onClose: () => void }) => {
   const { shelters } = useShelters();
@@ -461,35 +530,44 @@ const DashboardView = ({
           </div>
 
           <div className="col-span-4 flex flex-col gap-[1rem] min-h-0">
-            <Card className="flex-[3] flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-[1rem] shrink-0">
+            <Card className="flex-1 flex flex-col min-h-0 bg-white/80 backdrop-blur-sm border-white/40 shadow-xl shadow-slate-200/50">
+              <div className="flex items-center justify-between mb-[0.875rem] shrink-0">
                 <div>
-                  <h3 className="text-[0.875rem] font-black text-slate-800 tracking-tight">Action Items</h3>
-                  <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-[0.125rem] underline decoration-accent/30 decoration-2">업무 우선순위 지능형 관리</p>
+                  <h3 className="text-[0.8125rem] font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <Calendar size={14} className="text-accent" /> Today's Focus
+                  </h3>
+                  <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-[0.125rem]">오늘 완료가 필요한 긴급 과제</p>
                 </div>
-                <div className="w-[2rem] h-[2rem] rounded-full bg-accent/5 flex items-center justify-center text-accent">
-                   <TrendingUp size={16} />
-                </div>
+                <div className="px-2 py-0.5 bg-accent/10 rounded text-[10px] font-black text-accent uppercase tracking-tighter">Priority</div>
               </div>
               
-              <div className="flex-1 overflow-hidden">
-                <ActionItemsWidget onTaskClick={setSelectedTaskForDrawer} />
+              <div className="flex-1 min-h-0">
+                <TodayFocusWidget onTaskClick={setSelectedTaskForDrawer} />
               </div>
-              <TaskDrawer 
-                task={selectedTaskForDrawer} 
-                onClose={() => setSelectedTaskForDrawer(null)} 
-              />
             </Card>
 
-            <Card className="flex-1 bg-slate-900 text-white border-none flex items-center gap-[1rem] shrink-0 p-[1.25rem] min-h-[5rem]">
-              <div className="w-[2.5rem] h-[2.5rem] rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="text-red-500" size={20} />
+            <Card className="flex-1 flex flex-col min-h-0 bg-white shadow-xl shadow-slate-200/50">
+              <div className="flex items-center justify-between mb-[0.875rem] shrink-0">
+                <div>
+                  <h3 className="text-[0.8125rem] font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <Activity size={14} className="text-indigo-500" /> Action Items
+                  </h3>
+                  <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-[0.125rem]">최근 활동 및 업무 추진 현황</p>
+                </div>
+                <button className="text-[10px] font-black text-slate-300 hover:text-slate-500 uppercase flex items-center gap-1 transition-colors">
+                  All <ArrowRight size={10} />
+                </button>
               </div>
-              <div>
-                <p className="text-[0.75rem] font-bold text-red-100 uppercase tracking-tight">시스템 경보</p>
-                <p className="text-[0.6875rem] text-slate-400 leading-tight">공급망 알림: 경기 클러스터 사료 재고 부족</p>
+              
+              <div className="flex-1 min-h-0">
+                <ActivityTimelineWidget onTaskClick={setSelectedTaskForDrawer} />
               </div>
             </Card>
+
+            <TaskDrawer 
+              task={selectedTaskForDrawer} 
+              onClose={() => setSelectedTaskForDrawer(null)} 
+            />
           </div>
         </div>
       </div>
