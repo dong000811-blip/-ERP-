@@ -23,8 +23,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { 
-  MOCK_SHELTERS, 
-  MOCK_SALES_TASKS, 
   SalesTask, 
   SalesTaskCategory, 
   SalesTaskPriority,
@@ -32,8 +30,8 @@ import {
   RecurringType,
   SubTask
 } from '../mockData';
-import { PARTNER_MASTER_DATA } from '../partnerMasterData';
 import { useShelters } from '../context/ShelterContext';
+import { useFirestore } from '../FirestoreContext';
 import { cn } from '../lib/utils';
 
 const CATEGORIES: SalesTaskCategory[] = ['방문 영업', '유선 상담', '물류 협의', '이벤트 기획', '기타'];
@@ -44,7 +42,7 @@ type ViewMode = 'List' | 'Kanban';
 
 export default function SalesTaskManager() {
   const { shelters } = useShelters();
-  const [tasks, setTasks] = useState<SalesTask[]>(MOCK_SALES_TASKS);
+  const { tasks, addDocument, updateDocument, deleteDocument, deleteDocuments, partners } = useFirestore();
   const [viewMode, setViewMode] = useState<ViewMode>('List');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
@@ -78,10 +76,6 @@ export default function SalesTaskManager() {
     subTasks: []
   });
 
-  const filteredSheltersForSelect = useMemo(() => {
-    return shelters.filter(s => s.name.toLowerCase().includes(shelterSearch.toLowerCase()));
-  }, [shelters, shelterSearch]);
-
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       const shelter = shelters.find(s => s.id === task.shelterId);
@@ -99,7 +93,7 @@ export default function SalesTaskManager() {
       setFormData(task);
       // Try to find the name for the search input
       const shelter = shelters.find(s => s.id === task.shelterId);
-      const partner = PARTNER_MASTER_DATA.find(p => p.id === task.shelterId);
+      const partner = partners.find(p => p.id === task.shelterId);
       if (shelter) setShelterSearch(`[보호소] ${shelter.name}`);
       else if (partner) setShelterSearch(`[파트너] ${partner.name}`);
       else setShelterSearch(task.shelterId || '');
@@ -124,53 +118,57 @@ export default function SalesTaskManager() {
 
   const combinedTargets = useMemo(() => {
     const shelterList = shelters.map(s => ({ id: s.id, name: `[보호소] ${s.name}`, type: 'shelter', region: s.region }));
-    const partnerList = PARTNER_MASTER_DATA.map(p => ({ id: p.id, name: `[파트너] ${p.name}`, type: 'partner', region: p.type }));
+    const partnerList = partners.map(p => ({ id: p.id, name: `[파트너] ${p.name}`, type: 'partner', region: p.type }));
     return [...shelterList, ...partnerList];
-  }, [shelters]);
+  }, [shelters, partners]);
 
   const filteredTargetsForSelect = useMemo(() => {
     return combinedTargets.filter(t => t.name.toLowerCase().includes(shelterSearch.toLowerCase()));
   }, [combinedTargets, shelterSearch]);
 
-  const handleSaveTask = (e: React.FormEvent) => {
+  const handleSaveTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Allow manual input if nothing selected from dropdown
     const targetId = formData.shelterId || shelterSearch;
     if (!targetId || !formData.taskName || !formData.deadline) return;
 
-    if (editingTask) {
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...formData, shelterId: targetId } as SalesTask : t));
-    } else {
-      const newTask: SalesTask = {
-        id: `t-${Date.now()}`,
-        shelterId: targetId,
-        category: formData.category as SalesTaskCategory,
-        taskName: formData.taskName!,
-        description: formData.description || '',
-        partnerIds: formData.partnerIds || [],
-        deadline: formData.deadline!,
-        priority: formData.priority as SalesTaskPriority,
-        status: formData.status as SalesTaskStatus || '대기',
-        recurring: formData.recurring as RecurringType || 'None',
-        subTasks: formData.subTasks || [],
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setTasks(prev => [newTask, ...prev]);
+    try {
+      if (editingTask) {
+        await updateDocument('tasks', editingTask.id, { ...formData, shelterId: targetId });
+      } else {
+        const id = `t-${Date.now()}`;
+        await addDocument('tasks', {
+          ...formData,
+          id,
+          shelterId: targetId,
+          createdAt: new Date().toISOString().split('T')[0],
+          status: formData.status || '대기',
+          recurring: formData.recurring || 'None',
+          subTasks: formData.subTasks || []
+        });
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      alert('업무 저장 중 오류가 발생했습니다.');
     }
-    setIsModalOpen(false);
   };
 
-  const handleDeleteTasks = () => {
-    if (taskToDelete) {
-      setTasks(prev => prev.filter(t => t.id !== taskToDelete));
-      setSelectedTaskIds(prev => {
-        const next = new Set(prev);
-        next.delete(taskToDelete);
-        return next;
-      });
-    } else {
-      setTasks(prev => prev.filter(t => !selectedTaskIds.has(t.id)));
-      setSelectedTaskIds(new Set());
+  const handleDeleteTasks = async () => {
+    try {
+      if (taskToDelete) {
+        await deleteDocument('tasks', taskToDelete);
+        setSelectedTaskIds(prev => {
+          const next = new Set(prev);
+          next.delete(taskToDelete);
+          return next;
+        });
+      } else {
+        await deleteDocuments('tasks', Array.from(selectedTaskIds));
+        setSelectedTaskIds(new Set());
+      }
+    } catch (error) {
+      console.error(error);
+      alert('삭제 중 오류가 발생했습니다.');
     }
     setIsDeleteConfirmOpen(false);
     setTaskToDelete(null);
@@ -191,24 +189,25 @@ export default function SalesTaskManager() {
     setSelectedTaskIds(next);
   };
 
-  const toggleTaskStatus = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === '완료' ? '대기' : '완료' } : t));
+  const toggleTaskStatus = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    await updateDocument('tasks', id, { status: task.status === '완료' ? '대기' : '완료' });
   };
 
-  const toggleSubTask = (taskId: string, subTaskId: string) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id === taskId && t.subTasks) {
-        return {
-          ...t,
-          subTasks: t.subTasks.map(st => st.id === subTaskId ? { ...st, isCompleted: !st.isCompleted } : st)
-        };
-      }
-      return t;
-    }));
+  const toggleSubTask = async (taskId: string, subTaskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.subTasks) return;
+    
+    const updatedSubTasks = task.subTasks.map(st => 
+      st.id === subTaskId ? { ...st, isCompleted: !st.isCompleted } : st
+    );
+    
+    await updateDocument('tasks', taskId, { subTasks: updatedSubTasks });
   };
 
-  const moveTask = (taskId: string, newStatus: SalesTaskStatus) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+  const moveTask = async (taskId: string, newStatus: SalesTaskStatus) => {
+    await updateDocument('tasks', taskId, { status: newStatus });
   };
 
   const toggleExpand = (taskId: string) => {
@@ -423,7 +422,7 @@ export default function SalesTaskManager() {
                             <div className="flex -space-x-[0.5rem]">
                               {task.partnerIds && task.partnerIds.length > 0 ? (
                                 task.partnerIds.map(pid => {
-                                  const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
+                                  const partner = partners.find(p => p.id === pid);
                                   return (
                                     <div key={pid} title={partner?.name} className="w-[1.75rem] h-[1.75rem] rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center text-[0.625rem] font-black text-indigo-500 shadow-sm">
                                       {partner?.name.charAt(0)}
@@ -831,7 +830,7 @@ export default function SalesTaskManager() {
                     <div className="space-y-[0.25rem]">
                       <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">협력 파트너 (선택)</label>
                       <div className="grid grid-cols-1 gap-[0.25rem] p-[0.625rem] bg-slate-50 rounded-xl border border-slate-100 max-h-[6rem] overflow-y-auto custom-scrollbar">
-                        {PARTNER_MASTER_DATA.map(p => (
+                        {partners.map(p => (
                           <button
                             key={p.id}
                             type="button"

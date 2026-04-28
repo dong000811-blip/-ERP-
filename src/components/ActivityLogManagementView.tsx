@@ -24,18 +24,16 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { 
-  MOCK_ACTIVITY_LOGS, 
   ActivityLog, 
-  MOCK_SHELTERS, 
   Shelter 
 } from '../mockData';
-import { PARTNER_MASTER_DATA } from '../partnerMasterData';
 import { useShelters } from '../context/ShelterContext';
+import { useFirestore } from '../FirestoreContext';
 
 export default function ActivityLogManagementView() {
   const { shelters } = useShelters();
+  const { logs, deleteDocuments, addDocument, partners } = useFirestore();
   const [activeTab, setActiveTab] = useState<'All' | 'Meeting' | 'Travel'>('All');
-  const [logs, setLogs] = useState<ActivityLog[]>(MOCK_ACTIVITY_LOGS);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [isTravelModalOpen, setIsTravelModalOpen] = useState(false);
   const [selectedLogForDocument, setSelectedLogForDocument] = useState<ActivityLog | null>(null);
@@ -48,10 +46,24 @@ export default function ActivityLogManagementView() {
     return logs.filter(log => log.type === activeTab);
   }, [logs, activeTab]);
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (window.confirm(`기록된 ${selectedLogIds.size}개의 업무 이력이 영구 삭제됩니다. 계속하시겠습니까?`)) {
-      setLogs(prev => prev.filter(log => !selectedLogIds.has(log.id)));
-      setSelectedLogIds(new Set());
+      try {
+        await deleteDocuments('logs', Array.from(selectedLogIds));
+        setSelectedLogIds(new Set());
+      } catch (error) {
+        console.error(error);
+        alert('삭제 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  const handleSaveLog = async (log: ActivityLog) => {
+    try {
+      await addDocument('logs', log);
+    } catch (error) {
+      console.error(error);
+      alert('로그 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -237,12 +249,12 @@ export default function ActivityLogManagementView() {
       <MeetingLogModal 
         isOpen={isMeetingModalOpen} 
         onClose={() => setIsMeetingModalOpen(false)} 
-        onSave={(newLog) => setLogs([newLog, ...logs])}
+        onSave={handleSaveLog}
       />
       <TravelLogModal 
         isOpen={isTravelModalOpen} 
         onClose={() => setIsTravelModalOpen(false)} 
-        onSave={(newLog) => setLogs([newLog, ...logs])}
+        onSave={handleSaveLog}
       />
       <DocumentViewModal 
         log={selectedLogForDocument}
@@ -516,6 +528,7 @@ function DocumentViewModal({ log, isOpen, onClose }: { log: ActivityLog | null, 
 
 function MeetingLogModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (log: ActivityLog) => void }) {
   const { shelters } = useShelters();
+  const { partners } = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -531,9 +544,9 @@ function MeetingLogModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose
 
   const allTargets = useMemo(() => {
     const s = shelters.map(item => ({ id: item.id, name: `[보호소] ${item.name}`, type: 'shelter' }));
-    const p = PARTNER_MASTER_DATA.map(item => ({ id: item.id, name: `[파트너] ${item.name}`, type: 'partner' }));
+    const p = partners.map(item => ({ id: item.id, name: `[파트너] ${item.name}`, type: 'partner' }));
     return [...s, ...p];
-  }, [shelters]);
+  }, [shelters, partners]);
 
   const filteredTargets = allTargets.filter(t => t.name.includes(searchTerm));
 

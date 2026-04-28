@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Product } from '../mockData';
-import { MASTER_PRODUCT_DATA } from '../masterProductData';
+import { useFirestore } from '../FirestoreContext';
 import * as XLSX from 'xlsx';
 
 interface AddProductFormData {
@@ -33,7 +33,7 @@ interface AddProductFormData {
 }
 
 const ProductRegistry = () => {
-  const [products, setProducts] = useState<Product[]>(MASTER_PRODUCT_DATA);
+  const { products, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('전체');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -100,67 +100,60 @@ const ProductRegistry = () => {
     setIsModalOpen(true);
   };
 
-  const handleAddOrUpdateProduct = (e: React.FormEvent) => {
+  const handleAddOrUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.purchasePrice || !formData.sellingPrice) {
       showToast('필수 사항을 입력해주세요.', 'error');
       return;
     }
 
-    if (editingProductId) {
-      // Update existing
-      setProducts(prev => prev.map(p => {
-        if (p.id === editingProductId) {
-          return {
-            ...p,
-            name: formData.name,
-            category: formData.category,
-            standard: formData.standard,
-            unit: formData.unit,
-            purchasePrice: parseInt(formData.purchasePrice),
-            sellingPrice: parseInt(formData.sellingPrice),
-            remarks: formData.remarks
-          };
-        }
-        return p;
-      }));
-      showToast('상품 정보가 수정되었습니다.');
-    } else {
-      // Add new
-      const newProduct: Product = {
-        id: `PRD-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-        no: products.length > 0 ? Math.max(...products.map(p => p.no)) + 1 : 1,
-        name: formData.name,
-        category: formData.category,
-        standard: formData.standard,
-        unit: formData.unit,
-        purchasePrice: parseInt(formData.purchasePrice),
-        sellingPrice: parseInt(formData.sellingPrice),
-        remarks: formData.remarks
-      };
-      setProducts(prev => [...prev, newProduct]);
-      showToast('새로운 상품이 등록되었습니다.');
+    try {
+      if (editingProductId) {
+        // Update existing
+        await updateDocument('products', editingProductId, {
+          name: formData.name,
+          category: formData.category,
+          standard: formData.standard,
+          unit: formData.unit,
+          purchasePrice: parseInt(formData.purchasePrice),
+          sellingPrice: parseInt(formData.sellingPrice),
+          remarks: formData.remarks
+        });
+        showToast('상품 정보가 수정되었습니다.');
+      } else {
+        // Add new
+        const id = `PRD-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+        const nextNo = products.length > 0 ? Math.max(...products.map(p => p.no)) + 1 : 1;
+        await addDocument('products', {
+          id,
+          no: nextNo,
+          name: formData.name,
+          category: formData.category,
+          standard: formData.standard,
+          unit: formData.unit,
+          purchasePrice: parseInt(formData.purchasePrice),
+          sellingPrice: parseInt(formData.sellingPrice),
+          remarks: formData.remarks
+        });
+        showToast('새로운 상품이 등록되었습니다.');
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      showToast('상품 저장 중 오류가 발생했습니다.', 'error');
     }
-
-    setIsModalOpen(false);
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-    setSelectedProductIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-    showToast('상품이 삭제되었습니다.');
-    setDeleteConfirmId(null);
-  };
-
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (window.confirm(`선택한 ${selectedProductIds.size}개의 상품을 정말 삭제하시겠습니까?`)) {
-      setProducts(prev => prev.filter(p => !selectedProductIds.has(p.id)));
-      setSelectedProductIds(new Set());
-      showToast('선택한 상품들이 삭제되었습니다.');
+      try {
+        await deleteDocuments('products', Array.from(selectedProductIds));
+        setSelectedProductIds(new Set());
+        showToast('선택한 상품들이 삭제되었습니다.');
+      } catch (error) {
+        console.error(error);
+        showToast('삭제 중 오류가 발생했습니다.', 'error');
+      }
     }
   };
 

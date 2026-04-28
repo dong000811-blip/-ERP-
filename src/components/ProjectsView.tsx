@@ -24,8 +24,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { PROJECT_DATA, Project, ProjectPerformance } from '../projectData';
-import { MOCK_SHELTERS } from '../mockData';
+import { Project, ProjectPerformance } from '../projectData';
+import { useShelters } from '../context/ShelterContext';
+import { useFirestore } from '../FirestoreContext';
 import { MASTER_PRODUCT_DATA } from '../masterProductData';
 import { PARTNER_MASTER_DATA } from '../partnerMasterData';
 
@@ -40,12 +41,10 @@ interface ProjectFormData {
   partnerIds: string[];
 }
 
-interface ProjectsViewProps {
-  projects: Project[];
-  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
-}
-
-const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) => {
+const ProjectsView: React.FC = () => {
+  const { projects, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
+  const { shelters } = useShelters();
+  
   const [shelterFilter, setShelterFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -153,52 +152,36 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
     setIsModalOpen(true);
   };
 
-  const handleSaveProject = (e: React.FormEvent) => {
+  const handleSaveProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.projectName || !formData.shelterId || !formData.startDate || !formData.endDate) {
       alert('모든 필수 항목을 입력해주세요.');
       return;
     }
 
-    const shelterName = MOCK_SHELTERS.find(s => s.id === formData.shelterId)?.name || 'Unknown';
+    const shelterName = shelters.find(s => s.id === formData.shelterId)?.name || 'Unknown';
 
-    if (editingProjectId) {
-      setProjects(prev => prev.map(p => {
-        if (p.id === editingProjectId) {
-          return {
-            ...p,
-            projectName: formData.projectName,
-            shelterId: formData.shelterId,
-            shelterName: shelterName,
-            startDate: formData.startDate,
-            endDate: formData.endDate,
-            description: formData.description,
-            status: formData.status,
-            type: formData.type,
-            partnerIds: formData.partnerIds
-          };
-        }
-        return p;
-      }));
-      showToast('프로젝트 정보가 수정되었습니다.');
-    } else {
-      const newProject: Project = {
-        id: `PRJ-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
-        projectName: formData.projectName,
-        shelterId: formData.shelterId,
-        shelterName: shelterName,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        status: formData.status,
-        description: formData.description,
-        type: formData.type,
-        partnerIds: formData.partnerIds
-      };
-      setProjects(prev => [newProject, ...prev]);
-      showToast('새 프로젝트가 등록되었습니다.');
+    try {
+      if (editingProjectId) {
+        await updateDocument('projects', editingProjectId, {
+          ...formData,
+          shelterName
+        });
+        showToast('프로젝트 정보가 수정되었습니다.');
+      } else {
+        const id = `PRJ-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+        await addDocument('projects', {
+          ...formData,
+          id,
+          shelterName
+        });
+        showToast('새 프로젝트가 등록되었습니다.');
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      showToast('프로젝트 저장에 실패했습니다.', 'error');
     }
-
-    setIsModalOpen(false);
   };
 
   const handleOpenPerfModal = (project: Project) => {
@@ -220,25 +203,25 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
     setIsPerfModalOpen(true);
   };
 
-  const handleSavePerformance = (e: React.FormEvent) => {
+  const handleSavePerformance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!perfFormData.productId || perfFormData.quantity <= 0) {
       alert('상품을 선택하고 수량을 입력해주세요.');
       return;
     }
 
-    setProjects(prev => prev.map(p => {
-      if (p.id === perfProjectId) {
-        return {
-          ...p,
-          performance: perfFormData
-        };
-      }
-      return p;
-    }));
+    if (!perfProjectId) return;
 
-    showToast('프로젝트 성과 정보가 저장되었습니다.');
-    setIsPerfModalOpen(false);
+    try {
+      await updateDocument('projects', perfProjectId, {
+        performance: perfFormData
+      });
+      showToast('프로젝트 성과 정보가 저장되었습니다.');
+      setIsPerfModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      showToast('성과 저장에 실패했습니다.', 'error');
+    }
   };
 
   const calculatePerf = (data: ProjectPerformance) => {
@@ -254,24 +237,34 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
-  const deleteProject = (id: string) => {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-    showToast('프로젝트가 삭제되었습니다.');
-    setExpandedProjectId(null);
-    setDeleteConfirmId(null);
-    setSelectedProjectIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
+  const deleteProject = async (id: string) => {
+    try {
+      await deleteDocument('projects', id);
+      showToast('프로젝트가 삭제되었습니다.');
+      setExpandedProjectId(null);
+      setDeleteConfirmId(null);
+      setSelectedProjectIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } catch (error) {
+      console.error(error);
+      showToast('프로젝트 삭제에 실패했습니다.', 'error');
+    }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (window.confirm(`선택한 ${selectedProjectIds.size}개의 프로젝트를 정말 삭제하시겠습니까?`)) {
-      setProjects(prev => prev.filter(p => !selectedProjectIds.has(p.id)));
-      setSelectedProjectIds(new Set());
-      showToast('성공적으로 삭제되었습니다.');
-      setExpandedProjectId(null);
+      try {
+        await deleteDocuments('projects', Array.from(selectedProjectIds));
+        setSelectedProjectIds(new Set());
+        showToast('성공적으로 삭제되었습니다.');
+        setExpandedProjectId(null);
+      } catch (error) {
+        console.error(error);
+        showToast('삭제에 실패했습니다.', 'error');
+      }
     }
   };
 
@@ -357,7 +350,7 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
               className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-[#2D336B]/10 transition-all cursor-pointer"
             >
               <option value="all">전체 보호소</option>
-              {MOCK_SHELTERS.map(s => (
+              {shelters.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
@@ -724,7 +717,7 @@ const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, setProjects }) =>
                       className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all cursor-pointer"
                     >
                       <option value="" disabled>보호소를 선택하세요</option>
-                      {MOCK_SHELTERS.map(s => (
+                      {shelters.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
                     </select>

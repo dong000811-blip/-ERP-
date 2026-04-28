@@ -59,19 +59,16 @@ import {
   GROWTH_DATA,
   REGIONAL_SHELTER_DATA
 } from '../constants';
+import { auth } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
 import { 
   MOCK_SHELTERS, 
-  MOCK_DONATIONS, 
-  MOCK_DELIVERIES, 
-  CONTACT_HISTORY,
-  MOCK_SALES_TASKS,
   Shelter,
-  Donation,
-  Delivery,
   SalesTask
 } from '../mockData';
 import { PARTNER_MASTER_DATA } from '../partnerMasterData';
 import { useShelters } from '../context/ShelterContext';
+import { useFirestore } from '../FirestoreContext';
 import { PROJECT_DATA, Project } from '../projectData';
 import { cn } from '../lib/utils';
 
@@ -105,7 +102,7 @@ const Card = ({ children, className }: { children: React.ReactNode, className?: 
 // --- Action Items Related Components ---
 
 const TodayFocusWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => void }) => {
-  const [tasks, setTasks] = useState<SalesTask[]>(MOCK_SALES_TASKS);
+  const { tasks, updateDocument } = useFirestore();
   const { shelters } = useShelters();
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -125,10 +122,9 @@ const TodayFocusWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => v
       });
   }, [tasks]);
 
-  const handleToggle = (id: string, e: React.MouseEvent) => {
+  const handleToggle = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Simulated completion logic
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: '완료' } : t));
+    await updateDocument('tasks', id, { status: '완료' });
   };
 
   const isOverdue = (deadline: string) => {
@@ -215,18 +211,19 @@ const TodayFocusWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => v
 
 const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => void }) => {
   const { shelters } = useShelters();
+  const { tasks, logs } = useFirestore();
   
   const activities = useMemo(() => {
-    const history = CONTACT_HISTORY.map(h => ({
-      id: h.id,
-      date: h.date,
-      message: h.message,
-      type: 'contact',
-      category: '상담/컨택',
-      shelterId: h.shelterId
+    const logEvents = logs.map(l => ({
+      id: l.id,
+      date: l.date,
+      message: l.title,
+      type: 'log',
+      category: l.type === 'Meeting' ? '회의록' : '출장 일지',
+      shelterId: l.targetId
     }));
 
-    const taskEvents = MOCK_SALES_TASKS.map(t => ({
+    const taskEvents = tasks.map(t => ({
       id: t.id,
       date: t.deadline,
       message: t.taskName,
@@ -236,9 +233,10 @@ const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask
       originalTask: t
     }));
 
-    return [...history, ...taskEvents]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, []);
+    return [...logEvents, ...taskEvents]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 20); // Limit to recent 20
+  }, [tasks, logs]);
 
   const getIcon = (category: string) => {
     if (category.includes('방문') || category.includes('현장')) return <MapPin size={14} className="text-emerald-500" />;
@@ -421,15 +419,16 @@ const DashboardView = ({
   projects: Project[]
 }) => {
   const { shelters } = useShelters();
+  const { deliveries } = useFirestore();
   const [viewMode, setViewMode] = useState<'map' | 'calendar'>('map');
   const [selectedTaskForDrawer, setSelectedTaskForDrawer] = useState<SalesTask | null>(null);
   
   const ongoingCount = projects.filter(p => p.status === 'Ongoing').length;
+  const pendingDeliveries = deliveries.filter(d => d.status === 'Pending').length;
   
   return (
     <div className="space-y-[1rem] flex flex-col h-full overflow-hidden">
       <section className="grid grid-cols-4 gap-[0.75rem] shrink-0">
-        {/* ... stats cards ... */}
         <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-[0.875rem]">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">활성 파트너</p>
@@ -453,7 +452,7 @@ const DashboardView = ({
         <Card className="h-full flex flex-col justify-between p-[0.875rem]">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">배송 대기</p>
-            <div className="text-[1.25rem] font-black text-slate-800">12 건</div>
+            <div className="text-[1.25rem] font-black text-slate-800">{pendingDeliveries} 건</div>
           </div>
           <div className="text-[0.625rem] text-blue-500 flex items-center font-bold">
             배송 중 <span className="text-slate-400 font-normal ml-[0.25rem]">물류 활성화</span>
@@ -592,6 +591,7 @@ interface AddShelterFormData {
 
 const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
   const { shelters, addShelter, updateShelter, deleteShelter, deleteShelters } = useShelters();
+  const { tasks, logs } = useFirestore();
   const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(null);
   const [filter, setFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState(initialFilter || '전체 지역');
@@ -913,8 +913,8 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                 </h4>
                 <div className="relative pl-6 space-y-6 border-l border-slate-100 ml-2 max-h-[30rem] overflow-y-auto pr-2 custom-scrollbar">
                    { ( [
-                      ...CONTACT_HISTORY.filter(h => h.shelterId === selectedShelter.id).map(h => ({ date: h.date, msg: h.message, type: 'contact', status: undefined })),
-                      ...MOCK_SALES_TASKS.filter(t => t.shelterId === selectedShelter.id).map(t => ({ date: t.deadline, msg: `[${t.category}] ${t.taskName}`, type: 'task', status: t.status }))
+                      ...logs.filter(h => h.targetId === selectedShelter.id).map(h => ({ date: h.date, msg: h.title, type: 'contact', status: undefined })),
+                      ...tasks.filter(t => t.shelterId === selectedShelter.id).map(t => ({ date: t.deadline, msg: `[${t.category}] ${t.taskName}`, type: 'task', status: t.status }))
                      ] as any[] )
                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                      .map((item, idx) => (
@@ -1144,10 +1144,18 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
 // --- Main Layout Component ---
 
 export default function ShelterDashboard() {
-  const { shelters } = useShelters();
+  const { shelters, currentUser } = useShelters();
+  const { projects } = useFirestore();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
   const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales'>('dashboard');
   const [crmFilter, setCrmFilter] = useState('');
-  const [projects, setProjects] = useState<Project[]>(PROJECT_DATA);
 
   const navigateToCrm = (region: string) => {
     setCrmFilter(region);
@@ -1170,10 +1178,7 @@ export default function ShelterDashboard() {
       );
       case 'crm': return <ShelterListView initialFilter={crmFilter} />;
       case 'donations': return (
-        <ProjectsView 
-          projects={projects} 
-          setProjects={setProjects} 
-        />
+        <ProjectsView />
       );
       case 'inventory': return <InventoryLogisticsView />;
       case 'activities': return <ActivityLogManagementView />;
@@ -1264,17 +1269,21 @@ export default function ShelterDashboard() {
           <div className="flex items-center gap-[0.75rem] p-[0.75rem] bg-white rounded-xl shadow-sm border border-slate-200 group">
             <div className="relative">
                <img 
-                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=Carlis" 
+                 src={currentUser?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.email || 'default'}`} 
                  alt="Avatar" 
                  className="w-[2.5rem] h-[2.5rem] rounded-lg bg-slate-100 border border-slate-200 object-cover p-[0.125rem] transition-transform group-hover:scale-105"
                />
                <div className="absolute -bottom-[0.25rem] -right-[0.25rem] w-[0.75rem] h-[0.75rem] bg-green-500 rounded-full border-2 border-white shadow-sm ring-1 ring-green-100"></div>
             </div>
             <div className="overflow-hidden flex-1">
-              <p className="text-[0.6875rem] font-black text-slate-800 truncate">카를리스 볼롬보이</p>
-              <p className="text-[0.5625rem] text-slate-400 font-bold uppercase tracking-tighter">지역 총괄 이사</p>
+              <p className="text-[0.6875rem] font-black text-slate-800 truncate">{currentUser?.displayName || currentUser?.email?.split('@')[0] || '사용자'}</p>
+              <p className="text-[0.5625rem] text-slate-400 font-bold uppercase tracking-tighter">{currentUser?.email}</p>
             </div>
-            <button className="text-slate-300 hover:text-red-400 transition-colors p-[0.25rem] rounded-md hover:bg-red-50">
+            <button 
+              onClick={handleLogout}
+              className="text-slate-300 hover:text-red-400 transition-colors p-[0.25rem] rounded-md hover:bg-red-50"
+              title="로그아웃"
+            >
                <LogOut size={16} />
             </button>
           </div>

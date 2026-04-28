@@ -34,8 +34,9 @@ import {
   Cell
 } from 'recharts';
 import { cn } from '../lib/utils';
-import { INVENTORY_LEDGER_DATA, InventoryEntry } from '../inventoryLedgerData';
-import { MOCK_SHELTERS } from '../mockData';
+import { InventoryEntry } from '../inventoryLedgerData';
+import { useFirestore } from '../FirestoreContext';
+import { useShelters } from '../context/ShelterContext';
 
 const Card = ({ children, className, ...props }: { children: React.ReactNode, className?: string, [key: string]: any }) => (
   <div {...props} className={cn("bg-white rounded-2xl p-5 shadow-sm border border-slate-100", className)}>
@@ -44,7 +45,8 @@ const Card = ({ children, className, ...props }: { children: React.ReactNode, cl
 );
 
 export default function InventoryLogisticsView() {
-  const [ledger, setLedger] = useState<InventoryEntry[]>(INVENTORY_LEDGER_DATA);
+  const { inventory: ledgerRaw, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
+  const { shelters } = useShelters();
   const [selectedShelterId, setSelectedShelterId] = useState<string>('전체');
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
@@ -64,10 +66,10 @@ export default function InventoryLogisticsView() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Balance recalculation logic
-  const recalculateBalances = (updatedLedger: InventoryEntry[]) => {
+  // Balance recalculation logic for display
+  const ledger = useMemo(() => {
     // Sort by date (oldest first) to calculate sequential balance
-    const sorted = [...updatedLedger].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = [...ledgerRaw].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     // Group by shelter + item
     const groups: Record<string, number> = {};
@@ -84,7 +86,7 @@ export default function InventoryLogisticsView() {
       
       return { ...entry, balance: groups[key] };
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Return to newest first for display
-  };
+  }, [ledgerRaw]);
 
   const filteredLedger = useMemo(() => {
     let result = [...ledger];
@@ -149,8 +151,8 @@ export default function InventoryLogisticsView() {
   const focusedShelterName = useMemo(() => {
     const id = focusedShelterId || selectedShelterId;
     if (id === '전체') return '전체 보호소';
-    return MOCK_SHELTERS.find(s => s.id === id.replace('SHT-', ''))?.name || '기타 보호소';
-  }, [focusedShelterId, selectedShelterId]);
+    return shelters.find(s => s.id === id)?.name || shelters.find(s => `SHT-${s.id}` === id)?.name || '기타 보호소';
+  }, [focusedShelterId, selectedShelterId, shelters]);
 
   const shelterSummary = useMemo(() => {
     const summary: Record<string, Record<string, { quantity: number; spec: string }>> = {};
@@ -222,21 +224,24 @@ export default function InventoryLogisticsView() {
     setIsDeleteConfirmOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteId) {
-      const updated = ledger.filter(e => e.id !== deleteId);
-      setLedger(recalculateBalances(updated));
-      setSelectedIds(prev => {
-        const next = new Set(prev);
-        next.delete(deleteId);
-        return next;
-      });
-      showToast('삭제되었습니다.');
-    } else {
-      const updated = ledger.filter(e => !selectedIds.has(e.id));
-      setLedger(recalculateBalances(updated));
-      setSelectedIds(new Set());
-      showToast('선택한 내역이 삭제되었습니다.');
+  const handleConfirmDelete = async () => {
+    try {
+      if (deleteId) {
+        await deleteDocument('inventory', deleteId);
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          next.delete(deleteId);
+          return next;
+        });
+        showToast('삭제되었습니다.');
+      } else {
+        await deleteDocuments('inventory', Array.from(selectedIds));
+        setSelectedIds(new Set());
+        showToast('선택한 내역이 삭제되었습니다.');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast('삭제 중 오류가 발생했습니다.', 'error');
     }
     setIsDeleteConfirmOpen(false);
     setDeleteId(null);
@@ -264,8 +269,9 @@ export default function InventoryLogisticsView() {
     });
   };
 
-  const handleSubmit = (type: '입고' | '출고') => {
-    const shelterName = MOCK_SHELTERS.find(s => s.id === formData.shelterId.replace('SHT-', ''))?.name || '기타 보호소';
+  const handleSubmit = async (type: '입고' | '출고') => {
+    const shelter = shelters.find(s => s.id === formData.shelterId) || shelters.find(s => `SHT-${s.id}` === formData.shelterId);
+    const shelterName = shelter?.name || '기타 보호소';
 
     if (type === '출고' && !editingEntry) {
       const currentBalance = ledger
@@ -278,32 +284,34 @@ export default function InventoryLogisticsView() {
       }
     }
 
-    let updatedLedger: InventoryEntry[];
-    if (editingEntry) {
-      updatedLedger = ledger.map(e => e.id === editingEntry.id ? {
-        ...e,
-        ...formData,
-        shelterName,
-        type
-      } as InventoryEntry : e);
-      showToast('내역이 수정되었습니다.');
-    } else {
-      const newEntry: InventoryEntry = {
-        id: `ENT-${Date.now()}`,
-        ...formData,
-        shelterName,
-        type,
-        balance: 0 // Will be recalculated
-      } as InventoryEntry;
-      updatedLedger = [newEntry, ...ledger];
-      showToast('내역이 등록되었습니다.');
-    }
+    try {
+      if (editingEntry) {
+        await updateDocument('inventory', editingEntry.id, {
+          ...formData,
+          shelterName,
+          type
+        });
+        showToast('내역이 수정되었습니다.');
+      } else {
+        const id = `ENT-${Date.now()}`;
+        await addDocument('inventory', {
+          id,
+          ...formData,
+          shelterName,
+          type,
+          balance: 0 // Recalculated on display
+        });
+        showToast('내역이 등록되었습니다.');
+      }
 
-    setLedger(recalculateBalances(updatedLedger));
-    setIsStockInModalOpen(false);
-    setIsStockOutModalOpen(false);
-    setEditingEntry(null);
-    resetForm();
+      setIsStockInModalOpen(false);
+      setIsStockOutModalOpen(false);
+      setEditingEntry(null);
+      resetForm();
+    } catch (error) {
+       console.error(error);
+       showToast('저장 중 오류가 발생했습니다.', 'error');
+    }
   };
 
   const resetForm = () => {

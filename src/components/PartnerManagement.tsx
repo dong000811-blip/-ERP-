@@ -26,7 +26,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { PARTNER_MASTER_DATA, Partner, PartnerType, Specialty } from '../partnerMasterData';
+import { Partner, PartnerType, Specialty } from '../partnerMasterData';
+import { useFirestore } from '../FirestoreContext';
 
 const Card = ({ children, className, ...props }: { children: React.ReactNode, className?: string, [key: string]: any }) => (
   <div {...props} className={cn("bg-white rounded-2xl p-5 shadow-sm border border-slate-100", className)}>
@@ -50,10 +51,11 @@ const Badge = ({ children, variant = 'slate' }: { children: React.ReactNode, var
 };
 
 export default function PartnerManagement() {
-  const [partners, setPartners] = useState<Partner[]>(PARTNER_MASTER_DATA);
+  const { partners, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
   const [activePartner, setActivePartner] = useState<Partner | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof Partner, string>>>({});
   
   // Filters
   const [typeFilter, setTypeFilter] = useState<'All' | PartnerType>('All');
@@ -66,7 +68,7 @@ export default function PartnerManagement() {
       const matchSpecialty = specialtyFilter === 'All' || p.specialties.includes(specialtyFilter as Specialty);
       const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.resourcesMemo.toLowerCase().includes(searchQuery.toLowerCase());
+                          (p.resourcesMemo || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchType && matchSpecialty && matchSearch;
     });
   }, [partners, typeFilter, specialtyFilter, searchQuery]);
@@ -89,53 +91,44 @@ export default function PartnerManagement() {
   const organizationTypes = ['기업', '봉사단체', '비영리단체', '지자체', '기타'];
 
   const [formData, setFormData] = useState<Partial<Partner>>(initialFormState);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(new Set());
   
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-    if (!formData.name) errors.name = '이름/기업명을 입력해주세요.';
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!formData.name) return;
 
-    if (editingPartner) {
-      setPartners(prev => prev.map(p => p.id === editingPartner.id ? { ...p, ...formData } as Partner : p));
-    } else {
-      const newPartner: Partner = {
-        ...formData,
-        id: `PRT-${Date.now().toString().slice(-3)}`,
-        createdAt: new Date().toISOString().split('T')[0],
-      } as Partner;
-      setPartners(prev => [...prev, newPartner]);
+    try {
+      if (editingPartner) {
+        await updateDocument('partners', editingPartner.id, formData);
+      } else {
+        const id = `PRT-${Date.now().toString().slice(-3)}`;
+        await addDocument('partners', {
+          ...formData,
+          id,
+          createdAt: new Date().toISOString().split('T')[0],
+        });
+      }
+      
+      setIsModalOpen(false);
+      setEditingPartner(null);
+      setFormData(initialFormState);
+    } catch (error) {
+      console.error(error);
+      alert('파트너 저장 중 오류가 발생했습니다.');
     }
-    
-    setIsModalOpen(false);
-    setEditingPartner(null);
-    setFormData(initialFormState);
   };
 
-  const handleDelete = (id: string) => {
-    setPartners(prev => prev.filter(p => p.id !== id));
-    if (activePartner?.id === id) setActivePartner(null);
-    setSelectedPartnerIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  };
-
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (window.confirm(`선택한 ${selectedPartnerIds.size}개의 파트너 정보를 삭제하시겠습니까?`)) {
-      setPartners(prev => prev.filter(p => !selectedPartnerIds.has(p.id)));
-      setSelectedPartnerIds(new Set());
-      if (activePartner && selectedPartnerIds.has(activePartner.id)) setActivePartner(null);
+      try {
+        await deleteDocuments('partners', Array.from(selectedPartnerIds));
+        setSelectedPartnerIds(new Set());
+        if (activePartner && selectedPartnerIds.has(activePartner.id)) setActivePartner(null);
+      } catch (error) {
+        console.error(error);
+        alert('삭제 중 오류가 발생했습니다.');
+      }
     }
   };
 

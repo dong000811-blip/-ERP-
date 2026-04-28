@@ -1,0 +1,157 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(data) {
+      return isSignedIn() && data.userId == request.auth.uid;
+    }
+
+    function isAdmin() {
+      // Bootstrapped Admin from metadata
+      return isSignedIn() && request.auth.token.email == 'dong000811@gmail.com' && isEmailVerified();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidShelter(data) {
+      return data.keys().hasAll(['id', 'name', 'region', 'userId']) &&
+             data.id is string && data.id.size() <= 100 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.region is string &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'projectName', 'shelterId', 'userId']) &&
+             data.projectName is string && data.projectName.size() <= 200 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'taskName', 'status', 'userId']) &&
+             data.taskName is string && data.taskName.size() <= 500 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidLog(data) {
+      return data.keys().hasAll(['id', 'title', 'type', 'userId']) &&
+             data.title is string && data.title.size() <= 500 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidPartner(data) {
+      return data.keys().hasAll(['id', 'name', 'type', 'userId']) &&
+             data.name is string && data.name.size() <= 200 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'purchasePrice', 'userId']) &&
+             data.name is string && data.name.size() <= 200 &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidInventory(data) {
+      return data.keys().hasAll(['id', 'date', 'type', 'quantity', 'userId']) &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidDonation(data) {
+      return data.keys().hasAll(['id', 'date', 'shelterName', 'userId']) &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidDelivery(data) {
+      return data.keys().hasAll(['id', 'trackingNumber', 'status', 'userId']) &&
+             data.userId == request.auth.uid;
+    }
+
+    // --- Collection Matches ---
+
+    match /shelters/{shelterId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidShelter(incoming());
+    }
+
+    match /projects/{projectId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidProject(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidProject(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidTask(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidTask(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidLog(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidLog(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /partners/{partnerId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidPartner(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidPartner(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidProduct(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidProduct(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /inventory/{entryId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidInventory(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidInventory(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /donations/{donationId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidDonation(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidDonation(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /deliveries/{deliveryId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidDelivery(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidDelivery(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+  }
+}

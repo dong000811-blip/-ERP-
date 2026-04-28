@@ -1,0 +1,149 @@
+{
+  "entities": {
+    "shelter": {
+      "title": "Shelter",
+      "description": "Animal shelter information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "representative": { "type": "string" },
+        "representativeGender": { "type": "string", "enum": ["Male", "Female"] },
+        "representativePhone": { "type": "string" },
+        "managerName": { "type": "string" },
+        "managerGender": { "type": "string", "enum": ["Male", "Female"] },
+        "managerPhone": { "type": "string" },
+        "region": { "type": "string" },
+        "detailedAddress": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "size": { "type": "number" },
+        "stage": { "type": "string", "enum": ["Lead", "Sample Sent", "Negotiating", "Partnered"] },
+        "lastContactDate": { "type": "string" },
+        "painPoints": { "type": "string" }
+      }
+    },
+    "project": {
+      "title": "Project",
+      "description": "Support projects for shelters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectName": { "type": "string" },
+        "shelterId": { "type": "string" },
+        "shelterName": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["Upcoming", "Ongoing", "Completed"] },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["logistics", "sales", "event"] },
+        "partnerIds": { "type": "array" }
+      }
+    },
+    "task": {
+      "title": "Sales Task",
+      "description": "Tasks related to sales and partnership",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "shelterId": { "type": "string" },
+        "category": { "type": "string" },
+        "taskName": { "type": "string" },
+        "description": { "type": "string" },
+        "partnerIds": { "type": "array" },
+        "deadline": { "type": "string" },
+        "priority": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "log": {
+      "title": "Activity Log",
+      "description": "Record of meetings and travel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["Meeting", "Travel"] },
+        "title": { "type": "string" },
+        "target": { "type": "string" },
+        "targetId": { "type": "string" },
+        "location": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "partner": {
+      "title": "Partner",
+      "description": "Partner individual or corporate",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["Individual", "Corporate"] },
+        "name": { "type": "string" },
+        "specialties": { "type": "array" },
+        "region": { "type": "string" },
+        "contact": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "product": {
+      "title": "Product",
+      "description": "Product master data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "no": { "type": "number" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "purchasePrice": { "type": "number" },
+        "sellingPrice": { "type": "number" }
+      }
+    },
+    "donation": {
+      "title": "Donation",
+      "description": "Donation records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "shelterName": { "type": "string" },
+        "volumeKg": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "delivery": {
+      "title": "Delivery",
+      "description": "Delivery tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "trackingNumber": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "inventory": {
+      "title": "Inventory Ledger",
+      "description": "In/Out records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string" },
+        "quantity": { "type": "number" },
+        "balance": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "shelters": { "schema": "shelter", "description": "Collection of shelters" },
+    "projects": { "schema": "project", "description": "Collection of support projects" },
+    "tasks": { "schema": "task", "description": "Collection of sales tasks" },
+    "logs": { "schema": "log", "description": "Collection of activity logs" },
+    "partners": { "schema": "partner", "description": "Collection of partners" },
+    "products": { "schema": "product", "description": "Collection of products" },
+    "donations": { "schema": "donation", "description": "Collection of donations" },
+    "deliveries": { "schema": "delivery", "description": "Collection of deliveries" },
+    "inventory": { "schema": "inventory", "description": "Collection of inventory records" }
+  }
+}
