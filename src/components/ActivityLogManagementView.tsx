@@ -263,13 +263,13 @@ function DocumentViewModal({ log, isOpen, onClose }: { log: ActivityLog | null, 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 print:p-0">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 print:p-0 document-view-container">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm print:hidden" />
           <motion.div 
             initial={{ scale: 0.95, opacity: 0, y: 20 }} 
             animate={{ scale: 1, opacity: 1, y: 0 }} 
             exit={{ scale: 0.95, opacity: 0, y: 20 }} 
-            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:h-full print:absolute print:inset-0"
+            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:h-full print:absolute print:inset-0 document-card"
           >
             {/* Header / Actions - Hidden on print */}
             <div className="px-[2rem] py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0 print:hidden">
@@ -294,16 +294,67 @@ function DocumentViewModal({ log, isOpen, onClose }: { log: ActivityLog | null, 
             <style>
               {`
                 @media print {
-                  @page { margin: 20mm; }
-                  body { background: white !important; }
-                  .print\\:hidden { display: none !important; }
+                  @page { 
+                    size: A4; 
+                    margin: 15mm; 
+                  }
+                  
+                  /* Hide entire app UI except the document container */
+                  body > *:not(#root),
+                  #root > *:not(.document-view-container),
+                  .sidebar, .dashboard-header, nav, header, aside, .action-bar, .print-hidden {
+                    display: none !important;
+                  }
+
+                  body, #root {
+                    background: white !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    overflow: visible !important;
+                    height: auto !important;
+                  }
+
+                  .document-view-container {
+                    position: static !important;
+                    display: block !important;
+                    padding: 0 !important;
+                    z-index: auto !important;
+                    overflow: visible !important;
+                  }
+
+                  .document-card {
+                    position: static !important;
+                    width: 100% !important;
+                    max-width: none !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    margin: 0 !important;
+                    display: block !important;
+                    height: auto !important;
+                    overflow: visible !important;
+                    border-radius: 0 !important;
+                  }
+
+                  .document-content-area {
+                    padding: 0 !important;
+                    overflow: visible !important;
+                    height: auto !important;
+                    display: block !important;
+                  }
+
+                  /* Color preservation for charts, badges, and branding */
+                  * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                  }
                 }
                 .document-a4-style {
                   font-family: "Noto Sans KR", sans-serif;
                 }
               `}
             </style>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-12 print:p-0 print:overflow-visible document-a4-style">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-12 print:p-0 print:overflow-visible document-a4-style document-content-area">
                {/* Document Ribbon / Header */}
                <div className="border-b-4 border-slate-900 pb-8 mb-8 flex justify-between items-end">
                   <div>
