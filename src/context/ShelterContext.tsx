@@ -95,8 +95,12 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'lastContactDate' | 'stage' | 'painPoints' | 'lat' | 'lng'>) => {
-    if (!currentUser) throw new Error('Authentication required');
+    if (!currentUser) {
+      console.error('Shelter registration failed: No authenticated user.');
+      throw new Error('Authentication required');
+    }
     try {
+      console.log('Processing geocoding for address:', newShelterData.detailedAddress);
       const coords = await geocodeAddress(newShelterData.detailedAddress || '');
       const regionCenter = REGIONAL_SHELTER_DATA.find(r => r.region === newShelterData.region) || REGIONAL_SHELTER_DATA[0];
 
@@ -112,8 +116,11 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
         lng: coords?.lng ?? regionCenter.lng,
       };
 
+      console.log('Attempting to WRITE shelter to Firestore:', id, newShelter);
       await setDoc(doc(db, 'shelters', id), newShelter);
+      console.log('Shelter document successfully written to Firestore.');
     } catch (error) {
+      console.error('CRITICAL: Firestore WRITE error for shelter:', error);
       handleFirestoreError(error, OperationType.WRITE, 'shelters');
     }
   };

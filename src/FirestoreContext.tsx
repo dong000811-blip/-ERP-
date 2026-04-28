@@ -126,11 +126,18 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [currentUser]);
 
   const addDocument = async (col: string, data: any) => {
-    if (!currentUser) throw new Error('Authentication required');
+    if (!currentUser) {
+      console.error(`Document write failed for ${col}: No authenticated user.`);
+      throw new Error('Authentication required');
+    }
     const id = data.id || `${col.toUpperCase()}-${Math.random().toString(36).substr(2, 9)}`;
+    const finalData = { ...data, id, userId: currentUser.uid };
     try {
-      await setDoc(doc(db, col, id), { ...data, id, userId: currentUser.uid });
+      console.log(`Attempting to WRITE document to ${col} inside Firestore:`, id, finalData);
+      await setDoc(doc(db, col, id), finalData);
+      console.log(`Document successfully written to ${col}!`);
     } catch (error) {
+      console.error(`CRITICAL: Firestore WRITE error for collection ${col}:`, error);
       handleFirestoreError(error, OperationType.WRITE, col);
     }
   };

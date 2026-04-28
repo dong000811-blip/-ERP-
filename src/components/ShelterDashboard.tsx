@@ -677,26 +677,31 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       return;
     }
 
-    if (editingShelterId) {
-      await updateShelter(editingShelterId, formData);
-    } else {
-      await addShelter(formData);
-    }
+    try {
+      if (editingShelterId) {
+        await updateShelter(editingShelterId, formData);
+      } else {
+        await addShelter(formData);
+      }
 
-    setIsModalOpen(false);
-    setEditingShelterId(null);
-    setFormData({
-      name: '',
-      region: '서울',
-      detailedAddress: '',
-      size: 0,
-      representative: '',
-      representativeGender: 'Male',
-      representativePhone: '',
-      managerName: '',
-      managerGender: 'Male',
-      managerPhone: ''
-    });
+      setIsModalOpen(false);
+      setEditingShelterId(null);
+      setFormData({
+        name: '',
+        region: '서울',
+        detailedAddress: '',
+        size: 0,
+        representative: '',
+        representativeGender: 'Male',
+        representativePhone: '',
+        managerName: '',
+        managerGender: 'Male',
+        managerPhone: ''
+      });
+    } catch (err) {
+      console.error('UI Layer: Shelter registration failed', err);
+      alert('보호소 정보를 저장하는 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
+    }
   };
 
   return (
