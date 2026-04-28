@@ -8,6 +8,7 @@ interface ShelterContextType {
   addShelter: (shelter: Omit<Shelter, 'id' | 'lastContactDate' | 'stage' | 'painPoints' | 'lat' | 'lng'>) => Promise<void>;
   updateShelter: (id: string, updates: Partial<Shelter>) => Promise<void>;
   deleteShelter: (id: string) => void;
+  deleteShelters: (ids: string[]) => void;
   getRegionalCount: (region: string) => number;
 }
 
@@ -79,12 +80,17 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setShelters(prev => prev.filter(s => s.id !== id));
   };
 
+  const deleteShelters = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setShelters(prev => prev.filter(s => !idSet.has(s.id)));
+  };
+
   const getRegionalCount = (region: string) => {
     return shelters.filter(s => s.region === region).length;
   };
 
   return (
-    <ShelterContext.Provider value={{ shelters, regionalData, addShelter, updateShelter, deleteShelter, getRegionalCount }}>
+    <ShelterContext.Provider value={{ shelters, regionalData, addShelter, updateShelter, deleteShelter, deleteShelters, getRegionalCount }}>
       {children}
     </ShelterContext.Provider>
   );

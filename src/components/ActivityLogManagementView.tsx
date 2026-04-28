@@ -16,7 +16,10 @@ import {
   Trash2, 
   Camera, 
   Wallet,
-  ArrowRight
+  ArrowRight,
+  Printer,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -35,31 +38,76 @@ export default function ActivityLogManagementView() {
   const [logs, setLogs] = useState<ActivityLog[]>(MOCK_ACTIVITY_LOGS);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [isTravelModalOpen, setIsTravelModalOpen] = useState(false);
+  const [selectedLogForDocument, setSelectedLogForDocument] = useState<ActivityLog | null>(null);
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  
+  const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set());
 
   const filteredLogs = useMemo(() => {
     if (activeTab === 'All') return logs;
     return logs.filter(log => log.type === activeTab);
   }, [logs, activeTab]);
 
+  const handleDeleteSelected = () => {
+    if (window.confirm(`기록된 ${selectedLogIds.size}개의 업무 이력이 영구 삭제됩니다. 계속하시겠습니까?`)) {
+      setLogs(prev => prev.filter(log => !selectedLogIds.has(log.id)));
+      setSelectedLogIds(new Set());
+    }
+  };
+
+  const toggleSelectLog = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedLogIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLogIds.size === filteredLogs.length && filteredLogs.length > 0) {
+      setSelectedLogIds(new Set());
+    } else {
+      setSelectedLogIds(new Set(filteredLogs.map(l => l.id)));
+    }
+  };
+
   return (
     <div className="flex flex-col h-full gap-[1rem]">
       {/* Header Actions */}
       <div className="flex justify-between items-end shrink-0">
-        <div className="flex gap-[0.5rem] p-[0.25rem] bg-white border border-slate-200 rounded-xl shadow-sm">
-          {(['All', 'Meeting', 'Travel'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "px-[1rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black transition-all",
-                activeTab === tab 
-                  ? "bg-[#2D336B] text-white shadow-md shadow-indigo-200" 
-                  : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              {tab === 'All' ? '전체' : tab === 'Meeting' ? '회의록' : '출장 일지'}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          <div className="flex gap-[0.5rem] p-[0.25rem] bg-white border border-slate-200 rounded-xl shadow-sm">
+            {(['All', 'Meeting', 'Travel'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "px-[1rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black transition-all",
+                  activeTab === tab 
+                    ? "bg-[#2D336B] text-white shadow-md shadow-indigo-200" 
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {tab === 'All' ? '전체' : tab === 'Meeting' ? '회의록' : '출장 일지'}
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence>
+            {selectedLogIds.size > 0 && (
+              <motion.button 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                onClick={handleDeleteSelected}
+                className="flex items-center gap-2 px-6 py-[0.5rem] bg-rose-50 text-rose-600 rounded-xl text-[0.6875rem] font-black border border-rose-100 hover:bg-rose-100 transition-all shadow-sm"
+              >
+                <Trash2 size={14} /> 선택 일지 삭제 ({selectedLogIds.size})
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="flex gap-[0.75rem]">
@@ -84,6 +132,19 @@ export default function ActivityLogManagementView() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/80 text-[0.625rem] font-black text-slate-400 uppercase tracking-[0.15em] sticky top-0 z-10 border-b border-slate-100">
               <tr>
+                <th className="px-[1rem] py-[1rem] w-[3rem] text-center">
+                  <button 
+                    onClick={toggleSelectAll}
+                    className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                      selectedLogIds.size === filteredLogs.length && filteredLogs.length > 0
+                        ? "bg-[#2D336B] border-[#2D336B] text-white" 
+                        : "bg-white border-slate-300 text-transparent"
+                    )}
+                  >
+                    <CheckCircle2 size={12} />
+                  </button>
+                </th>
                 <th className="px-[1.5rem] py-[1rem] w-[6rem]">분류</th>
                 <th className="px-[1.5rem] py-[1rem]">제목</th>
                 <th className="px-[1.5rem] py-[1rem]">대상 / 장소</th>
@@ -93,9 +154,34 @@ export default function ActivityLogManagementView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/50 group transition-colors cursor-pointer">
-                  <td className="px-[1.5rem] py-[1rem]">
+              {filteredLogs.map((log) => {
+                const isSelected = selectedLogIds.has(log.id);
+                return (
+                  <tr 
+                    key={log.id} 
+                    onClick={() => {
+                      setSelectedLogForDocument(log);
+                      setIsDocumentModalOpen(true);
+                    }}
+                    className={cn(
+                      "hover:bg-slate-50/50 group transition-colors cursor-pointer",
+                      isSelected && "bg-indigo-50/30"
+                    )}
+                  >
+                    <td className="px-[1rem] py-[1rem] text-center">
+                      <button 
+                        onClick={(e) => toggleSelectLog(log.id, e)}
+                        className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                          isSelected 
+                            ? "bg-[#2D336B] border-[#2D336B] text-white" 
+                            : "bg-white border-slate-200 text-transparent group-hover:border-[#2D336B]/30"
+                        )}
+                      >
+                        <CheckCircle2 size={12} />
+                      </button>
+                    </td>
+                    <td className="px-[1.5rem] py-[1rem]">
                     <div className={cn(
                       "flex items-center justify-center w-[2.25rem] h-[2.25rem] rounded-xl border shadow-sm",
                       log.type === 'Meeting' ? "bg-blue-50 border-blue-100 text-blue-500" : "bg-orange-50 border-orange-100 text-orange-500"
@@ -141,8 +227,9 @@ export default function ActivityLogManagementView() {
                     <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-all group-hover:translate-x-1" />
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       </div>
@@ -157,7 +244,220 @@ export default function ActivityLogManagementView() {
         onClose={() => setIsTravelModalOpen(false)} 
         onSave={(newLog) => setLogs([newLog, ...logs])}
       />
+      <DocumentViewModal 
+        log={selectedLogForDocument}
+        isOpen={isDocumentModalOpen}
+        onClose={() => setIsDocumentModalOpen(false)}
+      />
     </div>
+  );
+}
+
+function DocumentViewModal({ log, isOpen, onClose }: { log: ActivityLog | null, isOpen: boolean, onClose: () => void }) {
+  if (!log) return null;
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 print:p-0">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm print:hidden" />
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+            animate={{ scale: 1, opacity: 1, y: 0 }} 
+            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+            className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:rounded-none print:w-full print:h-full print:absolute print:inset-0"
+          >
+            {/* Header / Actions - Hidden on print */}
+            <div className="px-[2rem] py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0 print:hidden">
+              <div className="flex items-center gap-3">
+                <FileText size={20} className="text-[#2D336B]" />
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Document Viewer</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#2D336B] text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-100 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  <Printer size={16} /> 문서 내보내기 (PDF/출력)
+                </button>
+                <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400">
+                  <Plus className="rotate-45" size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Document Content */}
+            <style>
+              {`
+                @media print {
+                  @page { margin: 20mm; }
+                  body { background: white !important; }
+                  .print\\:hidden { display: none !important; }
+                }
+                .document-a4-style {
+                  font-family: "Noto Sans KR", sans-serif;
+                }
+              `}
+            </style>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-12 print:p-0 print:overflow-visible document-a4-style">
+               {/* Document Ribbon / Header */}
+               <div className="border-b-4 border-slate-900 pb-8 mb-8 flex justify-between items-end">
+                  <div>
+                    <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">{log.type === 'Meeting' ? '회 의 록' : '출 장 일 지'}</h1>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">SHELTER FLOW BUSINESS ACTIVITY LOG</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">문서코드</p>
+                    <p className="text-xs font-mono font-bold text-slate-900">{log.id.toUpperCase()}</p>
+                  </div>
+               </div>
+
+               {/* Business Meta Table-like Grid */}
+               <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 mb-10 overflow-hidden rounded-sm">
+                  <div className="bg-slate-50 p-5 flex flex-col gap-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">작성일자 (DATE)</span>
+                    <span className="text-sm font-bold text-slate-800">{log.date}</span>
+                  </div>
+                  <div className="bg-slate-50 p-5 flex flex-col gap-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">작성자 (WRITER)</span>
+                    <span className="text-sm font-bold text-slate-800">영업운영그룹 / 이성진 파트장</span>
+                  </div>
+                  <div className="bg-slate-50 p-5 flex flex-col gap-1 col-span-2">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">문서 제목 (SUBJECT)</span>
+                    <span className="text-sm font-bold text-slate-800 tracking-tight">{log.title}</span>
+                  </div>
+                  <div className="bg-slate-50 p-5 flex flex-col gap-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">대상 파트너 (TARGET)</span>
+                    <span className="text-sm font-bold text-slate-800">{log.target}</span>
+                  </div>
+                  <div className="bg-slate-50 p-5 flex flex-col gap-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">지역/장소 (LOCATION)</span>
+                    <span className="text-sm font-bold text-slate-800">{log.location}</span>
+                  </div>
+               </div>
+
+               {/* Main Narrative Sections */}
+               {log.type === 'Meeting' ? (
+                 <div className="space-y-10">
+                    <section>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-[1.25rem] h-[1.25rem] bg-[#2D336B] text-white flex items-center justify-center rounded-sm text-[10px] font-black">01</div>
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">미팅 주요 목적</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pl-8">
+                        {log.purposes?.map(p => (
+                          <span key={p} className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-bold text-slate-600"># {p}</span>
+                        ))}
+                      </div>
+                    </section>
+                    <section>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-[1.25rem] h-[1.25rem] bg-[#2D336B] text-white flex items-center justify-center rounded-sm text-[10px] font-black">02</div>
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">회의 및 상담 상세 내용</h4>
+                      </div>
+                      <div className="pl-8">
+                        <div className="p-8 bg-slate-50/50 border border-slate-100 rounded-2xl min-h-[300px] text-sm leading-[1.8] text-slate-700 whitespace-pre-wrap shadow-inner">
+                          {log.content || '회의 상세 내용이 입력되지 않았습니다.'}
+                        </div>
+                      </div>
+                    </section>
+                    <section>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-[1.25rem] h-[1.25rem] bg-orange-500 text-white flex items-center justify-center rounded-sm text-[10px] font-black">!</div>
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest text-orange-600">결정 사항 및 후속 업무</h4>
+                      </div>
+                      <div className="pl-8">
+                        <div className="p-6 bg-orange-50/30 border border-orange-100 rounded-2xl text-[13px] font-bold text-orange-700 leading-relaxed ring-4 ring-orange-50/50">
+                          {log.nextActions || '지정된 후속 업무가 없습니다.'}
+                        </div>
+                      </div>
+                    </section>
+                 </div>
+               ) : (
+                 <div className="space-y-12">
+                    <section>
+                       <div className="flex items-center gap-3 mb-6">
+                        <div className="w-[1.25rem] h-[1.25rem] bg-orange-500 text-white flex items-center justify-center rounded-sm text-[10px] font-black">R</div>
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">출장지 활동 및 현장 리포트</h4>
+                      </div>
+                      <div className="space-y-6 pl-8">
+                        {log.days?.map(day => (
+                          <div key={day.day} className="border border-slate-200 rounded-3xl overflow-hidden bg-white shadow-sm">
+                            <div className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center">
+                              <span className="text-[10px] font-black uppercase tracking-widest">Day 0{day.day} Activity</span>
+                              <div className="flex items-center gap-2 text-slate-400">
+                                <MapPin size={10} />
+                                <span className="text-[10px] font-bold">{day.route}</span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 divide-x divide-slate-100">
+                              <div className="p-6">
+                                <span className="text-[9px] font-black text-slate-400 uppercase block mb-3 underline underline-offset-4 decoration-2 decoration-slate-100">Morning Report (AM)</span>
+                                <p className="text-xs text-slate-700 font-medium leading-[1.6]">{day.reportAM}</p>
+                              </div>
+                              <div className="p-6">
+                                <span className="text-[9px] font-black text-slate-400 uppercase block mb-3 underline underline-offset-4 decoration-2 decoration-slate-100">Afternoon Report (PM)</span>
+                                <p className="text-xs text-slate-700 font-medium leading-[1.6]">{day.reportPM}</p>
+                              </div>
+                            </div>
+                            {day.expenses.length > 0 && (
+                              <div className="p-6 bg-slate-50 border-t border-slate-100">
+                                <span className="text-[9px] font-black text-slate-400 uppercase block mb-3">Daily Expense Breakdown</span>
+                                <div className="space-y-2">
+                                  {day.expenses.map((exp, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-[10px] font-bold text-slate-600">
+                                      <span className="flex items-center gap-2">
+                                        <div className="w-1 h-1 bg-slate-300 rounded-full" /> {exp.item}
+                                      </span>
+                                      <span className="font-mono">{exp.amount.toLocaleString()} <span className="font-sans text-[8px] text-slate-400">KRW</span></span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="bg-slate-900 rounded-[2rem] p-10 text-white flex justify-between items-end shadow-2xl shadow-slate-200">
+                      <div>
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1 border-l-2 border-orange-500">Expenditure Summary</h4>
+                        <p className="text-[0.625rem] text-slate-500 font-black italic">본 정보는 전표 증빙 및 회계 승인을 위한 선행 자료입니다.</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-3xl font-mono font-black text-orange-400 tracking-tighter">{(log.totalExpense || 0).toLocaleString()}</span>
+                        <span className="text-xs font-black text-slate-400 ml-2">원 (VAT 포함)</span>
+                      </div>
+                    </section>
+                 </div>
+               )}
+
+               {/* Official Footer / Signatures */}
+               <div className="mt-24 pt-10 border-t-2 border-slate-100 flex justify-between items-start">
+                  <div className="flex gap-6">
+                    <div className="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-slate-100 flex items-center justify-center text-slate-200 relative">
+                      <span className="text-[9px] font-black uppercase text-center leading-tight rotate-[-15deg] opacity-50">SHELTER FLOW<br/>OFFICIAL RECORD</span>
+                      <div className="absolute inset-2 border border-slate-100 rounded-lg pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-serif italic text-slate-900 opacity-20 mb-3 tracking-tighter">Shelter Flow CRM Systems</p>
+                    <p className="text-[10px] font-black text-slate-400 max-w-[280px] leading-relaxed">
+                      본 문서는 시스템을 통해 자동 생성되었으며,<br/>
+                      위 변조 방지에 위해 작성 히스토리가 서버에 저장되었습니다.
+                    </p>
+                  </div>
+               </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

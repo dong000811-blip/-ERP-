@@ -591,13 +591,15 @@ interface AddShelterFormData {
 }
 
 const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
-  const { shelters, addShelter, updateShelter, deleteShelter } = useShelters();
+  const { shelters, addShelter, updateShelter, deleteShelter, deleteShelters } = useShelters();
   const [selectedShelter, setSelectedShelter] = useState<Shelter | null>(null);
   const [filter, setFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState(initialFilter || '전체 지역');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShelterId, setEditingShelterId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const [selectedShelterIds, setSelectedShelterIds] = useState<Set<string>>(new Set());
 
   // Form State
   const [formData, setFormData] = useState<AddShelterFormData>({
@@ -639,13 +641,33 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
     setOpenMenuId(null);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm('정말로 이 보호소 정보를 삭제하시겠습니까?')) {
-      deleteShelter(id);
-      if (selectedShelter?.id === id) setSelectedShelter(null);
+  const handleDeleteSelected = () => {
+    if (window.confirm(`선택한 ${selectedShelterIds.size}개의 보호소 정보를 정말 삭제하시겠습니까? 관련 영업 데이터가 함께 삭제될 수 있습니다.`)) {
+      deleteShelters(Array.from(selectedShelterIds));
+      setSelectedShelterIds(new Set());
+      if (selectedShelter && selectedShelterIds.has(selectedShelter.id)) {
+        setSelectedShelter(null);
+      }
+      alert(`${selectedShelterIds.size}곳의 보호소 정보가 성공적으로 삭제되었습니다.`);
     }
-    setOpenMenuId(null);
+  };
+
+  const toggleSelectShelter = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedShelterIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedShelterIds.size === filteredShelters.length && filteredShelters.length > 0) {
+      setSelectedShelterIds(new Set());
+    } else {
+      setSelectedShelterIds(new Set(filteredShelters.map(s => s.id)));
+    }
   };
 
   const handleAddOrUpdateShelter = async (e: React.FormEvent) => {
@@ -705,93 +727,127 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                {REGIONAL_SHELTER_DATA.map(r => <option key={r.id}>{r.region}</option>)}
              </select>
           </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-[#2D336B] hover:bg-[#1E234A] text-white px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
-          >
-            <Plus size={16} /> 신규 보호소 등록
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedShelterIds.size > 0 && (
+              <button 
+                onClick={handleDeleteSelected}
+                className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 border border-rose-100 transition-all shadow-sm"
+              >
+                <Trash2 size={14} /> 선택 보호소 삭제 ({selectedShelterIds.size})
+              </button>
+            )}
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-[#2D336B] hover:bg-[#1E234A] text-white px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+            >
+              <Plus size={16} /> 신규 보호소 등록
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest sticky top-0 z-20 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4">보호소명</th>
-                <th className="px-6 py-4">지역</th>
-                <th className="px-6 py-4 text-center">규모 (마리)</th>
-                <th className="px-6 py-4">대표자</th>
-                <th className="px-6 py-4">영업 단계</th>
-                <th className="px-6 py-4">마지막 컨택</th>
-                <th className="px-6 py-4 text-right">기능</th>
+                <th className="px-4 py-4 w-[40px] text-center">
+                  <button 
+                    onClick={toggleSelectAll}
+                    className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                      selectedShelterIds.size === filteredShelters.length && filteredShelters.length > 0
+                        ? "bg-[#2D336B] border-[#2D336B] text-white" 
+                        : "bg-white border-slate-300 text-transparent"
+                    )}
+                  >
+                    <CheckCircle2 size={12} />
+                  </button>
+                </th>
+                <th className="px-6 py-4 w-[20%]">보호소명</th>
+                <th className="px-6 py-4 w-[10%]">지역</th>
+                <th className="px-6 py-4 w-[10%] text-center">규모 (마리)</th>
+                <th className="px-6 py-4 w-[15%]">대표자</th>
+                <th className="px-6 py-4 w-[15%]">영업 단계</th>
+                <th className="px-6 py-4 w-[15%]">마지막 컨택</th>
+                <th className="px-6 py-4 text-right w-[10%]">기능</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredShelters.map((shelter) => (
-                <tr 
-                  key={shelter.id} 
-                  onClick={() => setSelectedShelter(shelter)}
-                  className={cn(
-                    "hover:bg-slate-50/50 cursor-pointer transition-colors text-xs group relative",
-                    selectedShelter?.id === shelter.id && "bg-slate-50 border-l-4 border-l-[#2D336B]"
-                  )}
-                >
-                  <td className="px-6 py-4 font-bold text-slate-800">{shelter.name}</td>
-                  <td className="px-6 py-4">
-                    <span className="flex items-center gap-1.5 text-slate-500 font-medium tracking-tight">
-                      <MapPin size={12} className="text-slate-300" /> {shelter.region}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center font-mono font-bold text-slate-600">{shelter.size}</td>
-                  <td className="px-6 py-4 font-medium text-slate-700">{shelter.representative}</td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight inline-block",
-                      shelter.stage === 'Partnered' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                      shelter.stage === 'Negotiating' ? "bg-orange-50 text-orange-600 border border-orange-100" :
-                      shelter.stage === 'Sample Sent' ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-slate-100 text-slate-500 border border-slate-200"
-                    )}>
-                      {shelter.stage === 'Partnered' ? '협력 완료' :
-                       shelter.stage === 'Negotiating' ? '협상 중' :
-                       shelter.stage === 'Sample Sent' ? '샘플 배송' : '가망 고객'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-400 font-medium tracking-tighter">{shelter.lastContactDate}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="relative inline-block text-left">
+              {filteredShelters.map((shelter) => {
+                const isSelected = selectedShelterIds.has(shelter.id);
+                return (
+                  <tr 
+                    key={shelter.id} 
+                    onClick={() => setSelectedShelter(shelter)}
+                    className={cn(
+                      "hover:bg-slate-50/50 cursor-pointer transition-colors text-xs group relative",
+                      selectedShelter?.id === shelter.id && "bg-slate-50 border-l-4 border-l-[#2D336B]",
+                      isSelected && "bg-indigo-50/30"
+                    )}
+                  >
+                    <td className="px-4 py-4 text-center">
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId(openMenuId === shelter.id ? null : shelter.id);
-                        }}
-                        className="p-1 px-2 hover:bg-slate-100 rounded-md transition-colors text-slate-400 hover:text-slate-700"
+                        onClick={(e) => toggleSelectShelter(shelter.id, e)}
+                        className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                          isSelected 
+                            ? "bg-[#2D336B] border-[#2D336B] text-white" 
+                            : "bg-white border-slate-200 text-transparent group-hover:border-indigo-300"
+                        )}
                       >
-                        <MoreHorizontal size={16} />
+                        <CheckCircle2 size={12} />
                       </button>
-                      
-                      {openMenuId === shelter.id && (
-                        <>
-                          <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)}></div>
-                          <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-100 z-40 py-1.5 overflow-hidden">
-                            <button 
-                              onClick={(e) => handleOpenEdit(shelter, e)}
-                              className="w-full px-4 py-2 text-left text-[11px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-                            >
-                              <Edit2 size={12} className="text-blue-500" /> 정보 수정
-                            </button>
-                            <button 
-                              onClick={(e) => handleDelete(shelter.id, e)}
-                              className="w-full px-4 py-2 text-left text-[11px] font-bold text-red-500 hover:bg-red-50 flex items-center gap-2"
-                            >
-                              <Trash2 size={12} /> 정보 삭제
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-800">{shelter.name}</td>
+                    <td className="px-6 py-4">
+                      <span className="flex items-center gap-1.5 text-slate-500 font-medium tracking-tight">
+                        <MapPin size={12} className="text-slate-300" /> {shelter.region}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center font-mono font-bold text-slate-600">{shelter.size}</td>
+                    <td className="px-6 py-4 font-medium text-slate-700">{shelter.representative}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight inline-block",
+                        shelter.stage === 'Partnered' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                        shelter.stage === 'Negotiating' ? "bg-orange-50 text-orange-600 border border-orange-100" :
+                        shelter.stage === 'Sample Sent' ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-slate-100 text-slate-500 border border-slate-200"
+                      )}>
+                        {shelter.stage === 'Partnered' ? '협력 완료' :
+                         shelter.stage === 'Negotiating' ? '협상 중' :
+                         shelter.stage === 'Sample Sent' ? '샘플 배송' : '가망 고객'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-400 font-medium tracking-tighter">{shelter.lastContactDate}</td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="relative inline-block text-left">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === shelter.id ? null : shelter.id);
+                          }}
+                          className="p-1 px-2 hover:bg-slate-100 rounded-md transition-colors text-slate-400 hover:text-slate-700"
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
+                        
+                        {openMenuId === shelter.id && (
+                          <>
+                            <div className="fixed inset-0 z-30" onClick={() => setOpenMenuId(null)}></div>
+                            <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-100 z-40 py-1.5 overflow-hidden">
+                              <button 
+                                onClick={(e) => handleOpenEdit(shelter, e)}
+                                className="w-full px-4 py-2 text-left text-[11px] font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                              >
+                                <Edit2 size={12} className="text-blue-500" /> 정보 수정
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
