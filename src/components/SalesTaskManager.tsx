@@ -186,16 +186,16 @@ export default function SalesTaskManager() {
   };
 
   return (
-    <div className="flex flex-col h-full gap-6">
+    <div className="flex flex-col h-full gap-[1rem]">
       {/* Search & Filter Header */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex flex-wrap gap-4 items-center">
+      <div className="bg-white p-[1rem] rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-[1rem] items-center justify-between shrink-0">
+        <div className="flex flex-wrap gap-[1rem] items-center">
           {/* View Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-xl mr-2">
+          <div className="flex bg-slate-100 p-[0.25rem] rounded-xl mr-[0.5rem]">
             <button 
               onClick={() => setViewMode('List')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all",
+                "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
                 viewMode === 'List' ? "bg-white text-accent shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -204,7 +204,7 @@ export default function SalesTaskManager() {
             <button 
               onClick={() => setViewMode('Kanban')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all",
+                "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
                 viewMode === 'Kanban' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -213,22 +213,22 @@ export default function SalesTaskManager() {
           </div>
 
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
               placeholder="업무명 또는 보호소 검색..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs w-64 focus:ring-2 focus:ring-accent/10 outline-none transition-all font-bold"
+              className="pl-[2.5rem] pr-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] w-[14rem] focus:ring-2 focus:ring-accent/10 outline-none transition-all font-bold"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-[0.5rem]">
             <Filter size={14} className="text-slate-400" />
             <select 
               value={categoryFilter}
               onChange={e => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 outline-none"
+              className="px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] font-bold text-slate-600 outline-none"
             >
               <option value="All">모든 업무</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -236,7 +236,7 @@ export default function SalesTaskManager() {
             <select 
               value={shelterFilter}
               onChange={e => setShelterFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 outline-none max-w-[150px]"
+              className="px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] font-bold text-slate-600 outline-none max-w-[9.375rem]"
             >
               <option value="All">모든 보호소</option>
               {shelters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -246,7 +246,7 @@ export default function SalesTaskManager() {
 
         <button 
           onClick={() => handleOpenModal()}
-          className="bg-accent hover:bg-accent/90 text-white px-6 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-accent/20 flex items-center gap-2 transition-all active:scale-95"
+          className="bg-accent hover:bg-accent/90 text-white px-[1.5rem] py-[0.625rem] rounded-xl text-[0.75rem] font-black shadow-lg shadow-accent/20 flex items-center gap-[0.5rem] transition-all active:scale-95"
         >
           <Plus size={18} /> 새 업무 등록
         </button>
@@ -258,17 +258,17 @@ export default function SalesTaskManager() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
             <div className="flex-1 overflow-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-10 border-b border-slate-100">
+                <thead className="bg-slate-50 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-10 border-b border-slate-100">
                   <tr>
-                    <th className="px-6 py-4 w-12 text-center">상태</th>
-                    <th className="px-6 py-4 w-8"></th>
-                    <th className="px-6 py-4">대상 보호소</th>
-                    <th className="px-6 py-4">업무 구분</th>
-                    <th className="px-6 py-4">테스크명</th>
-                    <th className="px-6 py-4">협력 파트너</th>
-                    <th className="px-6 py-4">마감 기한</th>
-                    <th className="px-6 py-4">우선순위</th>
-                    <th className="px-6 py-4 text-right">관리</th>
+                    <th className="px-[1.5rem] py-[1rem] w-[3rem] text-center">상태</th>
+                    <th className="px-[1rem] py-[1rem] w-[2rem]"></th>
+                    <th className="px-[1.5rem] py-[1rem]">대상 보호소</th>
+                    <th className="px-[1.5rem] py-[1rem]">업무 구분</th>
+                    <th className="px-[1.5rem] py-[1rem]">테스크명</th>
+                    <th className="px-[1.5rem] py-[1rem]">협력 파트너</th>
+                    <th className="px-[1.5rem] py-[1rem]">마감 기한</th>
+                    <th className="px-[1.5rem] py-[1rem]">우선순위</th>
+                    <th className="px-[1.5rem] py-[1rem] text-right">관리</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -283,11 +283,11 @@ export default function SalesTaskManager() {
                     return (
                       <React.Fragment key={task.id}>
                         <tr className="hover:bg-slate-50/50 transition-colors group">
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-[1.5rem] py-[1rem] text-center">
                             <button 
                               onClick={() => toggleTaskStatus(task.id)}
                               className={cn(
-                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                "w-[1.25rem] h-[1.25rem] rounded-full border-2 flex items-center justify-center transition-all",
                                 task.status === '완료' 
                                   ? "bg-green-500 border-green-500 text-white" 
                                   : "border-slate-200 text-transparent hover:border-accent"
@@ -296,25 +296,25 @@ export default function SalesTaskManager() {
                               <CheckCircle2 size={12} />
                             </button>
                           </td>
-                          <td className="px-4 py-4">
+                          <td className="px-[1rem] py-[1rem]">
                             {subTasksCount > 0 && (
                               <button 
                                 onClick={() => toggleExpand(task.id)}
-                                className="p-1 text-slate-400 hover:text-indigo-500 transition-colors"
+                                className="p-[0.25rem] text-slate-400 hover:text-indigo-500 transition-colors"
                               >
                                 {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                               </button>
                             )}
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
+                          <td className="px-[1.5rem] py-[1rem]">
+                            <div className="flex items-center gap-[0.5rem]">
                               <MapPin size={12} className="text-slate-300" />
-                              <span className="text-xs font-bold text-slate-700">{shelter?.name || 'Unknown'}</span>
+                              <span className="text-[0.75rem] font-bold text-slate-700">{shelter?.name || 'Unknown'}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-[1.5rem] py-[1rem]">
                             <span className={cn(
-                              "px-2 py-1 rounded-lg text-[10px] font-black",
+                              "px-[0.5rem] py-[0.25rem] rounded-lg text-[0.625rem] font-black",
                               task.category === '방문 영업' ? "bg-blue-50 text-blue-600" :
                               task.category === '유선 상담' ? "bg-amber-50 text-amber-600" :
                               task.category === '물류 협의' ? "bg-purple-50 text-purple-600" :
@@ -323,52 +323,52 @@ export default function SalesTaskManager() {
                               {task.category}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-[1.5rem] py-[1rem]">
                             <div className="flex flex-col">
                               <span className={cn(
-                                "text-xs font-bold text-slate-800",
+                                "text-[0.75rem] font-bold text-slate-800",
                                 task.status === '완료' && "text-slate-400 line-through"
                               )}>
                                 {task.taskName}
                               </span>
                               {subTasksCount > 0 && (
-                                <div className="mt-1.5 flex items-center gap-2">
-                                  <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="mt-[0.375rem] flex items-center gap-[0.5rem]">
+                                  <div className="w-[6rem] h-[0.25rem] bg-slate-100 rounded-full overflow-hidden">
                                     <div 
                                       className="h-full bg-indigo-500" 
                                       style={{ width: `${progress}%` }}
                                     />
                                   </div>
-                                  <span className="text-[9px] font-black text-slate-400">{completedSubTasks}/{subTasksCount}</span>
+                                  <span className="text-[0.5625rem] font-black text-slate-400">{completedSubTasks}/{subTasksCount}</span>
                                 </div>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex -space-x-2">
+                          <td className="px-[1.5rem] py-[1rem]">
+                            <div className="flex -space-x-[0.5rem]">
                               {task.partnerIds && task.partnerIds.length > 0 ? (
                                 task.partnerIds.map(pid => {
                                   const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
                                   return (
-                                    <div key={pid} title={partner?.name} className="w-7 h-7 rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center text-[10px] font-black text-indigo-500 shadow-sm">
+                                    <div key={pid} title={partner?.name} className="w-[1.75rem] h-[1.75rem] rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center text-[0.625rem] font-black text-indigo-500 shadow-sm">
                                       {partner?.name.charAt(0)}
                                     </div>
                                   )
                                 })
                               ) : (
-                                <span className="text-[10px] font-bold text-slate-300 uppercase italic">N/A</span>
+                                <span className="text-[0.625rem] font-bold text-slate-300 uppercase italic">N/A</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
+                          <td className="px-[1.5rem] py-[1rem]">
+                            <div className="flex items-center gap-[0.5rem]">
                               {task.recurring && task.recurring !== 'None' && (
                                 <RefreshCcw size={10} className="text-indigo-400" />
                               )}
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-[0.375rem]">
                                 <Clock size={12} className={cn(overdue ? "text-red-500 animate-pulse" : "text-slate-300")} />
                                 <span className={cn(
-                                  "text-xs font-bold font-mono tracking-tighter",
+                                  "text-[0.75rem] font-bold font-mono tracking-tighter",
                                   overdue ? "text-red-500" : "text-slate-500"
                                 )}>
                                   {task.deadline}
@@ -376,20 +376,20 @@ export default function SalesTaskManager() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5">
+                          <td className="px-[1.5rem] py-[1rem]">
+                            <div className="flex items-center gap-[0.375rem]">
                               <div className={cn(
-                                "w-2 h-2 rounded-full",
+                                "w-[0.5rem] h-[0.5rem] rounded-full",
                                 task.priority === '높음' ? "bg-red-500" :
                                 task.priority === '보통' ? "bg-amber-500" : "bg-slate-300"
                               )} />
-                              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{task.priority}</span>
+                              <span className="text-[0.625rem] font-black text-slate-600 uppercase tracking-widest">{task.priority}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-[1.5rem] py-[1rem] text-right">
                             <button 
                               onClick={() => handleOpenModal(task)}
-                              className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-300 hover:text-slate-700"
+                              className="p-[0.25rem] hover:bg-slate-100 rounded-md transition-colors text-slate-300 hover:text-slate-700"
                             >
                               <MoreVertical size={16} />
                             </button>
@@ -403,21 +403,21 @@ export default function SalesTaskManager() {
                               exit={{ opacity: 0, height: 0 }}
                               className="bg-indigo-50/20"
                             >
-                              <td colSpan={9} className="px-16 py-3">
-                                <div className="space-y-2 pb-2">
+                              <td colSpan={9} className="px-[4rem] py-[0.75rem]">
+                                <div className="space-y-[0.5rem] pb-[0.5rem]">
                                   {task.subTasks.map(st => (
-                                    <div key={st.id} className="flex items-center gap-3">
+                                    <div key={st.id} className="flex items-center gap-[0.75rem]">
                                       <button 
                                         onClick={() => toggleSubTask(task.id, st.id)}
                                         className={cn(
-                                          "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                                          "w-[1rem] h-[1rem] rounded border flex items-center justify-center transition-all",
                                           st.isCompleted ? "bg-indigo-500 border-indigo-500 text-white" : "border-slate-300 text-transparent"
                                         )}
                                       >
                                         <CheckSquare size={10} />
                                       </button>
                                       <span className={cn(
-                                        "text-[11px] font-medium",
+                                        "text-[0.6875rem] font-medium",
                                         st.isCompleted ? "text-slate-400 line-through" : "text-slate-600"
                                       )}>
                                         {st.title}
@@ -434,10 +434,10 @@ export default function SalesTaskManager() {
                   })}
                   {filteredTasks.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-20 text-center">
+                      <td colSpan={9} className="px-[1.5rem] py-[5rem] text-center">
                         <div className="flex flex-col items-center opacity-30">
-                          <Search size={48} className="mb-4" />
-                          <p className="text-sm font-black uppercase tracking-widest">검색 결과가 없습니다</p>
+                          <Search size={48} className="mb-[1rem]" />
+                          <p className="text-[0.875rem] font-black uppercase tracking-widest">검색 결과가 없습니다</p>
                         </div>
                       </td>
                     </tr>
@@ -447,23 +447,23 @@ export default function SalesTaskManager() {
             </div>
           </div>
         ) : (
-          <div className="flex gap-6 h-full overflow-x-auto pb-6 custom-scrollbar px-1">
+          <div className="flex gap-[1.5rem] h-full overflow-x-auto pb-[1.5rem] custom-scrollbar px-[0.25rem]">
             {STATUSES.map(status => (
-              <div key={status} className="flex-1 min-w-[300px] flex flex-col bg-slate-50/50 rounded-2xl border border-slate-100 p-4">
-                <div className="flex items-center justify-between mb-4 px-2">
-                  <div className="flex items-center gap-2">
+              <div key={status} className="flex-1 min-w-[18.75rem] flex flex-col bg-slate-50/50 rounded-2xl border border-slate-100 p-[1rem]">
+                <div className="flex items-center justify-between mb-[1rem] px-[0.5rem]">
+                  <div className="flex items-center gap-[0.5rem]">
                     <span className={cn(
-                      "w-2 h-2 rounded-full",
+                      "w-[0.5rem] h-[0.5rem] rounded-full",
                       status === '대기' ? "bg-slate-400" :
                       status === '진행중' ? "bg-blue-500" :
                       status === '보류' ? "bg-amber-500" : "bg-green-500"
                     )} />
-                    <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">{status}</h4>
-                    <span className="text-[10px] font-bold text-slate-400 ml-1">{tasks.filter(t => t.status === status).length}</span>
+                    <h4 className="text-[0.75rem] font-black text-slate-700 uppercase tracking-widest">{status}</h4>
+                    <span className="text-[0.625rem] font-bold text-slate-400 ml-[0.25rem]">{tasks.filter(t => t.status === status).length}</span>
                   </div>
                 </div>
 
-                <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                <div className="space-y-[1rem] flex-1 overflow-y-auto custom-scrollbar pr-[0.25rem]">
                   {filteredTasks.filter(t => t.status === status).map(task => {
                     const shelter = shelters.find(s => s.id === task.shelterId);
                     return (
@@ -471,34 +471,34 @@ export default function SalesTaskManager() {
                         key={task.id}
                         layoutId={task.id}
                         onClick={() => handleOpenModal(task)}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-accent/40 transition-all cursor-pointer group"
+                        className="bg-white p-[1rem] rounded-xl shadow-sm border border-slate-200 hover:border-accent/40 transition-all cursor-pointer group"
                       >
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start mb-[0.5rem]">
                           <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter",
+                            "px-[0.375rem] py-[0.125rem] rounded text-[0.5rem] font-black uppercase tracking-tighter",
                             task.priority === '높음' ? "bg-red-50 text-red-600" :
                             task.priority === '보통' ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"
                           )}>
                             {task.priority}
                           </span>
-                          <span className="text-[9px] font-bold text-slate-300">{task.category}</span>
+                          <span className="text-[0.5625rem] font-bold text-slate-300">{task.category}</span>
                         </div>
-                        <h5 className="text-xs font-bold text-slate-800 mb-1 leading-tight">{task.taskName}</h5>
-                        <p className="text-[10px] text-slate-400 font-medium mb-3 line-clamp-2">{task.description}</p>
+                        <h5 className="text-[0.75rem] font-bold text-slate-800 mb-[0.25rem] leading-tight">{task.taskName}</h5>
+                        <p className="text-[0.625rem] text-slate-400 font-medium mb-[0.75rem] line-clamp-2">{task.description}</p>
                         
-                        <div className="flex justify-between items-center mt-auto border-t border-slate-50 pt-3">
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex justify-between items-center mt-auto border-t border-slate-50 pt-[0.75rem]">
+                          <div className="flex items-center gap-[0.375rem]">
                             <MapPin size={10} className="text-slate-300" />
-                            <span className="text-[10px] font-bold text-slate-500 truncate max-w-[100px]">{shelter?.name}</span>
+                            <span className="text-[0.625rem] font-bold text-slate-500 truncate max-w-[6.25rem]">{shelter?.name}</span>
                           </div>
-                          <div className="flex items-center gap-1 text-slate-400">
+                          <div className="flex items-center gap-[0.25rem] text-slate-400">
                              <Calendar size={10} />
-                             <span className="text-[9px] font-mono font-bold tracking-tighter">{task.deadline.slice(5)}</span>
+                             <span className="text-[0.5625rem] font-mono font-bold tracking-tighter">{task.deadline.slice(5)}</span>
                           </div>
                         </div>
                         
                         {/* Status Quick Select for Kanban simulation */}
-                        <div className="hidden group-hover:flex gap-1 mt-3 pt-3 border-t border-slate-50">
+                        <div className="hidden group-hover:flex gap-[0.25rem] mt-[0.75rem] pt-[0.75rem] border-t border-slate-50">
                           {STATUSES.filter(s => s !== status).map(s => (
                             <button 
                               key={s}
@@ -506,7 +506,7 @@ export default function SalesTaskManager() {
                                 e.stopPropagation();
                                 moveTask(task.id, s);
                               }}
-                              className="text-[8px] font-black text-slate-400 hover:text-accent bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 transition-colors"
+                              className="text-[0.5rem] font-black text-slate-400 hover:text-accent bg-slate-50 px-[0.375rem] py-[0.125rem] rounded border border-slate-100 transition-colors"
                             >
                               {s}(으)로 이동
                             </button>
@@ -525,7 +525,7 @@ export default function SalesTaskManager() {
       {/* Task Creation Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-[1rem]">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -537,33 +537,33 @@ export default function SalesTaskManager() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              className="relative w-full max-w-[40rem] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
-              <div className="px-5 py-3.5 bg-accent text-white flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-2.5">
-                   <div className="p-1.5 bg-white/10 rounded-lg">
+              <div className="px-[1.25rem] py-[0.875rem] bg-accent text-white flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-[0.625rem]">
+                   <div className="p-[0.375rem] bg-white/10 rounded-lg">
                       <Plus size={16} />
                    </div>
-                   <h3 className="text-base font-black tracking-tight leading-none">
+                   <h3 className="text-[1rem] font-black tracking-tight leading-none">
                      {editingTask ? '업무 상세 수정' : '신규 업무 등록'}
                    </h3>
                 </div>
                 <button 
                   onClick={() => setIsModalOpen(false)} 
-                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
+                  className="w-[1.75rem] h-[1.75rem] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
                 >
                   <X size={16} />
                 </button>
               </div>
 
               <form onSubmit={handleSaveTask} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                <div className="p-5 space-y-3.5">
+                <div className="p-[1.25rem] space-y-[0.875rem]">
                   {/* Row 1: Target / Category */}
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div className="space-y-1 relative">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">업무 대상 (보호소/파트너) *</label>
+                  <div className="grid grid-cols-2 gap-[0.875rem]">
+                    <div className="space-y-[0.25rem] relative">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">업무 대상 (보호소/파트너) *</label>
                       <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <Search size={14} className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         <input 
                           type="text"
                           placeholder="보호소 또는 파트너 검색..."
@@ -573,7 +573,7 @@ export default function SalesTaskManager() {
                             setShelterSearch(e.target.value);
                             setIsShelterDropdownOpen(true);
                           }}
-                          className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                          className="w-full pl-[2.25rem] pr-[1rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.8125rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
                         />
                         
                         <AnimatePresence>
@@ -582,7 +582,7 @@ export default function SalesTaskManager() {
                               initial={{ opacity: 0, y: -5 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -5 }}
-                              className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-40 overflow-y-auto custom-scrollbar p-1"
+                              className="absolute z-50 left-0 right-0 top-full mt-[0.25rem] bg-white border border-slate-200 rounded-xl shadow-2xl max-h-[10rem] overflow-y-auto custom-scrollbar p-[0.25rem]"
                             >
                               {filteredTargetsForSelect.length > 0 ? (
                                 filteredTargetsForSelect.map(s => (
@@ -595,32 +595,32 @@ export default function SalesTaskManager() {
                                       setIsShelterDropdownOpen(false);
                                     }}
                                     className={cn(
-                                      "w-full px-2.5 py-1.5 text-left hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group",
+                                      "w-full px-[0.625rem] py-[0.375rem] text-left hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-between group",
                                       formData.shelterId === s.id && "bg-accent/5 text-accent"
                                     )}
                                   >
                                     <div className="flex flex-col">
-                                      <span className="text-[11px] font-bold">{s.name}</span>
-                                      <span className="text-[9px] text-slate-400 font-medium">{s.region}</span>
+                                      <span className="text-[0.6875rem] font-bold">{s.name}</span>
+                                      <span className="text-[0.5625rem] text-slate-400 font-medium">{s.region}</span>
                                     </div>
                                     {formData.shelterId === s.id && <CheckCircle2 size={10} />}
                                   </button>
                                 ))
                               ) : (
-                                <div className="px-4 py-4 text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest">검색 결과가 없습니다</div>
+                                <div className="px-[1rem] py-[1rem] text-center text-[0.5625rem] font-bold text-slate-300 uppercase tracking-widest">검색 결과가 없습니다</div>
                               )}
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">업무 구분 *</label>
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">업무 구분 *</label>
                       <select 
                         required
                         value={formData.category}
                         onChange={e => setFormData({...formData, category: e.target.value as SalesTaskCategory})}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
+                        className="w-full px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.8125rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
                       >
                         {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
@@ -628,27 +628,27 @@ export default function SalesTaskManager() {
                   </div>
 
                   {/* Row 2: Status / Priority */}
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">진행 상태</label>
+                  <div className="grid grid-cols-2 gap-[0.875rem]">
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">진행 상태</label>
                       <select 
                         value={formData.status}
                         onChange={e => setFormData({...formData, status: e.target.value as SalesTaskStatus})}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
+                        className="w-full px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.8125rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
                       >
                         {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">우선 순위</label>
-                      <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">우선 순위</label>
+                      <div className="grid grid-cols-3 gap-[0.25rem] bg-slate-100 p-[0.25rem] rounded-xl">
                         {PRIORITIES.map(p => (
                           <button
                             key={p}
                             type="button"
                             onClick={() => setFormData({...formData, priority: p})}
                             className={cn(
-                              "py-1 rounded-lg text-[9px] font-black transition-all",
+                              "py-[0.25rem] rounded-lg text-[0.5625rem] font-black transition-all",
                               formData.priority === p 
                                 ? "bg-white text-slate-800 shadow-sm" 
                                 : "text-slate-400 hover:text-slate-600"
@@ -662,8 +662,8 @@ export default function SalesTaskManager() {
                   </div>
 
                   {/* Row 3: Task Name */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">업무명 *</label>
+                  <div className="space-y-[0.25rem]">
+                    <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">업무명 *</label>
                     <input 
                       autoFocus
                       required
@@ -671,31 +671,31 @@ export default function SalesTaskManager() {
                       value={formData.taskName}
                       onChange={e => setFormData({...formData, taskName: e.target.value})}
                       placeholder="수행할 업무 제목을 입력하세요"
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all shadow-inner placeholder:text-slate-300"
+                      className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.8125rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all shadow-inner placeholder:text-slate-300"
                     />
                   </div>
 
                   {/* Row 4: Schedule / Recurring */}
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">마감 기한 *</label>
+                  <div className="grid grid-cols-2 gap-[0.875rem]">
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">마감 기한 *</label>
                       <div className="relative">
-                        <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Calendar size={13} className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-slate-400" />
                         <input 
                           required
                           type="date" 
                           value={formData.deadline}
                           onChange={e => setFormData({...formData, deadline: e.target.value})}
-                          className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                          className="w-full pl-[2.25rem] pr-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.8125rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">반복 업무 설정</label>
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">반복 업무 설정</label>
                       <select 
                         value={formData.recurring}
                         onChange={e => setFormData({...formData, recurring: e.target.value as RecurringType})}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
+                        className="w-full px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.8125rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all cursor-pointer"
                       >
                         <option value="None">안 함</option>
                         <option value="Weekly">매주</option>
@@ -705,23 +705,23 @@ export default function SalesTaskManager() {
                   </div>
 
                   {/* Row 5: Detailed Content */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">세부 업무 내용</label>
+                  <div className="space-y-[0.25rem]">
+                    <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">세부 업무 내용</label>
                     <textarea 
                       value={formData.description}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                       placeholder="상담 기록이나 특이사항을 기재하세요."
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[12px] font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none h-16 placeholder:text-slate-300"
+                      className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none h-[4rem] placeholder:text-slate-300"
                     />
                   </div>
 
                   {/* Row 6: Subtasks / Partners */}
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">세부 체크리스트</label>
-                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                  <div className="grid grid-cols-2 gap-[0.875rem]">
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">세부 체크리스트</label>
+                      <div className="p-[0.625rem] bg-slate-50 rounded-xl border border-slate-100 space-y-[0.375rem] max-h-[6rem] overflow-y-auto custom-scrollbar">
                         {formData.subTasks?.map((st, idx) => (
-                          <div key={st.id} className="flex items-center gap-1.5">
+                          <div key={st.id} className="flex items-center gap-[0.375rem]">
                              <input 
                                type="text"
                                value={st.title}
@@ -730,7 +730,7 @@ export default function SalesTaskManager() {
                                  next[idx].title = e.target.value;
                                  setFormData({...formData, subTasks: next});
                                }}
-                               className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-medium outline-none"
+                               className="flex-1 bg-white border border-slate-200 rounded-lg px-[0.5rem] py-[0.25rem] text-[0.625rem] font-medium outline-none"
                              />
                              <button 
                                type="button"
@@ -744,15 +744,15 @@ export default function SalesTaskManager() {
                         <button 
                           type="button"
                           onClick={() => setFormData({...formData, subTasks: [...(formData.subTasks || []), { id: `st-${Date.now()}`, title: '', isCompleted: false }]})}
-                          className="text-[9px] font-black text-indigo-500 flex items-center gap-1 hover:underline ml-1 mt-1"
+                          className="text-[0.5625rem] font-black text-indigo-500 flex items-center gap-[0.25rem] hover:underline ml-[0.25rem] mt-[0.25rem]"
                         >
                           <Plus size={10} /> 세부 항목 추가
                         </button>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">협력 파트너 (선택)</label>
-                      <div className="grid grid-cols-1 gap-1 p-2.5 bg-slate-50 rounded-xl border border-slate-100 max-h-24 overflow-y-auto custom-scrollbar">
+                    <div className="space-y-[0.25rem]">
+                      <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">협력 파트너 (선택)</label>
+                      <div className="grid grid-cols-1 gap-[0.25rem] p-[0.625rem] bg-slate-50 rounded-xl border border-slate-100 max-h-[6rem] overflow-y-auto custom-scrollbar">
                         {PARTNER_MASTER_DATA.map(p => (
                           <button
                             key={p.id}
@@ -763,17 +763,17 @@ export default function SalesTaskManager() {
                               setFormData({...formData, partnerIds: next});
                             }}
                             className={cn(
-                              "flex items-center gap-2 px-1.5 py-1 rounded-lg border transition-all text-left",
+                              "flex items-center gap-[0.5rem] px-[0.375rem] py-[0.25rem] rounded-lg border transition-all text-left",
                               formData.partnerIds?.includes(p.id) ? "bg-white border-indigo-100 shadow-sm" : "bg-transparent border-transparent"
                             )}
                           >
                              <div className={cn(
-                               "w-2.5 h-2.5 rounded flex items-center justify-center border",
+                               "w-[0.625rem] h-[0.625rem] rounded flex items-center justify-center border",
                                formData.partnerIds?.includes(p.id) ? "bg-indigo-500 border-indigo-500" : "bg-white border-slate-300"
                              )}>
                                {formData.partnerIds?.includes(p.id) && <CheckSquare className="text-white" size={8} />}
                              </div>
-                             <span className={cn("text-[9px] font-bold truncate", formData.partnerIds?.includes(p.id) ? "text-indigo-600" : "text-slate-400")}>{p.name}</span>
+                             <span className={cn("text-[0.5625rem] font-bold truncate", formData.partnerIds?.includes(p.id) ? "text-indigo-600" : "text-slate-400")}>{p.name}</span>
                           </button>
                         ))}
                       </div>
@@ -781,17 +781,17 @@ export default function SalesTaskManager() {
                   </div>
                 </div>
 
-                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 sticky bottom-0 shrink-0">
+                <div className="p-[1.25rem] bg-slate-50 border-t border-slate-100 flex gap-[0.75rem] sticky bottom-0 shrink-0">
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 font-black text-[12px] rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]"
+                    className="flex-1 py-[0.75rem] bg-white border border-slate-200 text-slate-500 font-black text-[0.75rem] rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]"
                   >
                     취소
                   </button>
                   <button 
                     type="submit"
-                    className="flex-[2] py-3 bg-accent text-white font-black text-[12px] rounded-xl shadow-lg shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
+                    className="flex-[2] py-[0.75rem] bg-accent text-white font-black text-[0.75rem] rounded-xl shadow-lg shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
                   >
                     {editingTask ? '변경 사항 저장' : '업무 등록 완료'}
                   </button>

@@ -1,0 +1,643 @@
+import React, { useState, useMemo } from 'react';
+import { 
+  FileText, 
+  MapPin, 
+  Calendar, 
+  Plus, 
+  Search, 
+  ChevronRight, 
+  CheckCircle2, 
+  Clock, 
+  Users, 
+  Plane, 
+  MessageSquare, 
+  Tag, 
+  PlusCircle, 
+  Trash2, 
+  Camera, 
+  Wallet,
+  ArrowRight
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../lib/utils';
+import { 
+  MOCK_ACTIVITY_LOGS, 
+  ActivityLog, 
+  MOCK_SHELTERS, 
+  Shelter 
+} from '../mockData';
+import { PARTNER_MASTER_DATA } from '../partnerMasterData';
+import { useShelters } from '../context/ShelterContext';
+
+export default function ActivityLogManagementView() {
+  const { shelters } = useShelters();
+  const [activeTab, setActiveTab] = useState<'All' | 'Meeting' | 'Travel'>('All');
+  const [logs, setLogs] = useState<ActivityLog[]>(MOCK_ACTIVITY_LOGS);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [isTravelModalOpen, setIsTravelModalOpen] = useState(false);
+
+  const filteredLogs = useMemo(() => {
+    if (activeTab === 'All') return logs;
+    return logs.filter(log => log.type === activeTab);
+  }, [logs, activeTab]);
+
+  return (
+    <div className="flex flex-col h-full gap-[1rem]">
+      {/* Header Actions */}
+      <div className="flex justify-between items-end shrink-0">
+        <div className="flex gap-[0.5rem] p-[0.25rem] bg-white border border-slate-200 rounded-xl shadow-sm">
+          {(['All', 'Meeting', 'Travel'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-[1rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black transition-all",
+                activeTab === tab 
+                  ? "bg-[#2D336B] text-white shadow-md shadow-indigo-200" 
+                  : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              {tab === 'All' ? '전체' : tab === 'Meeting' ? '회의록' : '출장 일지'}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-[0.75rem]">
+          <button 
+            onClick={() => setIsMeetingModalOpen(true)}
+            className="px-[1.25rem] py-[0.625rem] bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[0.6875rem] font-black flex items-center gap-[0.5rem] shadow-lg shadow-blue-100 transition-all border border-blue-500/20"
+          >
+            <Plus size={16} /> 신규 회의록 작성
+          </button>
+          <button 
+            onClick={() => setIsTravelModalOpen(true)}
+            className="px-[1.25rem] py-[0.625rem] bg-[#FF9F1C] hover:bg-[#E68A00] text-white rounded-xl text-[0.6875rem] font-black flex items-center gap-[0.5rem] shadow-lg shadow-orange-100 transition-all border border-orange-500/20"
+          >
+            <Plus size={16} /> 신규 출장 일지 작성
+          </button>
+        </div>
+      </div>
+
+      {/* Main List Table */}
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+        <div className="overflow-auto custom-scrollbar flex-1">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50/80 text-[0.625rem] font-black text-slate-400 uppercase tracking-[0.15em] sticky top-0 z-10 border-b border-slate-100">
+              <tr>
+                <th className="px-[1.5rem] py-[1rem] w-[6rem]">분류</th>
+                <th className="px-[1.5rem] py-[1rem]">제목</th>
+                <th className="px-[1.5rem] py-[1rem]">대상 / 장소</th>
+                <th className="px-[1.5rem] py-[1rem] w-[8rem]">일시</th>
+                <th className="px-[1.5rem] py-[1rem] w-[8rem]">상태</th>
+                <th className="px-[1.5rem] py-[1rem] w-[3rem] text-right"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-slate-50/50 group transition-colors cursor-pointer">
+                  <td className="px-[1.5rem] py-[1rem]">
+                    <div className={cn(
+                      "flex items-center justify-center w-[2.25rem] h-[2.25rem] rounded-xl border shadow-sm",
+                      log.type === 'Meeting' ? "bg-blue-50 border-blue-100 text-blue-500" : "bg-orange-50 border-orange-100 text-orange-500"
+                    )}>
+                      {log.type === 'Meeting' ? <MessageSquare size={16} /> : <Plane size={16} />}
+                    </div>
+                  </td>
+                  <td className="px-[1.5rem] py-[1rem]">
+                    <div className="flex flex-col">
+                      <span className="text-[0.875rem] font-bold text-slate-800 tracking-tight group-hover:text-[#2D336B] transition-colors">{log.title}</span>
+                      <span className="text-[0.625rem] text-slate-400 font-medium">{log.type === 'Meeting' ? '파트너 미팅 기록' : '순회 출장 일지'}</span>
+                    </div>
+                  </td>
+                  <td className="px-[1.5rem] py-[1rem]">
+                    <div className="flex flex-col gap-[0.25rem]">
+                      <div className="flex items-center gap-[0.375rem] text-[0.75rem] font-bold text-slate-600">
+                        <Users size={12} className="text-slate-400" /> {log.target}
+                      </div>
+                      <div className="flex items-center gap-[0.375rem] text-[0.625rem] text-slate-400 font-medium italic">
+                        <MapPin size={10} /> {log.location}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-[1.5rem] py-[1rem]">
+                    <span className="text-[0.6875rem] font-mono font-bold text-slate-500 tracking-tight">{log.date}</span>
+                  </td>
+                  <td className="px-[1.5rem] py-[1rem]">
+                    <span className={cn(
+                      "px-[0.625rem] py-[0.25rem] rounded-full text-[0.5625rem] font-black uppercase tracking-tight inline-flex items-center gap-[0.375rem]",
+                      log.status === '완료' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                      log.status === '후속 업무 진행 중' ? "bg-blue-50 text-blue-600 border border-blue-100" :
+                      "bg-slate-100 text-slate-500 border border-slate-200"
+                    )}>
+                      <span className={cn(
+                        "w-[0.25rem] h-[0.25rem] rounded-full",
+                        log.status === '완료' ? "bg-emerald-500" :
+                        log.status === '후속 업무 진행 중' ? "bg-blue-500" : "bg-slate-400"
+                      )} />
+                      {log.status}
+                    </span>
+                  </td>
+                  <td className="px-[1.5rem] py-[1rem] text-right">
+                    <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-all group-hover:translate-x-1" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <MeetingLogModal 
+        isOpen={isMeetingModalOpen} 
+        onClose={() => setIsMeetingModalOpen(false)} 
+        onSave={(newLog) => setLogs([newLog, ...logs])}
+      />
+      <TravelLogModal 
+        isOpen={isTravelModalOpen} 
+        onClose={() => setIsTravelModalOpen(false)} 
+        onSave={(newLog) => setLogs([newLog, ...logs])}
+      />
+    </div>
+  );
+}
+
+// --- Modals ---
+
+function MeetingLogModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (log: ActivityLog) => void }) {
+  const { shelters } = useShelters();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    target: '',
+    targetId: '',
+    purposes: [] as string[],
+    tags: [] as string[],
+    content: '',
+    nextActions: '',
+    salesStage: 'Negotiating'
+  });
+
+  const allTargets = useMemo(() => {
+    const s = shelters.map(item => ({ id: item.id, name: `[보호소] ${item.name}`, type: 'shelter' }));
+    const p = PARTNER_MASTER_DATA.map(item => ({ id: item.id, name: `[파트너] ${item.name}`, type: 'partner' }));
+    return [...s, ...p];
+  }, [shelters]);
+
+  const filteredTargets = allTargets.filter(t => t.name.includes(searchTerm));
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newLog: ActivityLog = {
+      id: `log-${Date.now()}`,
+      type: 'Meeting',
+      title: formData.title,
+      target: formData.target,
+      targetId: formData.targetId,
+      location: '삼송 보호소 상담실 (자동 연동)', // Mock location
+      date: new Date().toISOString().split('T')[0],
+      status: formData.nextActions ? '후속 업무 진행 중' : '완료',
+      purposes: formData.purposes,
+      tags: formData.tags,
+      content: formData.content,
+      nextActions: formData.nextActions
+    };
+    onSave(newLog);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+            animate={{ scale: 1, opacity: 1, y: 0 }} 
+            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+            className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+          >
+            <div className="px-[1.5rem] py-[1rem] bg-blue-600 text-white flex justify-between items-center shrink-0 shadow-md">
+              <div className="flex items-center gap-[0.75rem]">
+                <div className="p-[0.5rem] bg-white/10 rounded-lg"><MessageSquare size={18} /></div>
+                <h3 className="text-[1.125rem] font-black tracking-tight">파트너 미팅 회의록 작성</h3>
+              </div>
+              <button onClick={onClose} className="w-[2rem] h-[2rem] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                <Plus className="rotate-45" size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto custom-scrollbar p-[1.5rem] space-y-[1.25rem]">
+              <div className="grid grid-cols-2 gap-[1.25rem]">
+                <div className="space-y-[0.25rem] relative">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">대상 파트너 (CRM 연동) *</label>
+                  <div className="relative">
+                    <Search size={14} className="absolute left-[1rem] top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      required
+                      type="text" 
+                      placeholder="검색 후 선택하세요..."
+                      value={searchTerm}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full pl-[2.5rem] pr-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-slate-400"
+                    />
+                    {isDropdownOpen && (
+                      <div className="absolute z-50 left-0 right-0 top-full mt-[0.5rem] bg-white border border-slate-200 rounded-xl shadow-2xl max-h-[12rem] overflow-y-auto custom-scrollbar p-[0.25rem]">
+                        {filteredTargets.map(t => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => {
+                              setFormData({...formData, target: t.name, targetId: t.id});
+                              setSearchTerm(t.name);
+                              setIsDropdownOpen(false);
+                            }}
+                            className="w-full px-[1rem] py-[0.625rem] text-left hover:bg-slate-50 rounded-lg text-[0.75rem] font-bold flex items-center gap-[0.5rem] group transition-colors"
+                          >
+                            <span className={cn(
+                              "px-[0.375rem] py-[0.125rem] rounded text-[0.5rem] font-black uppercase",
+                              t.type === 'shelter' ? "bg-green-50 text-green-600 border border-green-100" : "bg-blue-50 text-blue-600 border border-blue-100"
+                            )}>
+                              {t.type === 'shelter' ? '보호소' : '파트너'}
+                            </span>
+                            {t.name.split('] ')[1]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-[0.25rem]">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">회의 제목 *</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={formData.title}
+                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    placeholder="미팅의 주요 목적을 적어주세요"
+                    className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-slate-300"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-[0.25rem]">
+                <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">미팅 목적 (다중 선택)</label>
+                <div className="flex flex-wrap gap-[0.5rem] pt-[0.25rem]">
+                  {['단가 협의', '물류 최적화', '이벤트 기획', '샘플 피드백', '정기 계약', '클레임 대응'].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ 
+                        ...prev, 
+                        purposes: prev.purposes.includes(p) ? prev.purposes.filter(item => item !== p) : [...prev.purposes, p]
+                      }))}
+                      className={cn(
+                        "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.625rem] font-bold border transition-all",
+                        formData.purposes.includes(p) ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100" : "bg-white border-slate-200 text-slate-500 hover:border-blue-200"
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-[1.25rem]">
+                <div className="space-y-[0.25rem]">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">영업 파이프라인 상태 변경</label>
+                  <select 
+                    value={formData.salesStage}
+                    onChange={e => setFormData({...formData, salesStage: e.target.value})}
+                    className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer appearance-none"
+                  >
+                    <option value="Lead">가망 고객 (Lead)</option>
+                    <option value="Sample Sent">샘플 배송 (Sample Sent)</option>
+                    <option value="Negotiating">협상 진행 (Negotiating)</option>
+                    <option value="Partnered">협력 완료 (Partnered)</option>
+                  </select>
+                </div>
+                <div className="space-y-[0.25rem]">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">주요 요구사항 (#태그)</label>
+                  <div className="relative">
+                    <Tag size={14} className="absolute left-[1rem] top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text" 
+                      placeholder="태그 입력 후 엔터 (예: #배송비절감)"
+                      className="w-full pl-[2.5rem] pr-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:text-slate-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-[0.25rem]">
+                <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">회의 상세 내용</label>
+                <textarea 
+                  value={formData.content}
+                  onChange={e => setFormData({...formData, content: e.target.value})}
+                  placeholder="대화의 핵심 내용과 합의 사항을 자유롭게 기록하세요."
+                  className="w-full px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] font-medium min-h-[6rem] focus:ring-2 focus:ring-accent/20 outline-none resize-none"
+                />
+              </div>
+
+              <div className="p-[1rem] bg-orange-50 border border-orange-100 rounded-2xl space-y-[0.5rem]">
+                 <div className="flex items-center gap-[0.5rem] mb-[0.25rem]">
+                   <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-orange-500 animate-pulse" />
+                   <label className="text-[0.625rem] font-black text-orange-600 uppercase tracking-widest italic">후속 업무 자동 연동 (Next Action)</label>
+                 </div>
+                 <input 
+                   placeholder="여기에 입력된 내용은 대시보드의 'Action Items'로 즉시 전송됩니다."
+                   value={formData.nextActions}
+                   onChange={e => setFormData({...formData, nextActions: e.target.value})}
+                   className="w-full px-[1rem] py-[0.5rem] bg-white border border-orange-200 rounded-xl text-[0.75rem] font-bold placeholder:text-orange-200 focus:ring-2 focus:ring-orange-200/50 outline-none"
+                 />
+              </div>
+
+              <div className="flex gap-[1rem] pt-[1rem] sticky bottom-0 bg-white">
+                <button type="button" onClick={onClose} className="flex-1 py-[0.875rem] bg-slate-100 text-slate-600 font-black text-[0.75rem] rounded-2xl hover:bg-slate-200 transition-colors">취소</button>
+                <button type="submit" className="flex-[2] py-[0.875rem] bg-blue-600 text-white font-black text-[0.75rem] rounded-2xl shadow-xl shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] transition-all">회의록 저장 및 동기화</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function TravelLogModal({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (log: ActivityLog) => void }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    startDate: '',
+    endDate: '',
+    days: [] as any[]
+  });
+
+  const [activeDay, setActiveDay] = useState(1);
+
+  const calculateDays = useMemo(() => {
+    if (!formData.startDate || !formData.endDate) return 0;
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return diff > 0 ? diff : 0;
+  }, [formData.startDate, formData.endDate]);
+
+  React.useEffect(() => {
+    if (calculateDays > 0 && formData.days.length !== calculateDays) {
+      const newDays = Array.from({ length: calculateDays }, (_, i) => ({
+        day: i + 1,
+        route: '',
+        reportAM: '',
+        reportPM: '',
+        expenses: [{ item: '', amount: 0 }]
+      }));
+      setFormData(prev => ({ ...prev, days: newDays }));
+    }
+  }, [calculateDays]);
+
+  const totalExpense = useMemo(() => {
+    return formData.days.reduce((acc, day) => {
+      const daySum = day.expenses.reduce((sum: number, exp: any) => sum + (Number(exp.amount) || 0), 0);
+      return acc + daySum;
+    }, 0);
+  }, [formData.days]);
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newLog: ActivityLog = {
+      id: `log-${Date.now()}`,
+      type: 'Travel',
+      title: formData.title,
+      target: `${calculateDays}일간의 전국 순회`,
+      location: formData.days[0]?.route.split('-')[0] || '전국',
+      date: formData.startDate,
+      status: '완료',
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      totalExpense,
+      days: formData.days
+    };
+    onSave(newLog);
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+            animate={{ scale: 1, opacity: 1, y: 0 }} 
+            exit={{ scale: 0.95, opacity: 0, y: 20 }} 
+            className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
+            <div className="px-[1.5rem] py-[1rem] bg-[#FF9F1C] text-white flex justify-between items-center shrink-0 shadow-md">
+              <div className="flex items-center gap-[0.75rem]">
+                <div className="p-[0.5rem] bg-white/10 rounded-lg"><Plane size={18} /></div>
+                <div>
+                   <h3 className="text-[1.125rem] font-black tracking-tight">다일/다구간 출장 일지 작성</h3>
+                   <p className="text-[0.5625rem] text-white/70 font-bold uppercase tracking-widest leading-none mt-[0.25rem]">현장 활동 기록 및 실시간 비용 정산</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="w-[2rem] h-[2rem] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                <Plus className="rotate-45" size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto custom-scrollbar p-[1.5rem] space-y-[1.5rem]">
+              <div className="grid grid-cols-12 gap-[1.25rem]">
+                <div className="col-span-12 space-y-[0.25rem]">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">출장명/프로젝트명 *</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={formData.title}
+                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    placeholder="예: 영남권 신규 보호소 실태 조사"
+                    className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none"
+                  />
+                </div>
+                <div className="col-span-6 space-y-[0.25rem]">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">시작 일자 *</label>
+                  <input 
+                    required
+                    type="date" 
+                    value={formData.startDate}
+                    onChange={e => setFormData({...formData, startDate: e.target.value})}
+                    className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none"
+                  />
+                </div>
+                <div className="col-span-6 space-y-[0.25rem]">
+                  <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">종료 일자 *</label>
+                  <input 
+                    required
+                    type="date" 
+                    value={formData.endDate}
+                    onChange={e => setFormData({...formData, endDate: e.target.value})}
+                    className="w-full px-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none"
+                  />
+                </div>
+              </div>
+
+              {calculateDays > 0 && (
+                <div className="space-y-[1rem]">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-[0.5rem]">
+                     <div className="flex gap-[0.5rem]">
+                        {formData.days.map((day, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setActiveDay(idx + 1)}
+                            className={cn(
+                              "px-[0.75rem] py-[0.25rem] rounded-full text-[0.625rem] font-black transition-all",
+                              activeDay === idx + 1 ? "bg-[#FF9F1C] text-white shadow-md shadow-orange-100" : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                            )}
+                          >
+                            DAY {idx + 1}
+                          </button>
+                        ))}
+                     </div>
+                     <div className="flex items-center gap-[0.5rem] bg-slate-900 text-white px-[0.75rem] py-[0.25rem] rounded-full shadow-lg">
+                        <Wallet size={12} className="text-orange-400" />
+                        <span className="text-[0.5625rem] font-black uppercase tracking-widest text-slate-400">Total:</span>
+                        <span className="text-[0.6875rem] font-mono font-black">{totalExpense.toLocaleString()}원</span>
+                     </div>
+                  </div>
+
+                  <div className="bg-slate-50/50 p-[1.25rem] rounded-2xl border border-slate-100 grid grid-cols-2 gap-[1.25rem] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                     <div className="col-span-2 space-y-[0.25rem]">
+                        <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">이동 동선 (출발-경유-도착)</label>
+                        <div className="relative">
+                           <MapPin size={14} className="absolute left-[1rem] top-1/2 -translate-y-1/2 text-slate-400" />
+                           <input 
+                             placeholder="예: 서울-고양-의정부-춘천"
+                             value={formData.days[activeDay-1]?.route || ''}
+                             onChange={e => {
+                               const next = [...formData.days];
+                               next[activeDay-1].route = e.target.value;
+                               setFormData({...formData, days: next});
+                             }}
+                             className="w-full pl-[2.5rem] pr-[1rem] py-[0.625rem] bg-white border border-slate-100 rounded-xl text-[0.75rem] font-bold outline-none ring-accent/10 focus:ring-2"
+                           />
+                        </div>
+                     </div>
+                     <div className="space-y-[0.25rem]">
+                        <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">AM 현장 리포트</label>
+                        <textarea 
+                           placeholder="오전 활동 주요 내용"
+                           value={formData.days[activeDay-1]?.reportAM || ''}
+                           onChange={e => {
+                              const next = [...formData.days];
+                              next[activeDay-1].reportAM = e.target.value;
+                              setFormData({...formData, days: next});
+                           }}
+                           className="w-full px-[1rem] py-[0.625rem] bg-white border border-slate-100 rounded-xl text-[0.6875rem] font-medium h-[5rem] resize-none outline-none ring-accent/10 focus:ring-2"
+                        />
+                     </div>
+                     <div className="space-y-[0.25rem]">
+                        <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">PM 현장 리포트</label>
+                        <textarea 
+                           placeholder="오후 미팅 및 활동 사항"
+                           value={formData.days[activeDay-1]?.reportPM || ''}
+                           onChange={e => {
+                              const next = [...formData.days];
+                              next[activeDay-1].reportPM = e.target.value;
+                              setFormData({...formData, days: next});
+                           }}
+                           className="w-full px-[1rem] py-[0.625rem] bg-white border border-slate-100 rounded-xl text-[0.6875rem] font-medium h-[5rem] resize-none outline-none ring-accent/10 focus:ring-2"
+                        />
+                     </div>
+
+                     <div className="col-span-2">
+                        <div className="flex justify-between items-center mb-[0.5rem]">
+                           <label className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem]">일일 비용 지출 내역</label>
+                           <button 
+                             type="button" 
+                             onClick={() => {
+                               const next = [...formData.days];
+                               next[activeDay-1].expenses.push({ item: '', amount: 0 });
+                               setFormData({...formData, days: next});
+                             }}
+                             className="text-[0.5625rem] font-black text-[#FF9F1C] flex items-center gap-[0.25rem] hover:underline"
+                           >
+                             <PlusCircle size={10} /> 항목 추가
+                           </button>
+                        </div>
+                        <div className="space-y-[0.5rem] max-h-[8rem] overflow-y-auto custom-scrollbar pr-[0.5rem]">
+                           {formData.days[activeDay-1]?.expenses.map((exp: any, eIdx: number) => (
+                             <div key={eIdx} className="flex gap-[0.5rem] items-center">
+                                <input 
+                                  placeholder="지출 항목"
+                                  value={exp.item}
+                                  onChange={e => {
+                                    const next = [...formData.days];
+                                    next[activeDay-1].expenses[eIdx].item = e.target.value;
+                                    setFormData({...formData, days: next});
+                                  }}
+                                  className="flex-1 px-[0.75rem] py-[0.375rem] bg-white border border-slate-100 rounded-lg text-[0.625rem] font-bold"
+                                />
+                                <div className="relative flex-1">
+                                   <input 
+                                     type="number"
+                                     placeholder="금액"
+                                     value={exp.amount || ''}
+                                     onChange={e => {
+                                       const next = [...formData.days];
+                                       next[activeDay-1].expenses[eIdx].amount = Number(e.target.value);
+                                       setFormData({...formData, days: next});
+                                     }}
+                                     className="w-full px-[0.75rem] py-[0.375rem] bg-white border border-slate-100 rounded-lg text-[0.625rem] font-mono font-bold text-right pr-[1.5rem]"
+                                   />
+                                   <span className="absolute right-[0.5rem] top-1/2 -translate-y-1/2 text-[0.625rem] font-bold text-slate-300">원</span>
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [...formData.days];
+                                    next[activeDay-1].expenses.splice(eIdx, 1);
+                                    setFormData({...formData, days: next});
+                                  }}
+                                  className="text-slate-300 hover:text-red-400"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-[1rem] pt-[1rem] sticky bottom-0 bg-white">
+                <button type="button" onClick={onClose} className="flex-1 py-[0.875rem] bg-slate-100 text-slate-600 font-black text-[0.75rem] rounded-2xl hover:bg-slate-200 transition-colors">취소</button>
+                <button type="submit" className="flex-[2] py-[0.875rem] bg-[#FF9F1C] text-white font-black text-[0.75rem] rounded-2xl shadow-xl shadow-orange-200 hover:scale-[1.02] active:scale-[0.98] transition-all">출장 일지 등록 완료</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function MinusCircle({ size, className }: { size?: number, className?: string }) {
+   return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+   );
+}

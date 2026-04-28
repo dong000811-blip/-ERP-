@@ -75,6 +75,36 @@ export interface Delivery {
   status: 'Order Received' | 'Preparing' | 'Shipped' | 'Delivered';
 }
 
+export interface ActivityLog {
+  id: string;
+  type: 'Meeting' | 'Travel';
+  title: string;
+  target: string; // Partner/Shelter Name
+  targetId?: string;
+  location: string;
+  date: string;
+  status: '작성 중' | '완료' | '후속 업무 진행 중';
+  
+  // Meeting specific
+  purposes?: string[];
+  tags?: string[];
+  content?: string;
+  nextActions?: string;
+  
+  // Travel specific
+  startDate?: string;
+  endDate?: string;
+  totalExpense?: number;
+  days?: {
+    day: number;
+    route: string; // 출발-경유-도착
+    reportAM: string;
+    reportPM: string;
+    images: string[];
+    expenses: { item: string; amount: number }[];
+  }[];
+}
+
 export const MOCK_SHELTERS: Shelter[] = [
   { 
     id: '1', 
@@ -212,5 +242,47 @@ export const MOCK_SALES_TASKS: SalesTask[] = [
     priority: '낮음',
     status: '완료',
     createdAt: '2024-04-20'
+  }
+];
+
+export const MOCK_ACTIVITY_LOGS: ActivityLog[] = [
+  {
+    id: 'log-1',
+    type: 'Meeting',
+    title: '왕왕랜드 대량 기부 협약 미팅',
+    target: '[보호소] 왕왕랜드',
+    targetId: '1',
+    location: '서울 서초구 왕왕랜드 본관',
+    date: '2024-04-25',
+    status: '완료',
+    purposes: ['파트너십 체결', '물류 최적화'],
+    tags: ['장기계약', '프리미엄사료'],
+    content: '대량 기부 협약서 최종 검토 및 서명 완료함.',
+    nextActions: '5월 1일 첫 대량 배송 전 물류팀 최종 확인 필요'
+  },
+  {
+    id: 'log-2',
+    type: 'Travel',
+    title: '경기 서북부 보호소 전국 순회 실태 조사',
+    target: '경기권 주요 5개 보호소',
+    location: '경기 고양, 파주 일대',
+    date: '2024-05-10',
+    status: '작성 중',
+    startDate: '2024-05-10',
+    endDate: '2024-05-12',
+    totalExpense: 450000,
+    days: [
+      {
+        day: 1,
+        route: '서울-고양-파주',
+        reportAM: '삼송 보호소 방문 및 시설 점검',
+        reportPM: '파주 지역 가망 보호소 2곳 미팅',
+        images: [],
+        expenses: [
+          { item: '주유비', amount: 50000 },
+          { item: '식대', amount: 25000 }
+        ]
+      }
+    ]
   }
 ];

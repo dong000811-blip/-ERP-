@@ -10,6 +10,7 @@ import {
   Settings,
   Bell,
   Search,
+  ShieldCheck,
   Users,
   LogOut,
   TrendingUp,
@@ -51,6 +52,7 @@ import ProjectsView from './ProjectsView';
 import InventoryLogisticsView from './InventoryLogisticsView';
 import PartnerManagement from './PartnerManagement';
 import SalesTaskManager from './SalesTaskManager';
+import ActivityLogManagementView from './ActivityLogManagementView';
 import { 
   LIVE_EVENTS, 
   LEAD_SHELTERS, 
@@ -79,14 +81,14 @@ const SidebarItem = ({ icon: Icon, active = false, label, onClick }: { icon: any
   <div 
     onClick={onClick}
     className={cn(
-      "p-2.5 rounded-lg flex items-center gap-2.5 transition-all duration-200 group cursor-pointer",
+      "p-[0.625rem] rounded-lg flex items-center gap-[0.5rem] transition-all duration-200 group cursor-pointer",
       active 
-        ? "bg-[#F0FDF4] border-l-4 border-accent text-accent shadow-sm" 
+        ? "bg-[#F0FDF4] border-l-[0.25rem] border-accent text-accent shadow-sm" 
         : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
     )}
   >
     <Icon size={18} className={cn(active ? "text-accent" : "text-slate-400 group-hover:text-slate-500")} />
-    <span className={cn("text-[13px] font-medium", active ? "font-semibold" : "")}>{label}</span>
+    <span className={cn("text-[0.75rem] font-medium", active ? "font-semibold" : "")}>{label}</span>
   </div>
 );
 
@@ -94,7 +96,7 @@ const Card = ({ children, className }: { children: React.ReactNode, className?: 
   <motion.div 
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className={cn("bg-white rounded-xl p-4 shadow-sm border border-slate-200", className)}
+    className={cn("bg-white rounded-xl p-[1rem] shadow-sm border border-slate-200", className)}
   >
     {children}
   </motion.div>
@@ -143,7 +145,7 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
   };
 
   return (
-    <div className="space-y-4 overflow-y-auto max-h-[420px] pr-2 custom-scrollbar">
+    <div className="space-y-[1rem] overflow-y-auto max-h-[26.25rem] pr-[0.5rem] custom-scrollbar">
       <AnimatePresence>
         {sortedTasks.map(task => {
           const shelter = shelters.find(s => s.id === task.shelterId);
@@ -155,7 +157,7 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
               initial={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               layout
-              className="group flex items-start gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-accent/20 transition-all cursor-pointer"
+              className="group flex items-start gap-[0.75rem] p-[0.75rem] bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-accent/20 transition-all cursor-pointer"
               onClick={() => onTaskClick(task)}
             >
               <button
@@ -164,7 +166,7 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
                   handleToggle(task.id);
                 }}
                 className={cn(
-                  "mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                  "mt-[0.125rem] flex-shrink-0 w-[1.25rem] h-[1.25rem] rounded-full border-2 flex items-center justify-center transition-all",
                   "border-slate-200 text-transparent hover:border-accent hover:bg-accent/5"
                 )}
               >
@@ -172,33 +174,33 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
               </button>
               
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-0.5">
+                <div className="flex justify-between items-start mb-[0.125rem]">
                   <span className={cn(
-                    "text-[10px] font-black uppercase tracking-widest",
+                    "text-[0.625rem] font-black uppercase tracking-widest",
                     overdue ? "text-red-500" : "text-slate-400"
                   )}>
                     {task.category}
                   </span>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-[0.25rem]">
                     <Clock size={10} className={cn(overdue ? "text-red-500" : "text-slate-300")} />
                     <span className={cn(
-                      "text-[10px] font-mono font-bold tracking-tighter",
+                      "text-[0.625rem] font-mono font-bold tracking-tighter",
                       overdue ? "text-red-500 underline decoration-red-200 decoration-2" : "text-slate-400"
                     )}>
                       {task.deadline}
                     </span>
                   </div>
                 </div>
-                <h4 className="text-xs font-bold text-slate-800 leading-tight mb-1 truncate">
+                <h4 className="text-[0.75rem] font-bold text-slate-800 leading-tight mb-[0.25rem] truncate">
                   {task.taskName}
                 </h4>
-                <div className="flex items-center gap-2">
-                   <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                <div className="flex items-center gap-[0.5rem]">
+                   <div className="flex items-center gap-[0.25rem] text-[0.625rem] font-medium text-slate-400">
                       <MapPin size={10} />
-                      <span className="truncate max-w-[120px]">{shelter?.name}</span>
+                      <span className="truncate max-w-[7.5rem]">{shelter?.name}</span>
                    </div>
                    {task.priority === '높음' && (
-                     <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                     <span className="flex-shrink-0 w-[0.375rem] h-[0.375rem] rounded-full bg-red-500 animate-pulse" />
                    )}
                 </div>
               </div>
@@ -207,9 +209,9 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
         })}
       </AnimatePresence>
       {sortedTasks.length === 0 && (
-        <div className="py-12 text-center">
-          <CheckCircle2 size={32} className="mx-auto text-green-200 mb-2" />
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">모든 업무를 완료했습니다!</p>
+        <div className="py-[3rem] text-center">
+          <CheckCircle2 size={32} className="mx-auto text-green-200 mb-[0.5rem]" />
+          <p className="text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">모든 업무를 완료했습니다!</p>
         </div>
       )}
     </div>
@@ -356,58 +358,58 @@ const DashboardView = ({
   const ongoingCount = projects.filter(p => p.status === 'Ongoing').length;
   
   return (
-    <div className="space-y-4">
-      <section className="grid grid-cols-4 gap-3">
+    <div className="space-y-[1rem]">
+      <section className="grid grid-cols-4 gap-[0.75rem]">
         {/* ... stats cards ... */}
-        <Card className="h-24 flex flex-col justify-between border-l-4 border-l-[#2D336B] p-3.5">
+        <Card className="h-[6rem] flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-[0.875rem]">
           <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">활성 파트너</p>
-            <div className="text-xl font-black text-slate-800">{shelters.length} 보호소</div>
+            <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">활성 파트너</p>
+            <div className="text-[1.25rem] font-black text-slate-800">{shelters.length} 보호소</div>
           </div>
-          <div className="text-[10px] text-green-500 flex items-center font-bold">
-            +12.5% <span className="text-slate-400 font-normal ml-1">전월 대비</span>
+          <div className="text-[0.625rem] text-green-500 flex items-center font-bold">
+            +12.5% <span className="text-slate-400 font-normal ml-[0.25rem]">전월 대비</span>
           </div>
         </Card>
 
-        <Card className="h-24 flex flex-col justify-between border-l-4 border-l-[#FF9F1C] p-3.5">
+        <Card className="h-[6rem] flex flex-col justify-between border-l-[0.25rem] border-l-[#FF9F1C] p-[0.875rem]">
           <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">진행 중 프로젝트</p>
-            <div className="text-xl font-black text-slate-800">{ongoingCount} 건</div>
+            <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">진행 중 프로젝트</p>
+            <div className="text-[1.25rem] font-black text-slate-800">{ongoingCount} 건</div>
           </div>
-          <div className="text-[10px] text-[#FF9F1C] flex items-center font-bold">
-            진행 중 <span className="text-slate-400 font-normal ml-1">실시간 데이터</span>
+          <div className="text-[0.625rem] text-[#FF9F1C] flex items-center font-bold">
+            진행 중 <span className="text-slate-400 font-normal ml-[0.25rem]">실시간 데이터</span>
           </div>
         </Card>
 
-        <Card className="h-24 flex flex-col justify-between p-3.5">
+        <Card className="h-[6rem] flex flex-col justify-between p-[0.875rem]">
           <div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">배송 대기</p>
-            <div className="text-xl font-black text-slate-800">12 건</div>
+            <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">배송 대기</p>
+            <div className="text-[1.25rem] font-black text-slate-800">12 건</div>
           </div>
-          <div className="text-[10px] text-blue-500 flex items-center font-bold">
-            배송 중 <span className="text-slate-400 font-normal ml-1">물류 활성화</span>
+          <div className="text-[0.625rem] text-blue-500 flex items-center font-bold">
+            배송 중 <span className="text-slate-400 font-normal ml-[0.25rem]">물류 활성화</span>
           </div>
         </Card>
 
-        <Card className="h-24 flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-3.5">
+        <Card className="h-[6rem] flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-[0.875rem]">
           <div>
-            <p className="text-slate-300 text-[10px] font-bold uppercase tracking-wider mb-0.5">네트워크 안정성</p>
-            <div className="text-xl font-black">92.8%</div>
+            <p className="text-slate-300 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">네트워크 안정성</p>
+            <div className="text-[1.25rem] font-black">92.8%</div>
           </div>
-          <div className="text-[10px] text-white/50 font-normal">
+          <div className="text-[0.625rem] text-white/50 font-normal">
             운영 효율 지수
           </div>
         </Card>
       </section>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-[0.75rem]">
         {/* View Switcher Toggle */}
         <div className="flex justify-start">
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 shadow-inner border border-slate-200">
+          <div className="bg-slate-100 p-[0.25rem] rounded-xl flex items-center gap-[0.25rem] shadow-inner border border-slate-200">
             <button 
               onClick={() => setViewMode('map')}
               className={cn(
-                "px-3 py-1 rounded-lg text-[11px] font-black flex items-center gap-1.5 transition-all",
+                "px-[0.75rem] py-[0.25rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
                 viewMode === 'map' ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -416,7 +418,7 @@ const DashboardView = ({
             <button 
               onClick={() => setViewMode('calendar')}
               className={cn(
-                "px-3 py-1 rounded-lg text-[11px] font-black flex items-center gap-1.5 transition-all",
+                "px-[0.75rem] py-[0.25rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
                 viewMode === 'calendar' ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-200" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -425,8 +427,8 @@ const DashboardView = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-4 min-h-[400px]">
-          <div className="col-span-8 h-[450px] relative">
+        <div className="grid grid-cols-12 gap-[1rem] flex-1 min-h-0 bg-slate-100">
+          <div className="col-span-8 flex flex-col min-h-0 relative">
             <AnimatePresence mode="wait">
               {viewMode === 'map' ? (
                 <motion.div 
@@ -435,9 +437,11 @@ const DashboardView = ({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.02 }}
                   transition={{ duration: 0.2 }}
-                  className="h-full"
+                  className="flex-1"
                 >
-                  <KoreaMap onSelectRegion={onSelectRegion} />
+                  <Card className="h-full overflow-hidden p-0 border-white/50 shadow-xl shadow-indigo-900/5">
+                    <KoreaMap onSelectRegion={onSelectRegion} />
+                  </Card>
                 </motion.div>
               ) : (
                 <motion.div 
@@ -446,40 +450,44 @@ const DashboardView = ({
                    animate={{ opacity: 1, scale: 1 }}
                    exit={{ opacity: 0, scale: 1.02 }}
                    transition={{ duration: 0.2 }}
-                   className="h-full"
+                   className="flex-1"
                 >
-                  <ProjectCalendar onEventClick={onProjectClick} projects={projects} />
+                  <Card className="h-full overflow-hidden border-white/50 shadow-xl shadow-indigo-900/5">
+                    <ProjectCalendar onEventClick={onProjectClick} projects={projects} />
+                  </Card>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <div className="col-span-4 flex flex-col gap-4">
-            <Card className="flex-1 flex flex-col">
-              <div className="flex items-center justify-between mb-6">
+          <div className="col-span-4 flex flex-col gap-[1rem] min-h-0">
+            <Card className="flex-1 flex flex-col min-h-0">
+              <div className="flex items-center justify-between mb-[1.5rem] shrink-0">
                 <div>
-                  <h3 className="text-sm font-black text-slate-800 tracking-tight">Action Items</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 underline decoration-accent/30 decoration-2">업무 우선순위 지능형 관리</p>
+                  <h3 className="text-[0.875rem] font-black text-slate-800 tracking-tight">Action Items</h3>
+                  <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-[0.125rem] underline decoration-accent/30 decoration-2">업무 우선순위 지능형 관리</p>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-accent/5 flex items-center justify-center text-accent">
+                <div className="w-[2rem] h-[2rem] rounded-full bg-accent/5 flex items-center justify-center text-accent">
                    <TrendingUp size={16} />
                 </div>
               </div>
               
-              <ActionItemsWidget onTaskClick={setSelectedTaskForDrawer} />
+              <div className="flex-1 overflow-hidden">
+                <ActionItemsWidget onTaskClick={setSelectedTaskForDrawer} />
+              </div>
               <TaskDrawer 
                 task={selectedTaskForDrawer} 
                 onClose={() => setSelectedTaskForDrawer(null)} 
               />
             </Card>
 
-            <Card className="h-24 bg-slate-900 text-white border-none flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+            <Card className="h-[6rem] bg-slate-900 text-white border-none flex items-center gap-[1rem] shrink-0 p-[1.25rem]">
+              <div className="w-[2.5rem] h-[2.5rem] rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="text-red-500" size={20} />
               </div>
               <div>
-                <p className="text-xs font-bold text-red-100 uppercase tracking-tight">시스템 경보</p>
-                <p className="text-[11px] text-slate-400 leading-tight">공급망 알림: 경기 클러스터 사료 재고 부족</p>
+                <p className="text-[0.75rem] font-bold text-red-100 uppercase tracking-tight">시스템 경보</p>
+                <p className="text-[0.6875rem] text-slate-400 leading-tight">공급망 알림: 경기 클러스터 사료 재고 부족</p>
               </div>
             </Card>
           </div>
@@ -818,149 +826,178 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       {/* Add Shelter Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-[2rem]">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => {
+                setIsModalOpen(false);
+                setEditingShelterId(null);
+              }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
             />
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-[32rem] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-6 bg-[#2D336B] text-white flex justify-between items-center">
-                <h3 className="text-xl font-bold tracking-tight">
-                  {editingShelterId ? '보호소 정보 수정' : '신규 보호소 등록'}
-                </h3>
+              {/* Modal Header - Fixed */}
+              <div className="px-[1.5rem] py-[1.25rem] bg-[#2D336B] text-white flex justify-between items-center shrink-0 shadow-sm border-b border-white/10">
+                <div className="flex items-center gap-[0.75rem]">
+                  <div className="p-[0.5rem] bg-white/10 rounded-lg"><LayoutDashboard size={18} /></div>
+                  <h3 className="text-[1rem] font-black tracking-tight leading-none">
+                    {editingShelterId ? '보호소 정보 수정' : '신규 보호소 등록'}
+                  </h3>
+                </div>
                 <button 
                   onClick={() => {
                     setIsModalOpen(false);
                     setEditingShelterId(null);
                   }} 
-                  className="text-white/60 hover:text-white transition-colors"
+                  className="w-[1.75rem] h-[1.75rem] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
                 >
-                  <Plus className="rotate-45" size={24} />
+                  <Plus className="rotate-45" size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleAddOrUpdateShelter} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-1.5 flex flex-col">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">보호소명 *</label>
+              {/* Modal Body - Scrollable */}
+              <form onSubmit={handleAddOrUpdateShelter} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                <div className="p-[1.5rem] space-y-[1.25rem] bg-white">
+                  <div className="grid grid-cols-2 gap-[1rem]">
+                    <div className="space-y-[0.375rem] flex flex-col">
+                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소명 *</label>
+                      <input 
+                        required
+                        type="text" 
+                        value={formData.name}
+                        onChange={e => setFormData({...formData, name: e.target.value})}
+                        placeholder="기관명을 입력하세요"
+                        className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-[0.375rem] flex flex-col">
+                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">지역 (시/도) *</label>
+                      <select 
+                        value={formData.region}
+                        onChange={e => setFormData({...formData, region: e.target.value})}
+                        className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                      >
+                        {REGIONAL_SHELTER_DATA.map(r => <option key={r.id}>{r.region}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-[0.375rem] flex flex-col">
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">상세 주소</label>
                     <input 
-                      required
                       type="text" 
-                      value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                      placeholder="e.g. 행복한 유기견 센터"
-                      className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                      value={formData.detailedAddress}
+                      onChange={e => setFormData({...formData, detailedAddress: e.target.value})}
+                      placeholder="상세 주소를 기재하세요"
+                      className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
                     />
                   </div>
-                  <div className="space-y-1.5 flex flex-col">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">지역 (시/도) *</label>
-                    <select 
-                      value={formData.region}
-                      onChange={e => setFormData({...formData, region: e.target.value})}
-                      className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-accent/20 outline-none transition-all"
-                    >
-                      {REGIONAL_SHELTER_DATA.map(r => <option key={r.id}>{r.region}</option>)}
-                    </select>
-                  </div>
-                </div>
 
-                <div className="space-y-1.5 flex flex-col">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">상세 주소</label>
-                  <input 
-                    type="text" 
-                    value={formData.detailedAddress}
-                    onChange={e => setFormData({...formData, detailedAddress: e.target.value})}
-                    placeholder="상세 번지수 및 건물명"
-                    className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-accent/20 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1.5 flex flex-col">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">보호소 규모 (수용 마리수) *</label>
-                  <input 
-                    required
-                    type="number" 
-                    value={formData.size}
-                    onChange={e => setFormData({...formData, size: parseInt(e.target.value) || 0})}
-                    placeholder="현재 보호중인 강아지 수"
-                    className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-accent/20 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
-                  <h4 className="text-xs font-bold text-[#2D336B] flex items-center gap-2">
-                    <Users size={14} /> 대표자 정보
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-[0.375rem] flex flex-col">
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소 규모 (보호 마리수) *</label>
                     <input 
                       required
-                      placeholder="이름" 
-                      value={formData.representative}
-                      onChange={e => setFormData({...formData, representative: e.target.value})}
-                      className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-accent"
+                      type="number" 
+                      value={formData.size}
+                      onChange={e => setFormData({...formData, size: parseInt(e.target.value) || 0})}
+                      placeholder="0"
+                      className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
                     />
-                    <select 
-                      value={formData.representativeGender}
-                      onChange={e => setFormData({...formData, representativeGender: e.target.value as any})}
-                      className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="Male">남성</option>
-                      <option value="Female">여성</option>
-                    </select>
-                    <input 
-                      required
-                      placeholder="연락처 (e.g. 010-0000-0000)" 
-                      value={formData.representativePhone}
-                      type="tel"
-                      onChange={e => setFormData({...formData, representativePhone: e.target.value})}
-                      className="col-span-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-accent"
-                    />
+                  </div>
+
+                  <div className="bg-slate-50 p-[1.5rem] rounded-2xl border border-slate-100 space-y-[1.25rem]">
+                    <h4 className="text-[0.75rem] font-bold text-[#2D336B] flex items-center gap-[0.5rem] uppercase tracking-widest leading-none">
+                      <ShieldCheck size={14} className="text-accent" /> 시설 상세 설정
+                    </h4>
+                    
+                    <div className="space-y-[1rem]">
+                      <h5 className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem] flex items-center gap-[0.375rem]">
+                        <Users size={12} /> 대표자 정보
+                      </h5>
+                      <div className="grid grid-cols-2 gap-[1rem]">
+                        <input 
+                          required
+                          placeholder="이름" 
+                          value={formData.representative}
+                          onChange={e => setFormData({...formData, representative: e.target.value})}
+                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                        />
+                        <select 
+                          value={formData.representativeGender}
+                          onChange={e => setFormData({...formData, representativeGender: e.target.value as any})}
+                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer"
+                        >
+                          <option value="Male">남성</option>
+                          <option value="Female">여성</option>
+                        </select>
+                        <input 
+                          required
+                          placeholder="연락처 (e.g. 010-0000-0000)" 
+                          value={formData.representativePhone}
+                          type="tel"
+                          onChange={e => setFormData({...formData, representativePhone: e.target.value})}
+                          className="col-span-2 px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-[1rem]">
+                      <h5 className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem] flex items-center gap-[0.375rem]">
+                        <Users size={12} /> 매니저/실무자 정보 (선택)
+                      </h5>
+                      <div className="grid grid-cols-2 gap-[1rem]">
+                        <input 
+                          placeholder="이름" 
+                          value={formData.managerName}
+                          onChange={e => setFormData({...formData, managerName: e.target.value})}
+                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                        />
+                        <select 
+                          value={formData.managerGender}
+                          onChange={e => setFormData({...formData, managerGender: e.target.value as any})}
+                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer"
+                        >
+                          <option value="Male">남성</option>
+                          <option value="Female">여성</option>
+                        </select>
+                        <input 
+                          placeholder="연락처" 
+                          value={formData.managerPhone}
+                          type="tel"
+                          onChange={e => setFormData({...formData, managerPhone: e.target.value})}
+                          className="col-span-2 px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
-                  <h4 className="text-xs font-bold text-slate-500 flex items-center gap-2">
-                    <Users size={14} /> 매니저/실무자 정보 (선택)
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <input 
-                      placeholder="이름" 
-                      value={formData.managerName}
-                      onChange={e => setFormData({...formData, managerName: e.target.value})}
-                      className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-accent"
-                    />
-                    <select 
-                      value={formData.managerGender}
-                      onChange={e => setFormData({...formData, managerGender: e.target.value as any})}
-                      className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="Male">남성</option>
-                      <option value="Female">여성</option>
-                    </select>
-                    <input 
-                      placeholder="연락처" 
-                      value={formData.managerPhone}
-                      type="tel"
-                      onChange={e => setFormData({...formData, managerPhone: e.target.value})}
-                      className="col-span-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-accent"
-                    />
-                  </div>
+                {/* Modal Footer - Sticky */}
+                <div className="p-[1.5rem] bg-slate-50 border-t border-slate-100 flex gap-[0.75rem] sticky bottom-0 shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setEditingShelterId(null);
+                    }}
+                    className="flex-1 py-[0.875rem] bg-white border border-slate-200 text-slate-500 font-black text-[0.75rem] rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
+                  >
+                    취소
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-[2] py-[0.875rem] bg-[#2D336B] text-white font-black text-[0.75rem] rounded-2xl shadow-xl shadow-indigo-900/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
+                  >
+                    {editingShelterId ? '변경 사항 저장' : '보호소 등록 완료'}
+                  </button>
                 </div>
-
-                <button 
-                  type="submit"
-                  className="w-full py-4 bg-[#2D336B] text-white font-bold rounded-xl shadow-xl hover:shadow-[#2D336B]/20 transition-all active:scale-[0.98] mt-4"
-                >
-                  {editingShelterId ? '수정 내용 저장' : '보호소 등록하기'}
-                </button>
               </form>
             </motion.div>
           </div>
@@ -970,81 +1007,11 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
   );
 };
 
-const LogisticsView = () => {
-    const statuses: Delivery['status'][] = ['Order Received', 'Preparing', 'Shipped', 'Delivered'];
-    const statusLabels: Record<Delivery['status'], string> = {
-        'Order Received': '주문 접수',
-        'Preparing': '배송 준비',
-        'Shipped': '배송 중',
-        'Delivered': '배송 완료'
-    };
-
-    return (
-        <div className="grid grid-cols-4 gap-6 h-full overflow-hidden">
-            {statuses.map(status => (
-                <div key={status} className="flex flex-col h-full bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden shadow-inner">
-                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                        <div className="flex items-center gap-2">
-                           <div className={cn(
-                             "w-1.5 h-4 rounded-full",
-                             status === 'Delivered' ? "bg-green-400" :
-                             status === 'Shipped' ? "bg-blue-400" :
-                             status === 'Preparing' ? "bg-orange-400" : "bg-slate-300"
-                           )}></div>
-                           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{statusLabels[status]}</h4>
-                        </div>
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200/50">
-                            {MOCK_DELIVERIES.filter(d => d.status === status).length}
-                        </span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                        {MOCK_DELIVERIES.filter(d => d.status === status).map(delivery => (
-                            <motion.div 
-                                layoutId={delivery.id}
-                                key={delivery.id} 
-                                className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 hover:shadow-md hover:border-accent/20 transition-all cursor-grab active:cursor-grabbing group relative overflow-hidden"
-                            >
-                                <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 rotate-45 translate-x-10 -translate-y-10 group-hover:bg-accent/5 transition-colors"></div>
-                                
-                                <div className="flex justify-between items-start mb-3 relative z-10">
-                                    <span className="text-[10px] text-slate-400 font-bold tracking-tighter bg-slate-50 px-2 py-0.5 rounded border border-slate-100">{delivery.trackingNumber}</span>
-                                    <button className="text-slate-200 group-hover:text-slate-400 transition-colors"><MoreVertical size={14} /></button>
-                                </div>
-                                <h5 className="text-sm font-bold text-slate-800 mb-1 tracking-tight">{delivery.destination}</h5>
-                                <p className="text-[10px] text-slate-500 mb-5 leading-relaxed font-medium line-clamp-2">{delivery.items}</p>
-                                
-                                {status === 'Delivered' ? (
-                                    <div className="flex gap-2">
-                                       <button className="flex-1 py-2.5 bg-green-50 text-green-600 text-[10px] font-bold rounded-lg border border-green-100 flex items-center justify-center gap-2 hover:bg-green-100 transition-colors">
-                                            <FileText size={12} /> 배송 증명 업로드됨
-                                       </button>
-                                       <button className="p-2.5 bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"><MapPin size={14} /></button>
-                                    </div>
-                                ) : (
-                                    <div className="flex gap-2">
-                                       <button className="flex-1 py-2.5 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2">
-                                           <Plus size={12} /> 정보 업로드
-                                       </button>
-                                       <button className="p-2.5 bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 border border-slate-100 transition-all"><Truck size={14} /></button>
-                                    </div>
-                                )}
-                            </motion.div>
-                        ))}
-                        <button className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-300 text-[10px] font-black hover:border-accent/30 hover:text-accent/50 transition-all uppercase tracking-widest bg-slate-50/50">
-                            + 신규 배송 등록
-                        </button>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-};
-
 // --- Main Layout Component ---
 
 export default function ShelterDashboard() {
   const { shelters } = useShelters();
-  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'logistics' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales'>('dashboard');
   const [crmFilter, setCrmFilter] = useState('');
   const [projects, setProjects] = useState<Project[]>(PROJECT_DATA);
 
@@ -1075,7 +1042,7 @@ export default function ShelterDashboard() {
         />
       );
       case 'inventory': return <InventoryLogisticsView />;
-      case 'logistics': return <LogisticsView />;
+      case 'activities': return <ActivityLogManagementView />;
       case 'partners': return <PartnerManagement />;
       case 'products': return <ProductRegistry />;
       case 'sales': return <SalesTaskManager />;
@@ -1085,20 +1052,20 @@ export default function ShelterDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100 font-sans text-slate-800 overflow-hidden">
-      {/* Sidebar - Clean Slate Themed */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 z-50">
-        <div className="p-7 flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20 border border-white/20">
+    <div className="flex h-screen w-screen bg-slate-100 font-sans text-slate-800 overflow-hidden">
+      {/* Sidebar - Proportional Scaling */}
+      <aside className="w-[14rem] bg-white border-r border-slate-200 flex flex-col shrink-0 z-50">
+        <div className="p-[1.75rem] flex items-center gap-[0.75rem] mb-[1.5rem]">
+          <div className="w-[2.75rem] h-[2.75rem] bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20 border border-white/20">
             <LayoutDashboard className="text-white" size={24} />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-xl tracking-tighter text-slate-800 leading-none">쉘터플로우</span>
-            <span className="text-[9px] font-black text-accent tracking-[.25em] uppercase mt-1 leading-none">네트워크 ERP</span>
+            <span className="font-black text-[1.25rem] tracking-tighter text-slate-800 leading-none">쉘터플로우</span>
+            <span className="text-[0.5625rem] font-black text-accent tracking-[.25em] uppercase mt-[0.25rem] leading-none">네트워크 ERP</span>
           </div>
         </div>
         
-        <nav className="flex-1 px-5 space-y-2">
+        <nav className="flex-1 px-[1.25rem] space-y-[0.5rem] overflow-y-auto custom-scrollbar">
           <SidebarItem 
             icon={LayoutDashboard} 
             active={activeView === 'dashboard'} 
@@ -1118,10 +1085,10 @@ export default function ShelterDashboard() {
             onClick={() => setActiveView('donations')}
           />
           <SidebarItem 
-            icon={Truck} 
-            active={activeView === 'logistics'} 
-            label="배송 현황" 
-            onClick={() => setActiveView('logistics')}
+            icon={FileText} 
+            active={activeView === 'activities'} 
+            label="일지 관리" 
+            onClick={() => setActiveView('activities')}
           />
           <SidebarItem 
             icon={Package} 
@@ -1130,7 +1097,7 @@ export default function ShelterDashboard() {
             onClick={() => setActiveView('inventory')}
           />
           
-          <div className="pt-6 pb-2 px-3 text-[10px] font-black text-slate-300 uppercase tracking-widest">기초 정보 관리 (Master Data)</div>
+          <div className="pt-[1.5rem] pb-[0.5rem] px-[0.75rem] text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">기초 정보 관리</div>
           <SidebarItem 
             icon={Users} 
             active={activeView === 'crm'} 
@@ -1150,7 +1117,7 @@ export default function ShelterDashboard() {
             onClick={() => setActiveView('partners')}
           />
 
-          <div className="pt-6 pb-2 px-3 text-[10px] font-black text-slate-300 uppercase tracking-widest">지원</div>
+          <div className="pt-[1.5rem] pb-[0.5rem] px-[0.75rem] text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">지원</div>
           <SidebarItem 
             icon={Settings} 
             active={activeView === 'settings'} 
@@ -1159,40 +1126,40 @@ export default function ShelterDashboard() {
           />
         </nav>
 
-        <div className="p-5 mt-auto bg-slate-50/50 border-t border-slate-100">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-slate-200 group">
+        <div className="p-[1.25rem] mt-auto bg-slate-50/50 border-t border-slate-100">
+          <div className="flex items-center gap-[0.75rem] p-[0.75rem] bg-white rounded-xl shadow-sm border border-slate-200 group">
             <div className="relative">
                <img 
                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Carlis" 
                  alt="Avatar" 
-                 className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 object-cover p-0.5 transition-transform group-hover:scale-105"
+                 className="w-[2.5rem] h-[2.5rem] rounded-lg bg-slate-100 border border-slate-200 object-cover p-[0.125rem] transition-transform group-hover:scale-105"
                />
-               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm ring-1 ring-green-100"></div>
+               <div className="absolute -bottom-[0.25rem] -right-[0.25rem] w-[0.75rem] h-[0.75rem] bg-green-500 rounded-full border-2 border-white shadow-sm ring-1 ring-green-100"></div>
             </div>
             <div className="overflow-hidden flex-1">
-              <p className="text-[11px] font-black text-slate-800 truncate">카를리스 볼롬보이</p>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">지역 총괄 이사</p>
+              <p className="text-[0.6875rem] font-black text-slate-800 truncate">카를리스 볼롬보이</p>
+              <p className="text-[0.5625rem] text-slate-400 font-bold uppercase tracking-tighter">지역 총괄 이사</p>
             </div>
-            <button className="text-slate-300 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-50">
+            <button className="text-slate-300 hover:text-red-400 transition-colors p-[0.25rem] rounded-md hover:bg-red-50">
                <LogOut size={16} />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden bg-slate-100 relative">
-        <div className="absolute inset-0 bg-[radial-gradient(#80BCBD15_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none opacity-50"></div>
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col overflow-hidden bg-slate-100 relative min-w-0">
+        <div className="absolute inset-0 bg-[radial-gradient(#80BCBD15_1px,transparent_1px)] [background-size:1.25rem_1.25rem] pointer-events-none opacity-50"></div>
         
         {/* Header - Integrated & Clean */}
-        <header className="h-[72px] bg-white border-b border-slate-200 px-10 flex items-center justify-between flex-shrink-0 z-40 shadow-sm shadow-slate-200/20 sticky top-0">
-          <div className="flex items-center gap-4">
-             <div className="w-1.5 h-6 bg-accent rounded-full shadow-[0_0_8px_rgba(128,188,189,0.5)]"></div>
-             <h1 className="text-xl font-black text-slate-800 tracking-tight capitalize antialiased">
+        <header className="h-[4.5rem] bg-white border-b border-slate-200 px-[2.5rem] flex items-center justify-between flex-shrink-0 z-40 shadow-sm shadow-slate-200/20 sticky top-0">
+          <div className="flex items-center gap-[1rem]">
+             <div className="w-[0.375rem] h-[1.5rem] bg-accent rounded-full shadow-[0_0_0.5rem_rgba(128,188,189,0.5)]"></div>
+             <h1 className="text-[1.25rem] font-black text-slate-800 tracking-tight capitalize antialiased">
                 {activeView === 'crm' ? '보호소 마스터 명부' : 
                  activeView === 'donations' ? '프로젝트 생애주기 관리' : 
                  activeView === 'inventory' ? '보호소별 수불부 관리' : 
-                 activeView === 'logistics' ? '출고 및 물류 이행' : 
+                 activeView === 'activities' ? '일지 및 활동 관리' : 
                  activeView === 'partners' ? '파트너 마스터 관리' : 
                  activeView === 'dashboard' ? '대시보드 개요' :
                  activeView === 'products' ? '상품 기초 데이터 등록' :
@@ -1200,30 +1167,30 @@ export default function ShelterDashboard() {
                  activeView.replace(/([A-Z])/g, ' $1').trim()}
              </h1>
           </div>
-          <div className="flex items-center gap-7 text-slate-800">
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-accent" size={16} />
+          <div className="flex items-center gap-[1.75rem] text-slate-800">
+            <div className="relative group hidden md:block">
+              <Search className="absolute left-[1rem] top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-accent" size={16} />
               <input 
                 type="text" 
                 placeholder="전체 네트워크 검색..." 
-                className="bg-slate-50 border border-slate-200/60 rounded-full py-2.5 pl-11 pr-5 text-[11px] font-medium w-72 focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all shadow-inner"
+                className="bg-slate-50 border border-slate-200/60 rounded-full py-[0.625rem] pl-[2.75rem] pr-[1.25rem] text-[0.6875rem] font-medium w-[18rem] focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all shadow-inner"
               />
             </div>
-            <div className="flex items-center gap-4 border-l border-slate-100 pl-7">
-              <button className="relative p-2.5 bg-slate-50 rounded-xl hover:bg-white hover:shadow-md border border-slate-100 transition-all text-slate-500 cursor-pointer group">
+            <div className="flex items-center gap-[1rem] border-l border-slate-100 pl-[1.75rem]">
+              <button className="relative p-[0.625rem] bg-slate-50 rounded-xl hover:bg-white hover:shadow-md border border-slate-100 transition-all text-slate-500 cursor-pointer group">
                 <Bell size={20} className="group-hover:text-accent transition-colors" />
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white border border-red-200 shadow-sm"></span>
+                <span className="absolute top-[0.5rem] right-[0.5rem] w-[0.625rem] h-[0.625rem] bg-red-500 rounded-full ring-2 ring-white border border-red-200 shadow-sm"></span>
               </button>
-              <button className="flex items-center gap-2 p-1 pr-3 bg-slate-900 rounded-full text-white shadow-lg shadow-slate-900/10 hover:opacity-90 active:scale-95 transition-all">
-                  <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center font-black text-[10px]">SF</div>
-                  <span className="text-[10px] font-black uppercase tracking-wider">빠른 작업</span>
+              <button className="flex items-center gap-[0.5rem] p-[0.25rem] pr-[0.75rem] bg-slate-900 rounded-full text-white shadow-lg shadow-slate-900/10 hover:opacity-90 active:scale-95 transition-all">
+                  <div className="w-[2rem] h-[2rem] rounded-full bg-accent flex items-center justify-center font-black text-[0.625rem]">SF</div>
+                  <span className="text-[0.625rem] font-black uppercase tracking-wider">빠른 작업</span>
               </button>
             </div>
           </div>
         </header>
 
-        {/* View Render Area */}
-        <div className="flex-1 overflow-hidden p-10 flex flex-col gap-6 relative z-10">
+        {/* View Content Area */}
+        <div className="flex-1 overflow-hidden p-[2.5rem] flex flex-col gap-[1.5rem] relative z-10">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeView}
@@ -1231,7 +1198,7 @@ export default function ShelterDashboard() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.99, y: -10 }}
                     transition={{ duration: 0.3, ease: 'circOut' }}
-                    className="h-full flex flex-col"
+                    className="h-full flex flex-col overflow-hidden"
                 >
                     {renderView()}
                 </motion.div>
