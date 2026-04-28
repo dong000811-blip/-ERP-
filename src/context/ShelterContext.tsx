@@ -29,8 +29,6 @@ interface ShelterContextType {
   getRegionalCount: (region: string) => number;
 }
 
-const API_KEY = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY;
-
 const ShelterContext = createContext<ShelterContextType | undefined>(undefined);
 
 export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -75,25 +73,69 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => unsubscribe();
   }, [currentUser]);
 
-  const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    if (!API_KEY || !address) return null;
-    try {
-      console.log(`[Geocoding] Fetching coordinates for: ${address}`);
-      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${API_KEY}`);
-      const data = await response.json();
-      if (data.status === 'OK' && data.results.length > 0) {
-        const location = data.results[0].geometry.location;
-        console.log(`[Geocoding SUCCESS] Result:`, location);
-        return location;
-      } else if (data.status === 'ZERO_RESULTS') {
-        console.warn(`[Geocoding] No results found for address: ${address}`);
-      } else {
-        console.error(`[Geocoding ERROR] Status: ${data.status}`);
-      }
-    } catch (error) {
-      console.error('Geocoding error:', error);
+  // Self-healing: Update coordinates for existing shelters that missing precise location
+  useEffect(() => {
+    const missingCoords = shelters.filter(s => !s.location && s.detailedAddress);
+    if (missingCoords.length > 0 && !isLoading) {
+      console.log(`[Self-Healing] Found ${missingCoords.length} shelters with missing coordinates. Updating...`);
+      // Process a few at a time to avoid rate limits
+      missingCoords.slice(0, 3).forEach(async (shelter) => {
+        try {
+          const coords = await geocodeAddress(shelter.detailedAddress!, true);
+          if (coords) {
+            await updateShelter(shelter.id, { 
+              lat: coords.lat, 
+              lng: coords.lng,
+              location: coords 
+            });
+          }
+        } catch (e) {
+          console.error('[Self-Healing] Failed to update coords for:', shelter.id, e);
+        }
+      });
     }
-    return null;
+  }, [shelters, isLoading]);
+
+  const geocodeAddress = async (address: string, silent: boolean = false): Promise<{ lat: number; lng: number } | null> => {
+    const win = window as any;
+    if (!win.naver || !win.naver.maps || !win.naver.maps.Service) {
+      if (!silent) console.error('[Geocoding] Naver Maps Service is not loaded on window object.');
+      return null;
+    }
+
+    if (!address) return null;
+
+    return new Promise((resolve) => {
+      try {
+        win.naver.maps.Service.geocode({ query: address }, (status: any, response: any) => {
+          if (status !== win.naver.maps.Service.Status.OK) {
+            if (!silent) console.error(`[Geocoding] Naver API Error. Status: ${status}`);
+            resolve(null);
+            return;
+          }
+
+          const result = response.v2.addresses[0];
+          if (result) {
+            const coords = {
+              lat: parseFloat(result.y),
+              lng: parseFloat(result.x)
+            };
+            console.log(`[Geocoding SUCCESS] "${address}" ->`, coords);
+            resolve(coords);
+          } else {
+            if (!silent) {
+              console.error(`[Geocoding ZERO_RESULTS] No results found for address: "${address}"`);
+              resolve(null);
+            } else {
+              resolve(null);
+            }
+          }
+        });
+      } catch (err) {
+        console.error('[Geocoding] Unexpected logic error:', err);
+        resolve(null);
+      }
+    });
   };
 
   const regionalData = REGIONAL_SHELTER_DATA.map(regionInfo => {
@@ -101,19 +143,21 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return { ...regionInfo, count };
   });
 
-  const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'lastContactDate' | 'stage' | 'painPoints' | 'lat' | 'lng'>) => {
+  const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'lastContactDate' | 'stage' | 'painPoints' | 'lat' | 'lng'>, manualCoords?: { lat: number, lng: number }) => {
     if (!currentUser) {
       console.error('Shelter registration failed: No authenticated user.');
       throw new Error('Authentication required');
     }
     try {
-      console.log('Processing geocoding for address:', newShelterData.detailedAddress);
-      const coords = await geocodeAddress(newShelterData.detailedAddress || '');
+      let coords = manualCoords;
+
+      if (!coords && newShelterData.detailedAddress) {
+        console.log('Fetching coordinates for address:', newShelterData.detailedAddress);
+        coords = await geocodeAddress(newShelterData.detailedAddress);
+      }
       
       if (!coords && newShelterData.detailedAddress) {
-        alert('입력하신 주소의 좌표를 찾을 수 없습니다. 정확한 주소를 입력했는지 확인해 주세요.');
-        // We continue with region default if strictly necessary, but better to stop if user expects precise placement.
-        // For now, let's allow fallback to region center but warn.
+        console.warn('Geocoding failed for detailed address. Falling back to regional coordinates if necessary.');
       }
 
       const regionCenter = REGIONAL_SHELTER_DATA.find(r => r.region === newShelterData.region) || REGIONAL_SHELTER_DATA[0];
@@ -128,6 +172,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
         painPoints: '신규 등록된 보호소입니다. 초기 연락 대기 중.',
         lat: coords?.lat ?? regionCenter.lat,
         lng: coords?.lng ?? regionCenter.lng,
+        location: coords ? { lat: coords.lat, lng: coords.lng } : { lat: regionCenter.lat, lng: regionCenter.lng }
       };
 
       console.log('Attempting to WRITE shelter to Firestore:', id, newShelter);
@@ -139,11 +184,12 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateShelter = async (id: string, updates: Partial<Shelter>) => {
+  const updateShelter = async (id: string, updates: Partial<Shelter>, manualCoords?: { lat: number, lng: number }) => {
     try {
       console.log(`[Shelter UPDATE START] Attempting to update shelter: ${id}`, updates);
-      let newCoords = null;
-      if (updates.detailedAddress) {
+      let newCoords = manualCoords;
+      
+      if (!newCoords && updates.detailedAddress) {
         console.log(`[Shelter UPDATE] Geocoding new address: ${updates.detailedAddress}`);
         newCoords = await geocodeAddress(updates.detailedAddress);
       }
@@ -152,6 +198,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (newCoords) {
         (finalUpdates as any).lat = newCoords.lat;
         (finalUpdates as any).lng = newCoords.lng;
+        (finalUpdates as any).location = { lat: newCoords.lat, lng: newCoords.lng };
       }
 
       await updateDoc(doc(db, 'shelters', id), finalUpdates);

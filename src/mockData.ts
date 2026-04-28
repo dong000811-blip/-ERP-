@@ -21,6 +21,10 @@ export interface Shelter {
   managerPhone?: string;
   region: string;
   detailedAddress?: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
   lat: number;
   lng: number;
   size: number; // Puppy count

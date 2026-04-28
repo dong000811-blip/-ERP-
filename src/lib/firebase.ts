@@ -8,6 +8,8 @@ import firebaseConfig from "../../firebase-applet-config.json";
 const requiredFields: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', 'appId'];
 const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 
+const NAVER_MAPS_CLIENT_ID = '56oihxhe3c';
+
 if (missingFields.length > 0) {
   const msg = `CRITICAL: Firebase configuration is missing required fields: ${missingFields.join(", ")}`;
   console.error(msg, firebaseConfig);
@@ -16,7 +18,9 @@ if (missingFields.length > 0) {
   }
 }
 
-// Debug: Log the config being used (redacted sensitive parts if necessary, but here we want to be sure)
+console.log("Naver Maps Client ID integrated:", NAVER_MAPS_CLIENT_ID);
+
+// Debug: Log the config being used
 console.log("Attempting Firebase initialization for project:", firebaseConfig.projectId);
 
 let app: FirebaseApp;

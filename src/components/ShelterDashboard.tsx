@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { 
   LayoutDashboard, 
   Map as MapIcon, 
@@ -601,50 +600,49 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const [selectedShelterIds, setSelectedShelterIds] = useState<Set<string>>(new Set());
+  
+  // New: Coordinate Tracking
+  const [pickedLocation, setPickedLocation] = useState<{ lat: number, lng: number } | null>(null);
 
-  // Google Places Autocomplete
-  const placesLibrary = useMapsLibrary('places');
-  const autoCompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Kakao Postcode Integration
+  const handleSearchAddress = () => {
+    if (typeof (window as any).daum === 'undefined' || !(window as any).daum.Postcode) {
+      alert('주소 검색 서비스(Kakao)를 로드할 수 없습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    new (window as any).daum.Postcode({
+      oncomplete: (data: any) => {
+        let fullAddress = data.address;
+        let extraAddress = '';
 
-  useEffect(() => {
-    if (!placesLibrary || !inputRef.current || !isModalOpen) return;
+        if (data.addressType === 'R') {
+          if (data.bname !== '') extraAddress += data.bname;
+          if (data.buildingName !== '') extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
+          fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
+        }
 
-    autoCompleteRef.current = new placesLibrary.Autocomplete(inputRef.current, {
-      fields: ['formatted_address', 'geometry', 'address_components'],
-      componentRestrictions: { country: 'kr' }
-    });
-
-    autoCompleteRef.current.addListener('place_changed', () => {
-      const place = autoCompleteRef.current?.getPlace();
-      if (place?.formatted_address) {
         setFormData(prev => ({
           ...prev,
-          detailedAddress: place.formatted_address || ''
+          detailedAddress: fullAddress
         }));
-        
-        // Try to auto-detect region from address components
-        const cityComponent = place.address_components?.find(c => 
-          c.types.includes('administrative_area_level_1')
+
+        // Auto-detect region from Kakao address components (sido)
+        const matchedRegion = REGIONAL_SHELTER_DATA.find(r => 
+          data.sido.includes(r.region) || r.region.includes(data.sido)
         );
-        if (cityComponent) {
-          const regionName = cityComponent.long_name;
-          const matchedRegion = REGIONAL_SHELTER_DATA.find(r => 
-            regionName.includes(r.region) || r.region.includes(regionName)
-          );
-          if (matchedRegion) {
-            setFormData(prev => ({ ...prev, region: matchedRegion.region }));
-          }
+        if (matchedRegion) {
+          setFormData(prev => ({ ...prev, region: matchedRegion.region }));
         }
       }
-    });
+    }).open();
+  };
 
-    return () => {
-      if (autoCompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autoCompleteRef.current);
-      }
-    };
-  }, [placesLibrary, isModalOpen]);
+  // Reset picked location when closing modal
+  useEffect(() => {
+    if (!isModalOpen) {
+      setPickedLocation(null);
+    }
+  }, [isModalOpen]);
 
   // Form State
   const [formData, setFormData] = useState<AddShelterFormData>({
@@ -681,6 +679,7 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       managerGender: shelter.managerGender || 'Male',
       managerPhone: shelter.managerPhone || ''
     });
+    setPickedLocation({ lat: shelter.lat, lng: shelter.lng });
     setEditingShelterId(shelter.id);
     setIsModalOpen(true);
     setOpenMenuId(null);
@@ -723,10 +722,11 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
     }
 
     try {
+      console.log(`[Submit] Saving shelter with manualCoords:`, pickedLocation);
       if (editingShelterId) {
-        await updateShelter(editingShelterId, formData);
+        await updateShelter(editingShelterId, formData, pickedLocation || undefined);
       } else {
-        await addShelter(formData);
+        await addShelter(formData, pickedLocation || undefined);
       }
 
       setIsModalOpen(false);
@@ -743,6 +743,7 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
         managerGender: 'Male',
         managerPhone: ''
       });
+      setPickedLocation(null);
     } catch (err) {
       console.error('UI Layer: Shelter registration failed', err);
       alert('보호소 정보를 저장하는 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
@@ -1074,15 +1075,24 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                   </div>
 
                   <div className="space-y-[0.375rem] flex flex-col">
-                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">상세 주소 (정확한 위치를 위해 입력하세요)</label>
-                    <input 
-                      ref={inputRef}
-                      type="text" 
-                      value={formData.detailedAddress}
-                      onChange={e => setFormData({...formData, detailedAddress: e.target.value})}
-                      placeholder="상세 주소를 검색하거나 입력하세요"
-                      className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all placeholder:font-normal"
-                    />
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">상세 주소 (네이버 정밀 위치 보정)</label>
+                    <div className="relative group flex gap-2">
+                      <input 
+                        type="text" 
+                        readOnly
+                        value={formData.detailedAddress}
+                        onClick={handleSearchAddress}
+                        placeholder="우측 버튼을 눌러 주소를 검색하세요"
+                        className="flex-1 px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all placeholder:font-normal"
+                      />
+                      <button 
+                        type="button"
+                        onClick={handleSearchAddress}
+                        className="px-4 py-2 bg-slate-900 text-white text-[11px] font-black rounded-2xl hover:bg-black transition-all flex items-center gap-2 shrink-0"
+                      >
+                        <Search size={14} /> 우편번호 검색
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-[0.375rem] flex flex-col">
