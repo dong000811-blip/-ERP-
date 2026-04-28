@@ -88,6 +88,8 @@ export default function PartnerManagement() {
   const [formData, setFormData] = useState<Partial<Partner>>(initialFormState);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const [selectedPartnerIds, setSelectedPartnerIds] = useState<Set<string>>(new Set());
+  
   const validateForm = () => {
     const errors: Record<string, string> = {};
     if (!formData.name) errors.name = '이름/기업명을 입력해주세요.';
@@ -123,9 +125,38 @@ export default function PartnerManagement() {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('정말 이 파트너 정보를 삭제하시겠습니까?')) {
-      setPartners(prev => prev.filter(p => p.id !== id));
-      if (activePartner?.id === id) setActivePartner(null);
+    setPartners(prev => prev.filter(p => p.id !== id));
+    if (activePartner?.id === id) setActivePartner(null);
+    setSelectedPartnerIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    if (window.confirm(`선택한 ${selectedPartnerIds.size}개의 파트너 정보를 삭제하시겠습니까?`)) {
+      setPartners(prev => prev.filter(p => !selectedPartnerIds.has(p.id)));
+      setSelectedPartnerIds(new Set());
+      if (activePartner && selectedPartnerIds.has(activePartner.id)) setActivePartner(null);
+    }
+  };
+
+  const toggleSelectPartner = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedPartnerIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedPartnerIds.size === filteredPartners.length) {
+      setSelectedPartnerIds(new Set());
+    } else {
+      setSelectedPartnerIds(new Set(filteredPartners.map(p => p.id)));
     }
   };
 
@@ -145,17 +176,27 @@ export default function PartnerManagement() {
              </div>
              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Partner Master Database</p>
           </div>
-          <button 
-            onClick={() => {
-              setEditingPartner(null);
-              setFormData(initialFormState);
-              setFormErrors({});
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]"
-          >
-            <Plus size={18} /> 신규 파트너 등록
-          </button>
+          <div className="flex items-center gap-2">
+            {selectedPartnerIds.size > 0 && (
+              <button 
+                onClick={handleDeleteSelected}
+                className="flex items-center gap-2 px-6 py-3.5 bg-rose-50 text-rose-600 rounded-2xl text-xs font-black border border-rose-100 transition-all hover:bg-rose-100"
+              >
+                <Trash2 size={18} /> 선택 삭제 ({selectedPartnerIds.size})
+              </button>
+            )}
+            <button 
+              onClick={() => {
+                setEditingPartner(null);
+                setFormData(initialFormState);
+                setFormErrors({});
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]"
+            >
+              <Plus size={18} /> 신규 파트너 등록
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -207,6 +248,19 @@ export default function PartnerManagement() {
             <table className="w-full text-left border-collapse min-w-[900px] table-auto">
               <thead className="bg-slate-50/50 sticky top-0 z-10">
                 <tr className="border-b border-slate-100">
+                  <th className="px-6 py-5 w-[40px]">
+                    <button 
+                      onClick={toggleSelectAll}
+                      className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                        selectedPartnerIds.size === filteredPartners.length && filteredPartners.length > 0
+                          ? "bg-indigo-600 border-indigo-600 text-white" 
+                          : "bg-white border-slate-300 text-transparent"
+                      )}
+                    >
+                      <CheckCircle2 size={12} />
+                    </button>
+                  </th>
                   <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-[10%] whitespace-nowrap">분류</th>
                   <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-[25%] whitespace-nowrap">파트너명</th>
                   <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-[20%] whitespace-nowrap">전문 분야</th>
@@ -226,6 +280,19 @@ export default function PartnerManagement() {
                       activePartner?.id === partner.id ? "bg-indigo-50/30" : ""
                     )}
                   >
+                    <td className="px-6 py-5">
+                      <button 
+                        onClick={(e) => toggleSelectPartner(partner.id, e)}
+                        className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all",
+                          selectedPartnerIds.has(partner.id)
+                            ? "bg-indigo-600 border-indigo-600 text-white" 
+                            : "bg-white border-slate-200 text-transparent hover:border-indigo-300"
+                        )}
+                      >
+                        <CheckCircle2 size={12} />
+                      </button>
+                    </td>
                     <td className="px-6 py-5 align-middle whitespace-nowrap">
                       {partner.type === 'Corporate' ? (
                         <div className="flex items-center gap-2">
@@ -282,17 +349,9 @@ export default function PartnerManagement() {
                               setIsModalOpen(true);
                             }}
                             className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-indigo-600 border border-transparent hover:border-indigo-100 transition-all shadow-sm"
+                            title="상세보기"
                           >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(partner.id);
-                            }}
-                            className="p-2 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all shadow-sm"
-                          >
-                            <Trash2 size={14} />
+                            <ChevronRight size={16} />
                           </button>
                        </div>
                     </td>
@@ -311,7 +370,7 @@ export default function PartnerManagement() {
       </div>
 
       {/* Side Detail Section */}
-      <div className="w-[320px] h-full flex flex-col gap-6 shrink-0">
+      <div className="w-[20rem] h-full flex flex-col gap-6 shrink-0">
         <AnimatePresence mode="wait">
           {activePartner ? (
             <motion.div
@@ -321,7 +380,7 @@ export default function PartnerManagement() {
               exit={{ x: 20, opacity: 0 }}
               className="flex-1 flex flex-col gap-6"
             >
-              <Card className="flex-1 flex flex-col gap-6">
+              <Card className="flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
                 <div className="flex flex-col items-center text-center gap-3">
                    <div className={cn(
                      "w-20 h-20 rounded-[2.5rem] flex items-center justify-center shadow-lg transition-all",

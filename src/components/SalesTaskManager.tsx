@@ -15,6 +15,7 @@ import {
   Tag,
   MapPin,
   X,
+  Trash2,
   LayoutGrid,
   List as ListIcon,
   RefreshCcw,
@@ -50,6 +51,11 @@ export default function SalesTaskManager() {
   const [shelterFilter, setShelterFilter] = useState<string>('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<SalesTask | null>(null);
+
+  // Selection State
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   // Subtask Accordion State
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -154,6 +160,37 @@ export default function SalesTaskManager() {
     setIsModalOpen(false);
   };
 
+  const handleDeleteTasks = () => {
+    if (taskToDelete) {
+      setTasks(prev => prev.filter(t => t.id !== taskToDelete));
+      setSelectedTaskIds(prev => {
+        const next = new Set(prev);
+        next.delete(taskToDelete);
+        return next;
+      });
+    } else {
+      setTasks(prev => prev.filter(t => !selectedTaskIds.has(t.id)));
+      setSelectedTaskIds(new Set());
+    }
+    setIsDeleteConfirmOpen(false);
+    setTaskToDelete(null);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTaskIds.size === filteredTasks.length) {
+      setSelectedTaskIds(new Set());
+    } else {
+      setSelectedTaskIds(new Set(filteredTasks.map(t => t.id)));
+    }
+  };
+
+  const toggleSelectTask = (id: string) => {
+    const next = new Set(selectedTaskIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedTaskIds(next);
+  };
+
   const toggleTaskStatus = (id: string) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === '완료' ? '대기' : '완료' } : t));
   };
@@ -224,51 +261,58 @@ export default function SalesTaskManager() {
           </div>
 
           <div className="flex items-center gap-[0.5rem]">
-            <Filter size={14} className="text-slate-400" />
-            <select 
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] font-bold text-slate-600 outline-none"
+            {selectedTaskIds.size > 0 && (
+              <button 
+                onClick={() => {
+                  setTaskToDelete(null);
+                  setIsDeleteConfirmOpen(true);
+                }}
+                className="bg-red-50 text-red-500 px-[1rem] py-[0.625rem] rounded-xl text-[0.75rem] font-black border border-red-100 flex items-center gap-[0.375rem] transition-all hover:bg-red-100"
+              >
+                <Trash2 size={16} /> 선택 삭제 ({selectedTaskIds.size})
+              </button>
+            )}
+            <button 
+              onClick={() => handleOpenModal()}
+              className="bg-accent hover:bg-accent/90 text-white px-[1.5rem] py-[0.625rem] rounded-xl text-[0.75rem] font-black shadow-lg shadow-accent/20 flex items-center gap-[0.5rem] transition-all active:scale-95"
             >
-              <option value="All">모든 업무</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select 
-              value={shelterFilter}
-              onChange={e => setShelterFilter(e.target.value)}
-              className="px-[0.75rem] py-[0.5rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] font-bold text-slate-600 outline-none max-w-[9.375rem]"
-            >
-              <option value="All">모든 보호소</option>
-              {shelters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+              <Plus size={18} /> 새 업무 등록
+            </button>
           </div>
         </div>
-
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-accent hover:bg-accent/90 text-white px-[1.5rem] py-[0.625rem] rounded-xl text-[0.75rem] font-black shadow-lg shadow-accent/20 flex items-center gap-[0.5rem] transition-all active:scale-95"
-        >
-          <Plus size={18} /> 새 업무 등록
-        </button>
       </div>
 
       {/* Task Content: List or Kanban */}
       <div className="flex-1 min-h-0">
         {viewMode === 'List' ? (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-            <div className="flex-1 overflow-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="flex-1 overflow-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[75rem]">
                 <thead className="bg-slate-50 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-10 border-b border-slate-100">
-                  <tr>
-                    <th className="px-[1.5rem] py-[1rem] w-[3rem] text-center">상태</th>
+                  <tr className="whitespace-nowrap">
+                    <th className="px-[1.5rem] py-[1rem] w-[3rem] text-center">
+                      <button 
+                        onClick={toggleSelectAll}
+                        className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                          selectedTaskIds.size === filteredTasks.length && filteredTasks.length > 0
+                            ? "bg-accent border-accent text-white"
+                            : "bg-white border-slate-300 text-transparent"
+                        )}
+                      >
+                        <CheckSquare size={12} />
+                      </button>
+                    </th>
+                    <th className="px-[1rem] py-[1rem] w-[4rem] text-center">완료</th>
+                    <th className="px-[1.5rem] py-[1rem] min-w-[6.25rem]">상태</th>
                     <th className="px-[1rem] py-[1rem] w-[2rem]"></th>
-                    <th className="px-[1.5rem] py-[1rem]">대상 보호소</th>
-                    <th className="px-[1.5rem] py-[1rem]">업무 구분</th>
-                    <th className="px-[1.5rem] py-[1rem]">테스크명</th>
-                    <th className="px-[1.5rem] py-[1rem]">협력 파트너</th>
-                    <th className="px-[1.5rem] py-[1rem]">마감 기한</th>
-                    <th className="px-[1.5rem] py-[1rem]">우선순위</th>
-                    <th className="px-[1.5rem] py-[1rem] text-right">관리</th>
+                    <th className="px-[1.5rem] py-[1rem] min-w-[10rem] w-[15%]">대상 보호소</th>
+                    <th className="px-[1.5rem] py-[1rem] w-[8rem]">업무 구분</th>
+                    <th className="px-[1.5rem] py-[1rem] flex-1">테스크명</th>
+                    <th className="px-[1.5rem] py-[1rem] w-[8rem]">협력 파트너</th>
+                    <th className="px-[1.5rem] py-[1rem] w-[8rem]">마감 기한</th>
+                    <th className="px-[1.5rem] py-[1rem] w-[6rem]">우선순위</th>
+                    <th className="px-[1.5rem] py-[1rem] text-right w-[4rem]">관리</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -276,18 +320,33 @@ export default function SalesTaskManager() {
                     const shelter = shelters.find(s => s.id === task.shelterId);
                     const overdue = task.status !== '완료' && isOverdue(task.deadline);
                     const isExpanded = expandedTasks.has(task.id);
+                    const isSelected = selectedTaskIds.has(task.id);
                     const subTasksCount = task.subTasks?.length || 0;
                     const completedSubTasks = task.subTasks?.filter(st => st.isCompleted).length || 0;
                     const progress = subTasksCount > 0 ? (completedSubTasks / subTasksCount) * 100 : 0;
                     
                     return (
                       <React.Fragment key={task.id}>
-                        <tr className="hover:bg-slate-50/50 transition-colors group">
+                        <tr className={cn(
+                          "hover:bg-slate-50/50 transition-colors group whitespace-nowrap",
+                          isSelected && "bg-accent/[0.02]"
+                        )}>
+                          <td className="px-[1.5rem] py-[1rem] text-center">
+                            <button 
+                              onClick={() => toggleSelectTask(task.id)}
+                              className={cn(
+                                "w-4 h-4 rounded border flex items-center justify-center transition-all mx-auto",
+                                isSelected ? "bg-accent border-accent text-white" : "bg-white border-slate-200 text-transparent hover:border-accent/40"
+                              )}
+                            >
+                              <CheckSquare size={12} />
+                            </button>
+                          </td>
                           <td className="px-[1.5rem] py-[1rem] text-center">
                             <button 
                               onClick={() => toggleTaskStatus(task.id)}
                               className={cn(
-                                "w-[1.25rem] h-[1.25rem] rounded-full border-2 flex items-center justify-center transition-all",
+                                "w-[1.25rem] h-[1.25rem] rounded-full border-2 flex items-center justify-center transition-all mx-auto",
                                 task.status === '완료' 
                                   ? "bg-green-500 border-green-500 text-white" 
                                   : "border-slate-200 text-transparent hover:border-accent"
@@ -295,6 +354,22 @@ export default function SalesTaskManager() {
                             >
                               <CheckCircle2 size={12} />
                             </button>
+                          </td>
+                          <td className="px-[1.5rem] py-[1rem]">
+                            <div className={cn(
+                              "inline-flex items-center gap-[0.375rem] px-[0.625rem] py-[0.25rem] rounded-full text-[0.625rem] font-black min-w-[4.5rem] justify-center whitespace-nowrap",
+                              task.status === '대기' ? "bg-slate-100 text-slate-500" :
+                              task.status === '진행중' ? "bg-blue-50 text-blue-600" :
+                              task.status === '보류' ? "bg-amber-50 text-amber-600" : "bg-green-50 text-green-600"
+                            )}>
+                              <div className={cn(
+                                "w-[0.375rem] h-[0.375rem] rounded-full",
+                                task.status === '대기' ? "bg-slate-400" :
+                                task.status === '진행중' ? "bg-blue-500" :
+                                task.status === '보류' ? "bg-amber-500" : "bg-green-500"
+                              )} />
+                              {task.status}
+                            </div>
                           </td>
                           <td className="px-[1rem] py-[1rem]">
                             {subTasksCount > 0 && (
@@ -387,12 +462,15 @@ export default function SalesTaskManager() {
                             </div>
                           </td>
                           <td className="px-[1.5rem] py-[1rem] text-right">
-                            <button 
-                              onClick={() => handleOpenModal(task)}
-                              className="p-[0.25rem] hover:bg-slate-100 rounded-md transition-colors text-slate-300 hover:text-slate-700"
-                            >
-                              <MoreVertical size={16} />
-                            </button>
+                            <div className="flex items-center justify-end">
+                              <button 
+                                onClick={() => handleOpenModal(task)}
+                                className="p-[0.375rem] hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
+                                title="상세보기"
+                              >
+                                <ChevronRight size={18} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         <AnimatePresence>
@@ -797,6 +875,53 @@ export default function SalesTaskManager() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-[1rem]">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-[24rem] bg-white rounded-3xl shadow-2xl p-[1.5rem] flex flex-col items-center text-center"
+            >
+              <div className="w-[3.5rem] h-[3.5rem] rounded-2xl bg-red-50 flex items-center justify-center text-red-500 mb-[1.25rem]">
+                <AlertCircle size={28} />
+              </div>
+              <h3 className="text-[1.125rem] font-black text-slate-800 tracking-tight mb-[0.5rem]">
+                {taskToDelete ? '업무 삭제' : '선택 업무 삭제'}
+              </h3>
+              <p className="text-[0.8125rem] text-slate-500 font-bold leading-relaxed mb-[1.5rem]">
+                {taskToDelete 
+                  ? '이 업무를 정말 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.' 
+                  : `선택한 ${selectedTaskIds.size}개의 업무를 정말 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`}
+              </p>
+              <div className="flex w-full gap-[0.75rem]">
+                <button 
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="flex-1 py-[0.75rem] bg-slate-50 text-slate-500 font-black text-[0.75rem] rounded-xl hover:bg-slate-100 transition-all"
+                >
+                  취소
+                </button>
+                <button 
+                  onClick={handleDeleteTasks}
+                  className="flex-1 py-[0.75rem] bg-red-500 text-white font-black text-[0.75rem] rounded-xl shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                >
+                  삭제하기
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

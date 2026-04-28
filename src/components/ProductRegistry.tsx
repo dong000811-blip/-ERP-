@@ -13,7 +13,8 @@ import {
   Download,
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -419,40 +420,13 @@ const ProductRegistry = () => {
                     <td className="px-6 py-4 text-slate-400 italic max-w-[200px] truncate">{product.remarks || '-'}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity min-h-[32px]">
-                        {deleteConfirmId === product.id ? (
-                          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200">
-                            <span className="text-[9px] font-black text-red-500 uppercase tracking-widest mr-1">삭제?</span>
-                            <button 
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="px-2 py-1 bg-red-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all"
-                            >
-                              확인
-                            </button>
-                            <button 
-                              onClick={() => setDeleteConfirmId(null)}
-                              className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
-                            >
-                              취소
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <button 
-                              onClick={() => handleOpenModal(product)}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-[#2D336B] transition-all"
-                              title="수정"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button 
-                              onClick={() => setDeleteConfirmId(product.id)}
-                              className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-all"
-                              title="삭제"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
-                        )}
+                        <button 
+                          onClick={() => handleOpenModal(product)}
+                          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-[#2D336B] transition-all"
+                          title="상세보기"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -498,7 +472,7 @@ const ProductRegistry = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleAddOrUpdateProduct} className="p-8 space-y-5 overflow-y-auto max-h-[80vh] custom-scrollbar">
+              <form onSubmit={handleAddOrUpdateProduct} className="p-8 space-y-5 overflow-y-auto max-h-[85vh] custom-scrollbar">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">상품명 *</label>
                   <input 

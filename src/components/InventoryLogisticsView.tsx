@@ -56,6 +56,9 @@ export default function InventoryLogisticsView() {
   const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null);
   const [summaryFilter, setSummaryFilter] = useState('');
 
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -215,25 +218,33 @@ export default function InventoryLogisticsView() {
 
   const handleDelete = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (window.confirm("정말 이 내역을 삭제하시겠습니까? 이후의 잔고가 자동으로 재계산됩니다.")) {
-      const updated = ledger.filter(e => e.id !== id);
+    setDeleteId(id);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteId) {
+      const updated = ledger.filter(e => e.id !== deleteId);
       setLedger(recalculateBalances(updated));
       setSelectedIds(prev => {
         const next = new Set(prev);
-        next.delete(id);
+        next.delete(deleteId);
         return next;
       });
-      showToast('성공적으로 삭제되었으며 잔고가 재계산되었습니다.');
-    }
-  };
-
-  const handleBulkDelete = () => {
-    if (window.confirm(`선택한 ${selectedIds.size}개의 내역을 삭제하시겠습니까?`)) {
+      showToast('삭제되었습니다.');
+    } else {
       const updated = ledger.filter(e => !selectedIds.has(e.id));
       setLedger(recalculateBalances(updated));
       setSelectedIds(new Set());
       showToast('선택한 내역이 삭제되었습니다.');
     }
+    setIsDeleteConfirmOpen(false);
+    setDeleteId(null);
+  };
+
+  const handleBulkDelete = () => {
+    setDeleteId(null);
+    setIsDeleteConfirmOpen(true);
   };
 
   const toggleSelectAll = () => {
@@ -362,9 +373,9 @@ export default function InventoryLogisticsView() {
       </div>
 
       {/* Summary Widgets */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 shrink-0">
         {/* Real-time Balance Widget */}
-        <Card className="lg:col-span-4 flex flex-col h-[200px]">
+        <Card className="lg:col-span-4 flex flex-col h-[12.5rem]">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
@@ -419,7 +430,7 @@ export default function InventoryLogisticsView() {
         </Card>
 
         {/* Annual Logistics Chart Widget */}
-        <Card className="lg:col-span-8 h-[200px] flex flex-col">
+        <Card className="lg:col-span-8 h-[12.5rem] flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
@@ -522,7 +533,7 @@ export default function InventoryLogisticsView() {
         <div className="flex-1 overflow-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0 z-20 border-b-2 border-slate-200 shadow-sm">
-              <tr>
+              <tr className="whitespace-nowrap">
                 <th className="px-6 py-5 w-12 bg-slate-50 sticky top-0 z-30">
                    <button 
                      onClick={toggleSelectAll}
@@ -560,7 +571,7 @@ export default function InventoryLogisticsView() {
                     focusedShelterId === entry.shelterId ? "bg-indigo-50/40 ring-1 ring-inset ring-indigo-100" : ""
                   )}
                 >
-                  <td className="px-6 py-4.5">
+                  <td className="px-6 py-4.5 whitespace-nowrap">
                     <button 
                        onClick={(e) => { 
                          e.stopPropagation(); 
@@ -577,10 +588,10 @@ export default function InventoryLogisticsView() {
                        {selectedIds.has(entry.id) && <CheckCircle2 size={12} />}
                     </button>
                   </td>
-                  <td className="px-6 py-4.5">
+                  <td className="px-6 py-4.5 whitespace-nowrap">
                     <span className="text-[11px] font-black text-slate-800 tracking-tighter">{entry.date}</span>
                   </td>
-                  <td className="px-6 py-4.5">
+                  <td className="px-6 py-4.5 whitespace-nowrap min-w-[5rem]">
                     <span className={cn(
                       "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight inline-block",
                       entry.type === '입고' 
@@ -590,10 +601,10 @@ export default function InventoryLogisticsView() {
                       {entry.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4.5">
+                  <td className="px-6 py-4.5 whitespace-nowrap">
                     <span className="text-xs font-bold text-slate-700">{entry.shelterName}</span>
                   </td>
-                  <td className="px-6 py-4.5">
+                  <td className="px-6 py-4.5 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                        <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 transition-colors">
                          <Box size={14} />
@@ -601,7 +612,7 @@ export default function InventoryLogisticsView() {
                        <span className="text-xs font-bold text-slate-600">{entry.itemName}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4.5 text-right">
+                  <td className="px-6 py-4.5 text-right whitespace-nowrap">
                     {entry.type === '출고' ? (
                       <span className="text-[11px] font-black text-slate-800 tabular-nums">
                         {entry.shippingFee ? `₩${(Math.round(entry.shippingFee * 1.1)).toLocaleString()}` : '₩0'}
@@ -611,27 +622,21 @@ export default function InventoryLogisticsView() {
                     )}
                   </td>
                   <td className={cn(
-                    "px-6 py-4.5 text-right font-black text-sm tabular-nums",
+                    "px-6 py-4.5 text-right font-black text-sm tabular-nums whitespace-nowrap",
                     entry.type === '입고' ? "text-blue-600" : "text-red-600"
                   )}>
                     {entry.type === '입고' ? '+' : '-'}{entry.quantity.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4.5 text-right font-black text-sm text-slate-800 tabular-nums">
+                  <td className="px-6 py-4.5 text-right font-black text-sm text-slate-800 tabular-nums whitespace-nowrap">
                     {entry.balance.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4.5 text-right">
+                  <td className="px-6 py-4.5 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                       <button 
                         onClick={() => handleOpenEdit(entry)}
                         className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-indigo-600 border border-transparent hover:border-indigo-100 transition-all shadow-sm"
                       >
                         <Edit2 size={14} />
-                      </button>
-                      <button 
-                        onClick={(e) => handleDelete(entry.id, e)}
-                        className="p-2 hover:bg-rose-50 rounded-xl text-slate-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all shadow-sm"
-                      >
-                        <Trash2 size={14} />
                       </button>
                     </div>
                   </td>
@@ -995,6 +1000,53 @@ export default function InventoryLogisticsView() {
                    <Truck size={18} /> {editingEntry ? '수정 완료' : '출고 등록 및 배송 시작'}
                  </button>
                </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-[1rem]">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-[24rem] bg-white rounded-3xl shadow-2xl p-[1.5rem] flex flex-col items-center text-center"
+            >
+              <div className="w-[3.5rem] h-[3.5rem] rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 mb-[1.25rem]">
+                <AlertCircle size={28} />
+              </div>
+              <h3 className="text-[1.125rem] font-black text-slate-800 tracking-tight mb-[0.5rem]">
+                {deleteId ? '수불 내역 삭제' : '선택 내역 삭제'}
+              </h3>
+              <p className="text-[0.8125rem] text-slate-500 font-bold leading-relaxed mb-[1.5rem]">
+                {deleteId 
+                  ? '이 내역을 정말 삭제하시겠습니까?\n삭제 후에는 잔고가 자동으로 재계산됩니다.' 
+                  : `선택한 ${selectedIds.size}개의 내역을 정말 삭제하시겠습니까?\n삭제 후에는 잔고가 자동으로 재계산됩니다.`}
+              </p>
+              <div className="flex w-full gap-[0.75rem]">
+                <button 
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="flex-1 py-[0.75rem] bg-slate-50 text-slate-500 font-black text-[0.75rem] rounded-xl hover:bg-slate-100 transition-all"
+                >
+                  취소
+                </button>
+                <button 
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-[0.75rem] bg-rose-500 text-white font-black text-[0.75rem] rounded-xl shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all"
+                >
+                  삭제하기
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

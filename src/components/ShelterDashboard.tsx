@@ -145,7 +145,7 @@ const ActionItemsWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask) => 
   };
 
   return (
-    <div className="space-y-[1rem] overflow-y-auto max-h-[26.25rem] pr-[0.5rem] custom-scrollbar">
+    <div className="space-y-[1rem] overflow-y-auto pr-[0.5rem] custom-scrollbar flex-1 min-h-0">
       <AnimatePresence>
         {sortedTasks.map(task => {
           const shelter = shelters.find(s => s.id === task.shelterId);
@@ -239,7 +239,7 @@ const TaskDrawer = ({ task, onClose }: { task: SalesTask | null, onClose: () => 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 w-[480px] h-full bg-white shadow-2xl z-[101] flex flex-col border-l border-slate-200"
+            className="fixed top-0 right-0 w-[30rem] h-full bg-white shadow-2xl z-[101] flex flex-col border-l border-slate-200"
           >
             <div className="p-6 bg-[#2D336B] text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -358,10 +358,10 @@ const DashboardView = ({
   const ongoingCount = projects.filter(p => p.status === 'Ongoing').length;
   
   return (
-    <div className="space-y-[1rem]">
-      <section className="grid grid-cols-4 gap-[0.75rem]">
+    <div className="space-y-[1rem] flex flex-col h-full overflow-hidden">
+      <section className="grid grid-cols-4 gap-[0.75rem] shrink-0">
         {/* ... stats cards ... */}
-        <Card className="h-[6rem] flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-[0.875rem]">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">활성 파트너</p>
             <div className="text-[1.25rem] font-black text-slate-800">{shelters.length} 보호소</div>
@@ -371,7 +371,7 @@ const DashboardView = ({
           </div>
         </Card>
 
-        <Card className="h-[6rem] flex flex-col justify-between border-l-[0.25rem] border-l-[#FF9F1C] p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#FF9F1C] p-[0.875rem]">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">진행 중 프로젝트</p>
             <div className="text-[1.25rem] font-black text-slate-800">{ongoingCount} 건</div>
@@ -381,7 +381,7 @@ const DashboardView = ({
           </div>
         </Card>
 
-        <Card className="h-[6rem] flex flex-col justify-between p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between p-[0.875rem]">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">배송 대기</p>
             <div className="text-[1.25rem] font-black text-slate-800">12 건</div>
@@ -391,7 +391,7 @@ const DashboardView = ({
           </div>
         </Card>
 
-        <Card className="h-[6rem] flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-[0.875rem]">
           <div>
             <p className="text-slate-300 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">네트워크 안정성</p>
             <div className="text-[1.25rem] font-black">92.8%</div>
@@ -402,9 +402,9 @@ const DashboardView = ({
         </Card>
       </section>
 
-      <div className="flex flex-col gap-[0.75rem]">
+      <div className="flex flex-col gap-[0.75rem] flex-1 min-h-0">
         {/* View Switcher Toggle */}
-        <div className="flex justify-start">
+        <div className="flex justify-start shrink-0">
           <div className="bg-slate-100 p-[0.25rem] rounded-xl flex items-center gap-[0.25rem] shadow-inner border border-slate-200">
             <button 
               onClick={() => setViewMode('map')}
@@ -461,8 +461,8 @@ const DashboardView = ({
           </div>
 
           <div className="col-span-4 flex flex-col gap-[1rem] min-h-0">
-            <Card className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-[1.5rem] shrink-0">
+            <Card className="flex-[3] flex flex-col min-h-0">
+              <div className="flex items-center justify-between mb-[1rem] shrink-0">
                 <div>
                   <h3 className="text-[0.875rem] font-black text-slate-800 tracking-tight">Action Items</h3>
                   <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-[0.125rem] underline decoration-accent/30 decoration-2">업무 우선순위 지능형 관리</p>
@@ -481,7 +481,7 @@ const DashboardView = ({
               />
             </Card>
 
-            <Card className="h-[6rem] bg-slate-900 text-white border-none flex items-center gap-[1rem] shrink-0 p-[1.25rem]">
+            <Card className="flex-1 bg-slate-900 text-white border-none flex items-center gap-[1rem] shrink-0 p-[1.25rem] min-h-[5rem]">
               <div className="w-[2.5rem] h-[2.5rem] rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="text-red-500" size={20} />
               </div>
@@ -727,7 +727,7 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute top-0 right-0 w-[420px] h-full bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col"
+            className="absolute top-0 right-0 w-[26.25rem] h-full bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col"
           >
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#2D336B] text-white">
               <div>
@@ -777,7 +777,7 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                 <h4 className="text-[10px] font-black text-[#FF9F1C] uppercase tracking-[0.2em] flex items-center gap-2">
                   <Activity size={12} /> 영업 및 활동 기록 히스토리
                 </h4>
-                <div className="relative pl-6 space-y-6 border-l border-slate-100 ml-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="relative pl-6 space-y-6 border-l border-slate-100 ml-2 max-h-[30rem] overflow-y-auto pr-2 custom-scrollbar">
                    { ( [
                       ...CONTACT_HISTORY.filter(h => h.shelterId === selectedShelter.id).map(h => ({ date: h.date, msg: h.message, type: 'contact', status: undefined })),
                       ...MOCK_SALES_TASKS.filter(t => t.shelterId === selectedShelter.id).map(t => ({ date: t.deadline, msg: `[${t.category}] ${t.taskName}`, type: 'task', status: t.status }))
