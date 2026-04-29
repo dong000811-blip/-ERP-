@@ -46,7 +46,7 @@ const Card = ({ children, className, ...props }: { children: React.ReactNode, cl
 );
 
 export default function InventoryLogisticsView() {
-  const { inventory: ledgerRaw, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
+  const { inventory: ledgerRaw, products, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
   const { shelters } = useShelters();
   const [selectedShelterId, setSelectedShelterId] = useState<string>('전체');
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
@@ -347,9 +347,9 @@ export default function InventoryLogisticsView() {
                 className="text-xs font-bold text-slate-700 outline-none bg-transparent"
               >
                 <option value="전체">전체 보호소</option>
-                <option value="SHT-001">왕왕랜드</option>
-                <option value="SHT-002">삼송보호소</option>
-                <option value="SHT-003">드림테일즈</option>
+                {shelters.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
               </select>
             </div>
             
@@ -793,13 +793,23 @@ export default function InventoryLogisticsView() {
                     <select 
                       required
                       value={formData.shelterId}
-                      onChange={e => setFormData({...formData, shelterId: e.target.value})}
+                      onChange={e => {
+                        const sId = e.target.value;
+                        const shelter = shelters.find(s => s.id === sId);
+                        setFormData({
+                          ...formData, 
+                          shelterId: sId,
+                          remarks: shelter 
+                            ? `[기본배송지] ${shelter.address || ''} ${shelter.detailedAddress || ''} / 연락처: ${shelter.representativePhone || shelter.managerPhone || '-'}`.trim() 
+                            : formData.remarks
+                        });
+                      }}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     >
                       <option value="">보호소 선택</option>
-                      <option value="SHT-001">왕왕랜드</option>
-                      <option value="SHT-002">삼송보호소</option>
-                      <option value="SHT-003">드림테일즈</option>
+                      {shelters.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -815,14 +825,25 @@ export default function InventoryLogisticsView() {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">품목명</label>
-                  <input 
+                  <select 
                     required
-                    type="text" 
                     value={formData.itemName}
-                    onChange={e => setFormData({...formData, itemName: e.target.value})}
-                    placeholder="e.g. 넥스트 펫밸런스 어덜트"
+                    onChange={e => {
+                      const pName = e.target.value;
+                      const product = products.find(p => p.name === pName);
+                      setFormData({
+                        ...formData, 
+                        itemName: pName,
+                        specification: product ? `${product.standard} ${product.unit}` : formData.specification
+                      });
+                    }}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                  />
+                  >
+                    <option value="">품목 선택</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -896,13 +917,23 @@ export default function InventoryLogisticsView() {
                     <select 
                       required
                       value={formData.shelterId}
-                      onChange={e => setFormData({...formData, shelterId: e.target.value})}
+                      onChange={e => {
+                        const sId = e.target.value;
+                        const shelter = shelters.find(s => s.id === sId);
+                        setFormData({
+                          ...formData, 
+                          shelterId: sId,
+                          remarks: shelter 
+                            ? `[출고배송지] ${shelter.address || ''} ${shelter.detailedAddress || ''} / 연락처: ${shelter.representativePhone || shelter.managerPhone || '-'}`.trim() 
+                            : formData.remarks
+                        });
+                      }}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     >
                       <option value="">보호소 선택</option>
-                      <option value="SHT-001">왕왕랜드</option>
-                      <option value="SHT-002">삼송보호소</option>
-                      <option value="SHT-003">드림테일즈</option>
+                      {shelters.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -910,12 +941,21 @@ export default function InventoryLogisticsView() {
                     <select 
                       required
                       value={formData.itemName}
-                      onChange={e => setFormData({...formData, itemName: e.target.value})}
+                      onChange={e => {
+                        const pName = e.target.value;
+                        const product = products.find(p => p.name === pName);
+                        setFormData({
+                          ...formData, 
+                          itemName: pName,
+                          specification: product ? `${product.standard} ${product.unit}` : formData.specification
+                        });
+                      }}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     >
                       <option value="">품목 선택</option>
-                      <option value="넥스트 펫밸런스 어덜트">넥스트 펫밸런스 어덜트</option>
-                      <option value="퍼피 프리미엄 연어">퍼피 프리미엄 연어</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
