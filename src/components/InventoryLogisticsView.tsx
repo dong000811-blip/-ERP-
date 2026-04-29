@@ -37,6 +37,7 @@ import { cn } from '../lib/utils';
 import { InventoryEntry } from '../inventoryLedgerData';
 import { useFirestore } from '../FirestoreContext';
 import { useShelters } from '../context/ShelterContext';
+import { ModalWrapper } from './ModalWrapper';
 
 const Card = ({ children, className, ...props }: { children: React.ReactNode, className?: string, [key: string]: any }) => (
   <div {...props} className={cn("bg-white rounded-2xl p-5 shadow-sm border border-slate-100", className)}>
@@ -670,15 +671,10 @@ export default function InventoryLogisticsView() {
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 50, opacity: 0 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-6 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl flex items-center gap-3"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 backdrop-blur-md"
           >
-            <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
-              toast.type === 'success' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
-            )}>
-              {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-            </div>
-            <span className="text-sm font-black">{toast.message}</span>
+            <CheckCircle2 className="text-emerald-400" size={18} />
+            <span className="text-[13px] font-black tracking-tight">{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -686,377 +682,333 @@ export default function InventoryLogisticsView() {
       {/* Balance Summary Modal */}
       <AnimatePresence>
         {isSummaryModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSummaryModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative w-full max-w-4xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-               <div className="p-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 border border-amber-100">
-                      <Database size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black tracking-tight text-slate-800">보호소별 실시간 잔고 요약</h3>
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Real-time Balance Aggregation</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setIsSummaryModalOpen(false)} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center hover:bg-slate-50 text-slate-400 transition-colors shadow-sm">
-                    <XCircle size={24} />
-                  </button>
-               </div>
-               
-               <div className="p-8 space-y-6 overflow-hidden flex flex-col">
-                 <div className="flex items-center gap-4">
-                    <div className="relative flex-1">
-                      <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input 
-                        type="text" 
-                        value={summaryFilter}
-                        onChange={e => setSummaryFilter(e.target.value)}
-                        placeholder="전체 보호소 또는 품목명으로 검색..." 
-                        className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all"
-                      />
-                    </div>
-                    <button className="px-6 py-4 bg-slate-50 text-slate-500 font-black text-sm rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all flex items-center gap-2">
-                       <Filter size={18} /> 필터링
-                    </button>
-                 </div>
+          <ModalWrapper
+            isOpen={isSummaryModalOpen}
+            onClose={() => setIsSummaryModalOpen(false)}
+            title="보호소별 실시간 잔고 요약"
+            icon={<Database size={20} />}
+            width="max-w-4xl"
+          >
+            <div className="p-8 space-y-6 flex flex-col bg-white">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    value={summaryFilter}
+                    onChange={e => setSummaryFilter(e.target.value)}
+                    placeholder="전체 보호소 또는 품목명으로 검색..." 
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all"
+                  />
+                </div>
+                <button className="px-6 py-4 bg-slate-50 text-slate-500 font-black text-sm rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all flex items-center gap-2">
+                   <Filter size={18} /> 필터링
+                </button>
+              </div>
 
-                 <div className="flex-1 overflow-auto custom-scrollbar border border-slate-100 rounded-3xl">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-50 sticky top-0 z-10 border-b-2 border-slate-200 shadow-sm">
-                        <tr>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">보호소명</th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">품목명</th>
-                          <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-slate-50 sticky top-0 z-10">규격</th>
-                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">현재 총 잔고</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {shelterSummary.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/30 transition-colors group">
-                            <td className="px-6 py-4.5 font-bold text-slate-800 text-sm">
-                              {item.shelterName}
-                            </td>
-                            <td className="px-6 py-4.5">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300">
-                                  <Box size={14} />
-                                </div>
-                                <span className="text-sm font-black text-slate-700">{item.itemName}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4.5 text-center">
-                              <span className="px-2 py-1 bg-slate-50 border border-slate-100 rounded-md text-[10px] font-bold text-slate-400">
-                                {item.spec}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4.5 text-right">
-                               <div className={cn(
-                                 "text-lg font-black tracking-tight",
-                                 item.quantity <= 0 ? "text-rose-500" : 
-                                 item.quantity < 200 ? "text-amber-500" : "text-emerald-600"
-                               )}>
-                                 {item.quantity.toLocaleString()}<span className="text-xs ml-0.5 opacity-60 font-bold uppercase">kg</span>
-                               </div>
-                               {item.quantity < 200 && (
-                                 <p className="text-[9px] font-black italic text-amber-500 mt-0.5">재고 보충 필요</p>
-                               )}
-                            </td>
-                          </tr>
-                        ))}
-                        {shelterSummary.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="py-20 text-center">
-                              <AlertCircle size={32} className="mx-auto text-slate-200 mb-2" />
-                              <p className="text-sm font-bold text-slate-300 italic">집계된 데이터가 없습니다.</p>
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                 </div>
+              <div className="flex-1 overflow-auto custom-scrollbar border border-slate-100 rounded-3xl max-h-[50vh]">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-50 sticky top-0 z-10 border-b-2 border-slate-200 shadow-sm">
+                    <tr>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">보호소명</th>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">품목명</th>
+                      <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center bg-slate-50 sticky top-0 z-10">규격</th>
+                      <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 sticky top-0 z-10">현재 총 잔고</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {shelterSummary.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/30 transition-colors group">
+                        <td className="px-6 py-4.5 font-bold text-slate-800 text-sm">
+                          {item.shelterName}
+                        </td>
+                        <td className="px-6 py-4.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300">
+                              <Box size={14} />
+                            </div>
+                            <span className="text-sm font-black text-slate-700">{item.itemName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4.5 text-center">
+                          <span className="px-2 py-1 bg-slate-50 border border-slate-100 rounded-md text-[10px] font-bold text-slate-400">
+                            {item.spec}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4.5 text-right">
+                           <div className={cn(
+                             "text-lg font-black tracking-tight",
+                             item.quantity <= 0 ? "text-rose-500" : 
+                             item.quantity < 200 ? "text-amber-500" : "text-emerald-600"
+                           )}>
+                             {item.quantity.toLocaleString()}<span className="text-xs ml-0.5 opacity-60 font-bold uppercase">kg</span>
+                           </div>
+                           {item.quantity < 200 && (
+                             <p className="text-[9px] font-black italic text-amber-500 mt-0.5">재고 보충 필요</p>
+                           )}
+                        </td>
+                      </tr>
+                    ))}
+                    {shelterSummary.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="py-20 text-center">
+                          <AlertCircle size={32} className="mx-auto text-slate-200 mb-2" />
+                          <p className="text-sm font-bold text-slate-300 italic">집계된 데이터가 없습니다.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                 <div className="flex justify-between items-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[11px] font-bold text-slate-500 italic">수원 및 연동된 실시간 데이터입니다.</span>
-                    </div>
-                    <button className="px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-black text-sm rounded-xl border border-slate-200 transition-all flex items-center gap-2 shadow-sm active:scale-95">
-                       <FileText size={18} className="text-blue-500" /> 엑셀 파일로 내보내기 (.xlsx)
-                    </button>
-                 </div>
-               </div>
-            </motion.div>
-          </div>
+              <div className="flex justify-between items-center bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[11px] font-bold text-slate-500 italic">수원 및 연동된 실시간 데이터입니다.</span>
+                </div>
+                <button className="px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-black text-sm rounded-xl border border-slate-200 transition-all flex items-center gap-2 shadow-sm active:scale-95">
+                   <FileText size={18} className="text-blue-500" /> 엑셀 파일로 내보내기 (.xlsx)
+                </button>
+              </div>
+            </div>
+          </ModalWrapper>
         )}
       </AnimatePresence>
 
       {/* Stock In Modal */}
       <AnimatePresence>
         {isStockInModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsStockInModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-               <div className="p-6 bg-[#2D336B] text-white flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                      {editingEntry ? <Edit2 size={20} /> : <PlusCircle size={20} />}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black tracking-tight">{editingEntry ? '수불 내역 수정' : '후원 물품 적립(입고)'}</h3>
-                      <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest mt-0.5">Stock Entry Management</p>
-                    </div>
+          <ModalWrapper
+            isOpen={isStockInModalOpen}
+            onClose={() => setIsStockInModalOpen(false)}
+            title={editingEntry ? '수불 내역 수정' : '후원 물품 적립(입고)'}
+            icon={<PlusCircle size={20} />}
+            width="max-w-lg"
+          >
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit('입고'); }} className="p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">대상 보호소</label>
+                    <select 
+                      required
+                      value={formData.shelterId}
+                      onChange={e => setFormData({...formData, shelterId: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    >
+                      <option value="">보호소 선택</option>
+                      <option value="SHT-001">왕왕랜드</option>
+                      <option value="SHT-002">삼송보호소</option>
+                      <option value="SHT-003">드림테일즈</option>
+                    </select>
                   </div>
-                  <button onClick={() => setIsStockInModalOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                    <XCircle size={20} />
-                  </button>
-               </div>
-               
-               <form onSubmit={(e) => { e.preventDefault(); handleSubmit('입고'); }} className="p-8 space-y-6">
-                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">대상 보호소</label>
-                        <select 
-                          required
-                          value={formData.shelterId}
-                          onChange={e => setFormData({...formData, shelterId: e.target.value})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        >
-                          <option value="">보호소 선택</option>
-                          <option value="SHT-001">왕왕랜드</option>
-                          <option value="SHT-002">삼송보호소</option>
-                          <option value="SHT-003">드림테일즈</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">입고 일자</label>
-                        <input 
-                          type="date"
-                          value={formData.date}
-                          onChange={e => setFormData({...formData, date: e.target.value})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">입고 일자</label>
+                    <input 
+                      type="date"
+                      value={formData.date}
+                      onChange={e => setFormData({...formData, date: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    />
+                  </div>
+                </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">품목명</label>
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.itemName}
-                        onChange={e => setFormData({...formData, itemName: e.target.value})}
-                        placeholder="e.g. 넥스트 펫밸런스 어덜트"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                      />
-                    </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">품목명</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={formData.itemName}
+                    onChange={e => setFormData({...formData, itemName: e.target.value})}
+                    placeholder="e.g. 넥스트 펫밸런스 어덜트"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                  />
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">규격</label>
-                        <input 
-                          required
-                          type="text" 
-                          value={formData.specification}
-                          onChange={e => setFormData({...formData, specification: e.target.value})}
-                          placeholder="e.g. 10kg 포대"
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">입고 수량(kg)</label>
-                        <input 
-                          required
-                          type="number" 
-                          value={formData.quantity}
-                          onChange={e => setFormData({...formData, quantity: Number(e.target.value)})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">규격</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={formData.specification}
+                      onChange={e => setFormData({...formData, specification: e.target.value})}
+                      placeholder="e.g. 10kg 포대"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">입고 수량(kg)</label>
+                    <input 
+                      required
+                      type="number" 
+                      value={formData.quantity}
+                      onChange={e => setFormData({...formData, quantity: Number(e.target.value)})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    />
+                  </div>
+                </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">비고 / 후원 정보</label>
-                      <textarea 
-                        value={formData.remarks}
-                        onChange={e => setFormData({...formData, remarks: e.target.value})}
-                        placeholder="후원 기업명 또는 특별 사항 기재"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all h-20 resize-none"
-                      />
-                    </div>
-                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">비고 / 후원 정보</label>
+                  <textarea 
+                    value={formData.remarks}
+                    onChange={e => setFormData({...formData, remarks: e.target.value})}
+                    placeholder="후원 기업명 또는 특별 사항 기재"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all h-20 resize-none"
+                  />
+                </div>
+              </div>
 
-                 <button type="submit" className="w-full py-4 bg-[#2D336B] text-white font-black text-sm rounded-2xl shadow-xl shadow-indigo-900/10 hover:shadow-indigo-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                   <CheckCircle2 size={18} /> {editingEntry ? '변경 사항 저장' : '입고 완료 및 장부 반영'}
-                 </button>
-               </form>
-            </motion.div>
-          </div>
+              <button type="submit" className="w-full py-4 bg-[#2D336B] text-white font-black text-sm rounded-2xl shadow-xl shadow-indigo-900/10 hover:shadow-indigo-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <CheckCircle2 size={18} /> {editingEntry ? '변경 사항 저장' : '입고 완료 및 장부 반영'}
+              </button>
+            </form>
+          </ModalWrapper>
         )}
       </AnimatePresence>
 
       {/* Stock Out Modal */}
       <AnimatePresence>
         {isStockOutModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsStockOutModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-               <div className="p-6 bg-white border-b border-slate-100 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
-                      <Truck size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black tracking-tight text-slate-800">{editingEntry ? '출고 내역 수정' : '물품 출고 및 배송 등록'}</h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Stock Out & Delivery</p>
-                    </div>
+          <ModalWrapper
+            isOpen={isStockOutModalOpen}
+            onClose={() => setIsStockOutModalOpen(false)}
+            title={editingEntry ? '출고 내역 수정' : '물품 출고 및 배송 등록'}
+            icon={<Truck size={20} />}
+            width="max-w-lg"
+          >
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit('출고'); }} className="p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
+              {!editingEntry && (
+                <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3">
+                   <AlertCircle className="text-amber-500 flex-shrink-0" size={18} />
+                   <p className="text-[11px] text-amber-700 font-bold leading-relaxed">
+                     출고 등록 시 선택한 보호소의 잔고가 실시간 차감되며,<br />
+                     <span className="underline underline-offset-2">배송 현황 리스트</span>에 자동으로 주문 접수 상태로 추가됩니다.
+                   </p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 대상 보호소</label>
+                    <select 
+                      required
+                      value={formData.shelterId}
+                      onChange={e => setFormData({...formData, shelterId: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    >
+                      <option value="">보호소 선택</option>
+                      <option value="SHT-001">왕왕랜드</option>
+                      <option value="SHT-002">삼송보호소</option>
+                      <option value="SHT-003">드림테일즈</option>
+                    </select>
                   </div>
-                  <button onClick={() => setIsStockOutModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors">
-                    <XCircle size={20} />
-                  </button>
-               </div>
-               
-               <form onSubmit={(e) => { e.preventDefault(); handleSubmit('출고'); }} className="p-8 space-y-6">
-                 {!editingEntry && (
-                   <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3">
-                      <AlertCircle className="text-amber-500 flex-shrink-0" size={18} />
-                      <p className="text-[11px] text-amber-700 font-bold leading-relaxed">
-                        출고 등록 시 선택한 보호소의 잔고가 실시간 차감되며,<br />
-                        <span className="underline underline-offset-2">배송 현황 리스트</span>에 자동으로 주문 접수 상태로 추가됩니다.
-                      </p>
-                   </div>
-                 )}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 품목</label>
+                    <select 
+                      required
+                      value={formData.itemName}
+                      onChange={e => setFormData({...formData, itemName: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    >
+                      <option value="">품목 선택</option>
+                      <option value="넥스트 펫밸런스 어덜트">넥스트 펫밸런스 어덜트</option>
+                      <option value="퍼피 프리미엄 연어">퍼피 프리미엄 연어</option>
+                    </select>
+                  </div>
+                </div>
 
-                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 대상 보호소</label>
-                        <select 
-                          required
-                          value={formData.shelterId}
-                          onChange={e => setFormData({...formData, shelterId: e.target.value})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        >
-                          <option value="">보호소 선택</option>
-                          <option value="SHT-001">왕왕랜드</option>
-                          <option value="SHT-002">삼송보호소</option>
-                          <option value="SHT-003">드림테일즈</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 품목</label>
-                        <select 
-                          required
-                          value={formData.itemName}
-                          onChange={e => setFormData({...formData, itemName: e.target.value})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        >
-                          <option value="">품목 선택</option>
-                          <option value="넥스트 펫밸런스 어덜트">넥스트 펫밸런스 어덜트</option>
-                          <option value="퍼피 프리미엄 연어">퍼피 프리미엄 연어</option>
-                        </select>
-                      </div>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 수량(kg)</label>
+                    <input 
+                      required
+                      type="number" 
+                      value={formData.quantity}
+                      onChange={e => setFormData({...formData, quantity: Number(e.target.value)})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송/출고 일자</label>
+                    <input 
+                      type="date"
+                      value={formData.date}
+                      onChange={e => setFormData({...formData, date: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    />
+                  </div>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 수량(kg)</label>
-                        <input 
-                          required
-                          type="number" 
-                          value={formData.quantity}
-                          onChange={e => setFormData({...formData, quantity: Number(e.target.value)})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송/출고 일자</label>
-                        <input 
-                          type="date"
-                          value={formData.date}
-                          onChange={e => setFormData({...formData, date: e.target.value})}
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송비 (부가세 별도)</label>
+                  <input 
+                    type="number" 
+                    value={formData.shippingFee}
+                    onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
+                    placeholder="공급가액 입력"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                  />
+                  <p className="text-[9px] font-bold text-slate-400 mt-1 pl-1">* 입력 시 VAT 10%가 자동으로 가산되어 정산됩니다.</p>
+                </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송비 (부가세 별도)</label>
-                      <input 
-                        type="number" 
-                        value={formData.shippingFee}
-                        onChange={e => setFormData({...formData, shippingFee: Number(e.target.value)})}
-                        placeholder="공급가액 입력"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                      />
-                      <p className="text-[9px] font-bold text-slate-400 mt-1 pl-1">* 입력 시 VAT 10%가 자동으로 가산되어 정산됩니다.</p>
-                    </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송 특이사항</label>
+                  <textarea 
+                    value={formData.remarks}
+                    onChange={e => setFormData({...formData, remarks: e.target.value})}
+                    placeholder="배송 담당자에게 전달할 메모"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all h-20 resize-none"
+                  />
+                </div>
+              </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송 특이사항</label>
-                      <textarea 
-                        value={formData.remarks}
-                        onChange={e => setFormData({...formData, remarks: e.target.value})}
-                        placeholder="배송 담당자에게 전달할 메모"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all h-20 resize-none"
-                      />
-                    </div>
-                 </div>
-
-                 <button type="submit" className="w-full py-4 bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-900/10 hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                   <Truck size={18} /> {editingEntry ? '수정 완료' : '출고 등록 및 배송 시작'}
-                 </button>
-               </form>
-            </motion.div>
-          </div>
+              <button type="submit" className="w-full py-4 bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-900/10 hover:bg-emerald-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <Truck size={18} /> {editingEntry ? '수정 완료' : '출고 등록 및 배송 시작'}
+              </button>
+            </form>
+          </ModalWrapper>
         )}
       </AnimatePresence>
       
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {isDeleteConfirmOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-[1rem]">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDeleteConfirmOpen(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="relative w-full max-w-[24rem] bg-white rounded-3xl shadow-2xl p-[1.5rem] flex flex-col items-center text-center"
-            >
-              <div className="w-[3.5rem] h-[3.5rem] rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 mb-[1.25rem]">
-                <AlertCircle size={28} />
+          <ModalWrapper
+            isOpen={isDeleteConfirmOpen}
+            onClose={() => setIsDeleteConfirmOpen(false)}
+            title={deleteId ? '수불 내역 삭제' : '선택 내역 삭제'}
+            icon={<AlertCircle size={20} />}
+            width="max-w-sm"
+            headerColor="bg-rose-600"
+          >
+            <div className="p-8 flex flex-col items-center text-center bg-white">
+              <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 mb-6">
+                <AlertCircle size={32} />
               </div>
-              <h3 className="text-[1.125rem] font-black text-slate-800 tracking-tight mb-[0.5rem]">
-                {deleteId ? '수불 내역 삭제' : '선택 내역 삭제'}
-              </h3>
-              <p className="text-[0.8125rem] text-slate-500 font-bold leading-relaxed mb-[1.5rem]">
+              <p className="text-sm text-slate-500 font-bold leading-relaxed mb-8">
                 {deleteId 
                   ? '이 내역을 정말 삭제하시겠습니까?\n삭제 후에는 잔고가 자동으로 재계산됩니다.' 
                   : `선택한 ${selectedIds.size}개의 내역을 정말 삭제하시겠습니까?\n삭제 후에는 잔고가 자동으로 재계산됩니다.`}
               </p>
-              <div className="flex w-full gap-[0.75rem]">
+              <div className="flex w-full gap-3">
                 <button 
                   onClick={() => setIsDeleteConfirmOpen(false)}
-                  className="flex-1 py-[0.75rem] bg-slate-50 text-slate-500 font-black text-[0.75rem] rounded-xl hover:bg-slate-100 transition-all"
+                  className="flex-1 py-3.5 bg-slate-50 text-slate-500 font-black text-xs rounded-xl hover:bg-slate-100 transition-all font-sans"
                 >
                   취소
                 </button>
                 <button 
                   onClick={handleConfirmDelete}
-                  className="flex-1 py-[0.75rem] bg-rose-500 text-white font-black text-[0.75rem] rounded-xl shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all"
+                  className="flex-1 py-3.5 bg-rose-500 text-white font-black text-xs rounded-xl shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all font-sans"
                 >
                   삭제하기
                 </button>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </ModalWrapper>
         )}
       </AnimatePresence>
 

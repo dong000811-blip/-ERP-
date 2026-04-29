@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { ModalWrapper } from './ModalWrapper';
 import { Partner, PartnerType, Specialty } from '../partnerMasterData';
 import { useFirestore } from '../FirestoreContext';
 
@@ -465,37 +466,20 @@ export default function PartnerManagement() {
       {/* Registration/Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              onClick={() => setIsModalOpen(false)} 
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.9, opacity: 0, y: 20 }} 
-              className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
-            >
-              <div className="p-8 bg-[#2D336B] text-white shrink-0">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shadow-inner">
-                      <Plus className="text-white" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black tracking-tight">{editingPartner ? '파트너 정보 수정' : '신규 파트너 등록'}</h3>
-                      <p className="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] mt-0.5">Master Data Registration</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {/* Partner Type Selector */}
+          <ModalWrapper
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setFormData(initialFormState);
+              setEditingPartner(null);
+            }}
+            title={editingPartner ? '파트너 정보 수정' : '신규 파트너 등록'}
+            icon={<Plus size={20} />}
+            width="max-w-2xl"
+          >
+            <div className="flex flex-col">
+              {/* Partner Type Selector */}
+              <div className="bg-[#2D336B] p-8 -mt-1">
                 <div className="flex p-1.5 bg-white/10 rounded-2xl backdrop-blur-md">
                    <button 
                      type="button"
@@ -520,7 +504,7 @@ export default function PartnerManagement() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto custom-scrollbar p-8">
+              <div className="flex-1 p-8">
                 <form id="partner-form" onSubmit={handleSave} className="space-y-8">
                   {/* Basic Info Section */}
                   <div className="space-y-6">
@@ -755,8 +739,8 @@ export default function PartnerManagement() {
                   {editingPartner ? '저장하기' : '파트너 등록 완료'}
                 </button>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </ModalWrapper>
         )}
       </AnimatePresence>
     </div>

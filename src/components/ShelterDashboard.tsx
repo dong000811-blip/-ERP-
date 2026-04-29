@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ModalWrapper } from './ModalWrapper';
 import { 
   LayoutDashboard, 
   Map as MapIcon, 
@@ -288,120 +289,93 @@ const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask
 const TaskDrawer = ({ task, onClose }: { task: SalesTask | null, onClose: () => void }) => {
   const { shelters } = useShelters();
   const shelter = task ? shelters.find(s => s.id === task.shelterId) : null;
-  const overdue = task ? new Date(task.deadline) < new Date() : false;
 
   return (
     <AnimatePresence>
       {task && (
-        <>
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 w-[30rem] h-full bg-white shadow-2xl z-[101] flex flex-col border-l border-slate-200"
-          >
-            <div className="p-6 bg-[#2D336B] text-white flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <Briefcase size={20} />
+        <ModalWrapper
+          isOpen={!!task}
+          onClose={onClose}
+          title={task.taskName}
+          icon={<Briefcase size={18} />}
+          headerColor="bg-[#2D336B]"
+          width="max-w-xl"
+        >
+          <div className="flex-1 overflow-y-auto p-7 space-y-8 bg-white custom-scrollbar">
+            <section className="space-y-4">
+              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <FileText size={14} /> 업무 개요
+              </h5>
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col gap-4">
+                <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase">전략적 카테고리</span>
+                  <span className="text-xs font-black text-accent">{task.category}</span>
                 </div>
-                <div>
-                  <h3 className="text-lg font-black tracking-tight">{task.taskName}</h3>
-                  <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">테스크 상세 정보</p>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                  "{task.description || '세부 정보가 입력되지 않았습니다.'}"
+                </p>
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <h5 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                <Users size={14} /> 담당 파트너 정보
+              </h5>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">대상 보호소</p>
+                  <p className="text-sm font-black text-slate-800">{shelter?.name || 'Unknown'}</p>
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold">
+                    <MapPin size={12} /> {shelter?.region}
+                  </div>
+                </div>
+                <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">대표자</p>
+                  <p className="text-sm font-black text-slate-800">{shelter?.representative || 'Unknown'}</p>
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
+                    <Phone size={12} /> {shelter?.representativePhone || 'N/A'}
+                  </div>
                 </div>
               </div>
-              <button 
-                onClick={onClose}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all active:scale-90"
-              >
-                <Plus className="rotate-45" size={24} />
+              {task.partnerIds.length > 0 && (
+                <div className="mt-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
+                  <p className="text-[9px] font-black text-indigo-400 uppercase mb-3">연결된 물류/이벤트 파트너</p>
+                  <div className="flex flex-wrap gap-2">
+                    {task.partnerIds.map(pid => {
+                      const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
+                      return (
+                        <div key={pid} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                          <span className="text-[11px] font-bold text-slate-700">{partner?.name}</span>
+                          <ExternalLink size={10} className="text-slate-300" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-4">
+              <h5 className="text-[10px] font-black text-[#FF9F1C] uppercase tracking-widest flex items-center gap-2">
+                <MsgIcon size={14} /> 업무 메모 및 협의 사항
+              </h5>
+              <textarea 
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none min-h-[120px]"
+                placeholder="클라이언트와의 미팅 내용이나 내부 전달 사항을 자유롭게 기록하세요..."
+              />
+            </section>
+
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-4 sticky bottom-0 shrink-0">
+              <button className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-black text-xs rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]">
+                수정하기
+              </button>
+              <button className="flex-2 py-4 bg-[#FF9F1C] text-white font-black text-xs rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-[0.98]">
+                완료 처리하기
               </button>
             </div>
-
-            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
-              <section className="space-y-4">
-                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <FileText size={14} /> 업무 개요
-                </h5>
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col gap-4">
-                   <div className="flex justify-between items-center bg-white px-4 py-2 rounded-xl border border-slate-100">
-                      <span className="text-[10px] font-black text-slate-400 uppercase">전략적 카테고리</span>
-                      <span className="text-xs font-black text-accent">{task.category}</span>
-                   </div>
-                   <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
-                     "{task.description || '세부 정보가 입력되지 않았습니다.'}"
-                   </p>
-                </div>
-              </section>
-
-              <section className="space-y-4">
-                <h5 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
-                  <Users size={14} /> 담당 파트너 정보
-                </h5>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">대상 보호소</p>
-                    <p className="text-sm font-black text-slate-800">{shelter?.name || 'Unknown'}</p>
-                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold">
-                       <MapPin size={12} /> {shelter?.region}
-                    </div>
-                  </div>
-                  <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">대표자</p>
-                    <p className="text-sm font-black text-slate-800">{shelter?.representative || 'Unknown'}</p>
-                    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase">
-                       <Phone size={12} /> {shelter?.representativePhone || 'N/A'}
-                    </div>
-                  </div>
-                </div>
-                {task.partnerIds.length > 0 && (
-                  <div className="mt-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
-                     <p className="text-[9px] font-black text-indigo-400 uppercase mb-3">연결된 물류/이벤트 파트너</p>
-                     <div className="flex flex-wrap gap-2">
-                       {task.partnerIds.map(pid => {
-                         const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
-                         return (
-                           <div key={pid} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm">
-                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                              <span className="text-[11px] font-bold text-slate-700">{partner?.name}</span>
-                              <ExternalLink size={10} className="text-slate-300" />
-                           </div>
-                         );
-                       })}
-                     </div>
-                  </div>
-                )}
-              </section>
-
-              <section className="space-y-4">
-                <h5 className="text-[10px] font-black text-[#FF9F1C] uppercase tracking-widest flex items-center gap-2">
-                  <MsgIcon size={14} /> 업무 메모 및 협의 사항
-                </h5>
-                <textarea 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all resize-none min-h-[120px]"
-                  placeholder="클라이언트와의 미팅 내용이나 내부 전달 사항을 자유롭게 기록하세요..."
-                />
-              </section>
-            </div>
-
-            <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
-               <button className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-black text-xs rounded-xl hover:bg-slate-100 transition-all active:scale-[0.98]">
-                 수정하기
-               </button>
-               <button className="flex-2 py-4 bg-[#FF9F1C] text-white font-black text-xs rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-[0.98]">
-                 완료 처리하기
-               </button>
-            </div>
-          </motion.div>
-        </>
+          </div>
+        </ModalWrapper>
       )}
     </AnimatePresence>
   );
@@ -929,30 +903,18 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
         </div>
       </div>
 
-      {/* Slide-over Detail Panel */}
+      {/* Slide-over Detail Modal */}
       <AnimatePresence>
         {selectedShelter && (
-          <motion.div 
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute top-0 right-0 w-[26.25rem] h-full bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col"
+          <ModalWrapper
+            isOpen={!!selectedShelter}
+            onClose={() => setSelectedShelter(null)}
+            title={selectedShelter.name}
+            icon={<ShieldCheck size={18} />}
+            headerColor="bg-[#2D336B]"
+            width="max-w-xl"
           >
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#2D336B] text-white">
-              <div>
-                <h3 className="text-lg font-bold tracking-tight">{selectedShelter.name}</h3>
-                <p className="text-[10px] text-white/60 font-medium tracking-widest uppercase mt-0.5">보호소 상세 프로필</p>
-              </div>
-              <button 
-                onClick={() => setSelectedShelter(null)}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-              >
-                <Plus className="rotate-45" size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-7 space-y-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-7 space-y-8 bg-white custom-scrollbar">
               {/* Region & Address */}
               <section className="space-y-4">
                 <h4 className="text-[10px] font-black text-[#2D336B] uppercase tracking-[0.2em] flex items-center gap-2">
@@ -1024,209 +986,180 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
               </section>
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100">
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex shrink-0 sticky bottom-0">
                <button className="w-full py-3 bg-[#FF9F1C] hover:bg-[#E68A00] text-white font-bold text-xs rounded-xl shadow-lg shadow-orange-200 transition-all active:scale-95 flex items-center justify-center gap-2">
                  <FileText size={14} /> 히스토리 기록 추가
                </button>
             </div>
-          </motion.div>
+          </ModalWrapper>
         )}
       </AnimatePresence>
 
       {/* Add Shelter Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-[2rem]">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setIsModalOpen(false);
-                setEditingShelterId(null);
-              }}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-[32rem] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              {/* Modal Header - Fixed */}
-              <div className="px-[1.5rem] py-[1.25rem] bg-[#2D336B] text-white flex justify-between items-center shrink-0 shadow-sm border-b border-white/10">
-                <div className="flex items-center gap-[0.75rem]">
-                  <div className="p-[0.5rem] bg-white/10 rounded-lg"><LayoutDashboard size={18} /></div>
-                  <h3 className="text-[1rem] font-black tracking-tight leading-none">
-                    {editingShelterId ? '보호소 정보 수정' : '신규 보호소 등록'}
-                  </h3>
+          <ModalWrapper
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingShelterId(null);
+            }}
+            title={editingShelterId ? '보호소 정보 수정' : '신규 보호소 등록'}
+            icon={<LayoutDashboard size={18} />}
+          >
+            <form onSubmit={handleAddOrUpdateShelter} className="flex-1 flex flex-col">
+              <div className="p-[1.5rem] space-y-[1.25rem] bg-white">
+                <div className="grid grid-cols-2 gap-[1.5rem]">
+                  <div className="space-y-[0.5rem] flex flex-col">
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소명 *</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      placeholder="기관명을 입력하세요"
+                      className="px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-slate-900/5 outline-none transition-all shadow-sm"
+                    />
+                  </div>
+                  <div className="space-y-[0.5rem] flex flex-col">
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">지역 (시/도) *</label>
+                    <select 
+                      value={formData.region}
+                      onChange={e => setFormData({...formData, region: e.target.value})}
+                      className="px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-slate-900/5 outline-none transition-all shadow-sm"
+                    >
+                      {REGIONAL_SHELTER_DATA.map(r => <option key={r.id}>{r.region}</option>)}
+                    </select>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-12 gap-[1rem]">
+                  <div className="col-span-3 space-y-[0.5rem] flex flex-col">
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">우편번호 *</label>
+                    <input 
+                      required
+                      readOnly
+                      type="text" 
+                      value={formData.zipCode}
+                      placeholder="00000"
+                      className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-default shadow-inner"
+                    />
+                  </div>
+                  <div className="col-span-9 space-y-[0.5rem] flex flex-col">
+                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">주소 (ADDRESS) *</label>
+                    <input 
+                      required
+                      type="text" 
+                      readOnly
+                      value={formData.address}
+                      onClick={handleSearchAddress}
+                      onFocus={handleSearchAddress}
+                      placeholder="클릭하여 주소를 검색하세요"
+                      className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all placeholder:font-normal shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-[0.375rem] flex flex-col">
+                  <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소 규모 (보호 마리수) *</label>
+                  <input 
+                    required
+                    type="number" 
+                    value={formData.size}
+                    onChange={e => setFormData({...formData, size: parseInt(e.target.value) || 0})}
+                    placeholder="0"
+                    className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="bg-slate-50 p-[1.5rem] rounded-2xl border border-slate-100 space-y-[1.25rem]">
+                  <h4 className="text-[0.75rem] font-bold text-[#2D336B] flex items-center gap-[0.5rem] uppercase tracking-widest leading-none">
+                    <ShieldCheck size={14} className="text-accent" /> 시설 상세 설정
+                  </h4>
+                  
+                  <div className="space-y-[1rem]">
+                    <h5 className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem] flex items-center gap-[0.375rem]">
+                      <Users size={12} /> 대표자 정보
+                    </h5>
+                    <div className="grid grid-cols-2 gap-[1rem]">
+                      <input 
+                        required
+                        placeholder="이름" 
+                        value={formData.representative}
+                        onChange={e => setFormData({...formData, representative: e.target.value})}
+                        className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                      />
+                      <select 
+                        value={formData.representativeGender}
+                        onChange={e => setFormData({...formData, representativeGender: e.target.value as any})}
+                        className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer"
+                      >
+                        <option value="Male">남성</option>
+                        <option value="Female">여성</option>
+                      </select>
+                      <input 
+                        required
+                        placeholder="연락처 (e.g. 010-0000-0000)" 
+                        value={formData.representativePhone}
+                        type="tel"
+                        onChange={e => setFormData({...formData, representativePhone: e.target.value})}
+                        className="col-span-2 px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-[1rem]">
+                    <h5 className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem] flex items-center gap-[0.375rem]">
+                      <Users size={12} /> 매니저/실무자 정보 (선택)
+                    </h5>
+                    <div className="grid grid-cols-2 gap-[1rem]">
+                      <input 
+                        placeholder="이름" 
+                        value={formData.managerName}
+                        onChange={e => setFormData({...formData, managerName: e.target.value})}
+                        className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                      />
+                      <select 
+                        value={formData.managerGender}
+                        onChange={e => setFormData({...formData, managerGender: e.target.value as any})}
+                        className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer"
+                      >
+                        <option value="Male">남성</option>
+                        <option value="Female">여성</option>
+                      </select>
+                      <input 
+                        placeholder="연락처" 
+                        value={formData.managerPhone}
+                        type="tel"
+                        onChange={e => setFormData({...formData, managerPhone: e.target.value})}
+                        className="col-span-2 px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer - Sticky */}
+              <div className="p-[1.5rem] bg-slate-50 border-t border-slate-100 flex gap-[0.75rem] sticky bottom-0 shrink-0">
                 <button 
+                  type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     setEditingShelterId(null);
-                  }} 
-                  className="w-[1.75rem] h-[1.75rem] rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
+                  }}
+                  className="flex-1 py-[0.875rem] bg-white border border-slate-200 text-slate-500 font-black text-[0.75rem] rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
                 >
-                  <Plus className="rotate-45" size={20} />
+                  취소
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-[2] py-[0.875rem] bg-[#2D336B] text-white font-black text-[0.75rem] rounded-2xl shadow-xl shadow-indigo-900/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
+                >
+                  {editingShelterId ? '변경 사항 저장' : '보호소 등록 완료'}
                 </button>
               </div>
-
-              {/* Modal Body - Scrollable */}
-              <form onSubmit={handleAddOrUpdateShelter} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                <div className="p-[1.5rem] space-y-[1.25rem] bg-white">
-                  <div className="grid grid-cols-2 gap-[1.5rem]">
-                    <div className="space-y-[0.5rem] flex flex-col">
-                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소명 *</label>
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.name}
-                        onChange={e => setFormData({...formData, name: e.target.value})}
-                        placeholder="기관명을 입력하세요"
-                        className="px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-slate-900/5 outline-none transition-all shadow-sm"
-                      />
-                    </div>
-                    <div className="space-y-[0.5rem] flex flex-col">
-                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">지역 (시/도) *</label>
-                      <select 
-                        value={formData.region}
-                        onChange={e => setFormData({...formData, region: e.target.value})}
-                        className="px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-slate-900/5 outline-none transition-all shadow-sm"
-                      >
-                        {REGIONAL_SHELTER_DATA.map(r => <option key={r.id}>{r.region}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-12 gap-[1rem]">
-                    <div className="col-span-3 space-y-[0.5rem] flex flex-col">
-                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">우편번호 *</label>
-                      <input 
-                        required
-                        readOnly
-                        type="text" 
-                        value={formData.zipCode}
-                        placeholder="00000"
-                        className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-default shadow-inner"
-                      />
-                    </div>
-                    <div className="col-span-9 space-y-[0.5rem] flex flex-col">
-                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">주소 (ADDRESS) *</label>
-                      <input 
-                        required
-                        type="text" 
-                        readOnly
-                        value={formData.address}
-                        onClick={handleSearchAddress}
-                        onFocus={handleSearchAddress}
-                        placeholder="클릭하여 주소를 검색하세요"
-                        className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all placeholder:font-normal shadow-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-[0.375rem] flex flex-col">
-                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소 규모 (보호 마리수) *</label>
-                    <input 
-                      required
-                      type="number" 
-                      value={formData.size}
-                      onChange={e => setFormData({...formData, size: parseInt(e.target.value) || 0})}
-                      placeholder="0"
-                      className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
-                    />
-                  </div>
-
-                  <div className="bg-slate-50 p-[1.5rem] rounded-2xl border border-slate-100 space-y-[1.25rem]">
-                    <h4 className="text-[0.75rem] font-bold text-[#2D336B] flex items-center gap-[0.5rem] uppercase tracking-widest leading-none">
-                      <ShieldCheck size={14} className="text-accent" /> 시설 상세 설정
-                    </h4>
-                    
-                    <div className="space-y-[1rem]">
-                      <h5 className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem] flex items-center gap-[0.375rem]">
-                        <Users size={12} /> 대표자 정보
-                      </h5>
-                      <div className="grid grid-cols-2 gap-[1rem]">
-                        <input 
-                          required
-                          placeholder="이름" 
-                          value={formData.representative}
-                          onChange={e => setFormData({...formData, representative: e.target.value})}
-                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
-                        />
-                        <select 
-                          value={formData.representativeGender}
-                          onChange={e => setFormData({...formData, representativeGender: e.target.value as any})}
-                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer"
-                        >
-                          <option value="Male">남성</option>
-                          <option value="Female">여성</option>
-                        </select>
-                        <input 
-                          required
-                          placeholder="연락처 (e.g. 010-0000-0000)" 
-                          value={formData.representativePhone}
-                          type="tel"
-                          onChange={e => setFormData({...formData, representativePhone: e.target.value})}
-                          className="col-span-2 px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-[1rem]">
-                      <h5 className="text-[0.625rem] font-black text-slate-400 uppercase tracking-widest pl-[0.25rem] flex items-center gap-[0.375rem]">
-                        <Users size={12} /> 매니저/실무자 정보 (선택)
-                      </h5>
-                      <div className="grid grid-cols-2 gap-[1rem]">
-                        <input 
-                          placeholder="이름" 
-                          value={formData.managerName}
-                          onChange={e => setFormData({...formData, managerName: e.target.value})}
-                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
-                        />
-                        <select 
-                          value={formData.managerGender}
-                          onChange={e => setFormData({...formData, managerGender: e.target.value as any})}
-                          className="px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none cursor-pointer"
-                        >
-                          <option value="Male">남성</option>
-                          <option value="Female">여성</option>
-                        </select>
-                        <input 
-                          placeholder="연락처" 
-                          value={formData.managerPhone}
-                          type="tel"
-                          onChange={e => setFormData({...formData, managerPhone: e.target.value})}
-                          className="col-span-2 px-[1rem] py-[0.625rem] bg-white border border-slate-200 rounded-xl text-[0.8125rem] focus:ring-2 focus:ring-accent/20 outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer - Sticky */}
-                <div className="p-[1.5rem] bg-slate-50 border-t border-slate-100 flex gap-[0.75rem] sticky bottom-0 shrink-0">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      setEditingShelterId(null);
-                    }}
-                    className="flex-1 py-[0.875rem] bg-white border border-slate-200 text-slate-500 font-black text-[0.75rem] rounded-2xl hover:bg-slate-100 transition-all active:scale-[0.98]"
-                  >
-                    취소
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-[2] py-[0.875rem] bg-[#2D336B] text-white font-black text-[0.75rem] rounded-2xl shadow-xl shadow-indigo-900/20 hover:scale-[1.01] active:scale-[0.98] transition-all"
-                  >
-                    {editingShelterId ? '변경 사항 저장' : '보호소 등록 완료'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
+            </form>
+          </ModalWrapper>
         )}
       </AnimatePresence>
     </div>

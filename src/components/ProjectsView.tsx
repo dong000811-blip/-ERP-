@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { ModalWrapper } from './ModalWrapper';
 import { Project, ProjectPerformance } from '../projectData';
 import { useShelters } from '../context/ShelterContext';
 import { useFirestore } from '../FirestoreContext';
@@ -663,420 +664,374 @@ const ProjectsView: React.FC = () => {
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          <ModalWrapper
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            title={editingProjectId ? '프로젝트 정보 수정' : '신규 프로젝트 등록'}
+            icon={<Briefcase size={20} />}
+            width="max-w-2xl"
+            headerColor="bg-[#2D336B]"
+          >
+            <form onSubmit={handleSaveProject} className="flex-1 p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">프로젝트명 *</label>
+            <input 
+              required
+              type="text" 
+              value={formData.projectName}
+              onChange={e => setFormData({...formData, projectName: e.target.value})}
+              placeholder="e.g. 2026 하반기 대규모 사료 지원 프로젝트"
+              className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
             />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="p-6 bg-[#2D336B] text-white flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Briefcase size={20} />
-                  </div>
-                  <h3 className="text-lg font-black tracking-tight">
-                    {editingProjectId ? '프로젝트 정보 수정' : '신규 프로젝트 등록'}
-                  </h3>
-                </div>
-                <button 
-                  onClick={() => setIsModalOpen(false)} 
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveProject} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">프로젝트명 *</label>
-                  <input 
-                    required
-                    type="text" 
-                    value={formData.projectName}
-                    onChange={e => setFormData({...formData, projectName: e.target.value})}
-                    placeholder="e.g. 2026 하반기 대규모 사료 지원 프로젝트"
-                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">대상 보호소 *</label>
-                    <select 
-                      required
-                      value={formData.shelterId}
-                      onChange={e => setFormData({...formData, shelterId: e.target.value})}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all cursor-pointer"
-                    >
-                      <option value="" disabled>보호소를 선택하세요</option>
-                      {shelters.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">분류(Type) *</label>
-                    <select 
-                      required
-                      value={formData.type}
-                      onChange={e => setFormData({...formData, type: e.target.value as any})}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all cursor-pointer"
-                    >
-                      <option value="logistics">배송/물류</option>
-                      <option value="sales">영업/미팅</option>
-                      <option value="event">이벤트/캠페인</option>
-                    </select>
-                  </div>
-                </div>
-
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">시작 날짜 *</label>
-                    <input 
-                      required
-                      type="date" 
-                      value={formData.startDate}
-                      onChange={e => setFormData({...formData, startDate: e.target.value})}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">종료 날짜 *</label>
-                    <input 
-                      required
-                      type="date" 
-                      value={formData.endDate}
-                      onChange={e => setFormData({...formData, endDate: e.target.value})}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">프로젝트 상세 내용</label>
-                  <textarea 
-                    rows={4}
-                    value={formData.description}
-                    onChange={e => setFormData({...formData, description: e.target.value})}
-                    placeholder="프로젝트의 목적, 지원 내용 등을 입력하세요."
-                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all resize-none"
-                  />
-                </div>
-
-                {/* Partners & Status Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-[1fr,180px] gap-6 items-start">
-                  {/* Partner Multi-Select */}
-                  <div className="space-y-1.5 relative">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 h-[14px] flex items-center">협력 파트너 <span className="opacity-50 text-[9px] ml-1">(선택)</span></label>
-                    
-                    <div className="relative">
-                      <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input 
-                        type="text" 
-                        value={partnerSearch}
-                        onFocus={() => setIsPartnerDropdownOpen(true)}
-                        onChange={e => {
-                          setPartnerSearch(e.target.value);
-                          setIsPartnerDropdownOpen(true);
-                        }}
-                        placeholder="파트너명 또는 ID 검색..."
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
-                      />
-                      
-                      {/* Selected Partner Tags */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {formData.partnerIds.map(pid => {
-                          const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
-                          if (!partner) return null;
-                          const displaySpecialty = partner.specialties[0]?.replace(' 지원', '') || (partner.type === 'Corporate' ? '기업' : '개인');
-                          return (
-                            <span key={pid} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-[10px] font-black text-[#2D336B]">
-                              [{displaySpecialty}] {partner.name}
-                              <button 
-                                type="button"
-                                onClick={() => setFormData(prev => ({
-                                  ...prev,
-                                  partnerIds: prev.partnerIds.filter(id => id !== pid)
-                                }))}
-                                className="hover:text-red-500 transition-colors"
-                              >
-                                <X size={12} />
-                              </button>
-                            </span>
-                          );
-                        })}
-                      </div>
-
-                      {/* Dropdown */}
-                      <AnimatePresence>
-                        {isPartnerDropdownOpen && partnerSearch && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar"
-                          >
-                            {filteredPartners.length > 0 ? (
-                              filteredPartners
-                                .filter(p => !formData.partnerIds.includes(p.id))
-                                .map(partner => (
-                                  <button
-                                    key={partner.id}
-                                    type="button"
-                                    onClick={() => {
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        partnerIds: [...prev.partnerIds, partner.id]
-                                      }));
-                                      setPartnerSearch('');
-                                      setIsPartnerDropdownOpen(false);
-                                    }}
-                                    className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between group"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="text-xs font-black text-slate-700">
-                                        <span className="text-indigo-500 mr-1">
-                                          [{partner.specialties[0]?.replace(' 지원', '') || (partner.type === 'Corporate' ? '기업' : '개인')}]
-                                        </span>
-                                        {partner.name}
-                                      </span>
-                                      <span className="text-[10px] font-bold text-slate-400">{partner.id} · {partner.specialties.join(', ')}</span>
-                                    </div>
-                                    <Plus size={14} className="text-slate-200 group-hover:text-indigo-400" />
-                                  </button>
-                                ))
-                            ) : (
-                              <div className="px-4 py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
-                                검색 결과가 없습니다
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    {isPartnerDropdownOpen && partnerSearch && (
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setIsPartnerDropdownOpen(false)}
-                      />
-                    )}
-                  </div>
-
-                  {/* Status Options Button Group */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 h-[14px] flex items-center">프로젝트 상태</label>
-                    <div className="flex bg-slate-50 p-1 rounded-xl h-[46px] items-center gap-1">
-                      {(['Upcoming', 'Ongoing', 'Completed'] as Project['status'][]).map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setFormData({...formData, status: s})}
-                          className={cn(
-                            "flex-1 h-full text-[9px] font-black rounded-lg transition-all",
-                            formData.status === s 
-                              ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-100" 
-                              : "text-slate-400 hover:text-slate-600"
-                          )}
-                        >
-                          {s === 'Upcoming' ? '진행 예정' : s === 'Ongoing' ? '진행 중' : '완료'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full py-4 bg-[#FF9F1C] text-white font-black rounded-xl shadow-xl shadow-orange-200 hover:opacity-90 active:scale-[0.98] transition-all mt-4"
-                >
-                  {editingProjectId ? '프로젝트 정보 수정 완료' : '새로운 프로젝트 등록하기'}
-                </button>
-              </form>
-            </motion.div>
           </div>
-        )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">대상 보호소 *</label>
+              <select 
+                required
+                value={formData.shelterId}
+                onChange={e => setFormData({...formData, shelterId: e.target.value})}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all cursor-pointer"
+              >
+                <option value="" disabled>보호소를 선택하세요</option>
+                {shelters.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">분류(Type) *</label>
+              <select 
+                required
+                value={formData.type}
+                onChange={e => setFormData({...formData, type: e.target.value as any})}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all cursor-pointer"
+              >
+                <option value="logistics">배송/물류</option>
+                <option value="sales">영업/미팅</option>
+                <option value="event">이벤트/캠페인</option>
+              </select>
+            </div>
+          </div>
+
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">시작 날짜 *</label>
+              <input 
+                required
+                type="date" 
+                value={formData.startDate}
+                onChange={e => setFormData({...formData, startDate: e.target.value})}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">종료 날짜 *</label>
+              <input 
+                required
+                type="date" 
+                value={formData.endDate}
+                onChange={e => setFormData({...formData, endDate: e.target.value})}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">프로젝트 상세 내용</label>
+            <textarea 
+              rows={4}
+              value={formData.description}
+              onChange={e => setFormData({...formData, description: e.target.value})}
+              placeholder="프로젝트의 목적, 지원 내용 등을 입력하세요."
+              className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all resize-none"
+            />
+          </div>
+
+          {/* Partners & Status Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,180px] gap-6 items-start">
+            {/* Partner Multi-Select */}
+            <div className="space-y-1.5 relative">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 h-[14px] flex items-center">협력 파트너 <span className="opacity-50 text-[9px] ml-1">(선택)</span></label>
+              
+              <div className="relative">
+                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  value={partnerSearch}
+                  onFocus={() => setIsPartnerDropdownOpen(true)}
+                  onChange={e => {
+                    setPartnerSearch(e.target.value);
+                    setIsPartnerDropdownOpen(true);
+                  }}
+                  placeholder="파트너명 또는 ID 검색..."
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-[#2D336B]/10 outline-none transition-all"
+                />
+                
+                {/* Selected Partner Tags */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {formData.partnerIds.map(pid => {
+                    const partner = PARTNER_MASTER_DATA.find(p => p.id === pid);
+                    if (!partner) return null;
+                    const displaySpecialty = partner.specialties[0]?.replace(' 지원', '') || (partner.type === 'Corporate' ? '기업' : '개인');
+                    return (
+                      <span key={pid} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-[10px] font-black text-[#2D336B]">
+                        [{displaySpecialty}] {partner.name}
+                        <button 
+                          type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            partnerIds: prev.partnerIds.filter(id => id !== pid)
+                          }))}
+                          className="hover:text-red-500 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+
+                {/* Dropdown */}
+                <AnimatePresence>
+                  {isPartnerDropdownOpen && partnerSearch && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar"
+                    >
+                      {filteredPartners.length > 0 ? (
+                        filteredPartners
+                          .filter(p => !formData.partnerIds.includes(p.id))
+                          .map(partner => (
+                            <button
+                              key={partner.id}
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  partnerIds: [...prev.partnerIds, partner.id]
+                                }));
+                                setPartnerSearch('');
+                                setIsPartnerDropdownOpen(false);
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between group"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-xs font-black text-slate-700">
+                                  <span className="text-indigo-500 mr-1">
+                                    [{partner.specialties[0]?.replace(' 지원', '') || (partner.type === 'Corporate' ? '기업' : '개인')}]
+                                  </span>
+                                  {partner.name}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400">{partner.id} · {partner.specialties.join(', ')}</span>
+                              </div>
+                              <Plus size={14} className="text-slate-200 group-hover:text-indigo-400" />
+                            </button>
+                          ))
+                      ) : (
+                        <div className="px-4 py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
+                          검색 결과가 없습니다
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              {isPartnerDropdownOpen && partnerSearch && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsPartnerDropdownOpen(false)}
+                />
+              )}
+            </div>
+
+            {/* Status Options Button Group */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 h-[14px] flex items-center">프로젝트 상태</label>
+              <div className="flex bg-slate-50 p-1 rounded-xl h-[46px] items-center gap-1">
+                {(['Upcoming', 'Ongoing', 'Completed'] as Project['status'][]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setFormData({...formData, status: s})}
+                    className={cn(
+                      "flex-1 h-full text-[9px] font-black rounded-lg transition-all",
+                      formData.status === s 
+                        ? "bg-white text-[#2D336B] shadow-sm ring-1 ring-slate-100" 
+                        : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    {s === 'Upcoming' ? '진행 예정' : s === 'Ongoing' ? '진행 중' : '완료'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full py-4 bg-[#FF9F1C] text-white font-black rounded-xl shadow-xl shadow-orange-200 hover:opacity-90 active:scale-[0.98] transition-all mt-4"
+          >
+            {editingProjectId ? '프로젝트 정보 수정 완료' : '새로운 프로젝트 등록하기'}
+          </button>
+        </form>
+      </ModalWrapper>
+      )}
       </AnimatePresence>
 
       {/* Performance Tracking Modal */}
       <AnimatePresence>
         {isPerfModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsPerfModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="p-6 bg-emerald-600 text-white flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <TrendingUp size={20} />
-                  </div>
-                  <h3 className="text-lg font-black tracking-tight">프로젝트 성과(영업) 기입</h3>
-                </div>
-                <button 
-                  onClick={() => setIsPerfModalOpen(false)} 
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  <X size={24} />
-                </button>
+          <ModalWrapper
+            isOpen={isPerfModalOpen}
+            onClose={() => setIsPerfModalOpen(false)}
+            title="프로젝트 성과(영업) 기입"
+            icon={<TrendingUp size={20} />}
+            width="max-w-xl"
+            headerColor="bg-emerald-600"
+          >
+        <form onSubmit={handleSavePerformance} className="flex-1 p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 품목 *</label>
+              <select 
+                required
+                value={perfFormData.productId}
+                onChange={e => {
+                  const product = MASTER_PRODUCT_DATA.find(p => p.id === e.target.value);
+                  if (product) {
+                    setPerfFormData({
+                      ...perfFormData,
+                      productId: product.id,
+                      productName: product.name,
+                      purchasePrice: product.purchasePrice,
+                      sellingPrice: product.sellingPrice
+                    });
+                  }
+                }}
+                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all cursor-pointer"
+              >
+                <option value="" disabled>상품을 선택하세요</option>
+                {MASTER_PRODUCT_DATA.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.standard})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 수량 *</label>
+                <input 
+                  required
+                  type="number"
+                  value={perfFormData.quantity || ''}
+                  onChange={e => setPerfFormData({...perfFormData, quantity: Number(e.target.value)})}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">수수료 (Commission)</label>
+                <input 
+                  type="number"
+                  value={perfFormData.commission || ''}
+                  onChange={e => setPerfFormData({...perfFormData, commission: Number(e.target.value)})}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
+              </div>
+            </div>
 
-              <form onSubmit={handleSavePerformance} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 품목 *</label>
-                    <select 
-                      required
-                      value={perfFormData.productId}
-                      onChange={e => {
-                        const product = MASTER_PRODUCT_DATA.find(p => p.id === e.target.value);
-                        if (product) {
-                          setPerfFormData({
-                            ...perfFormData,
-                            productId: product.id,
-                            productName: product.name,
-                            purchasePrice: product.purchasePrice,
-                            sellingPrice: product.sellingPrice
-                          });
-                        }
-                      }}
-                      className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all cursor-pointer"
-                    >
-                      <option value="" disabled>상품을 선택하세요</option>
-                      {MASTER_PRODUCT_DATA.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.standard})</option>
-                      ))}
-                    </select>
-                  </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">배송비 (Shipping Fee)</label>
+                <input 
+                  type="number"
+                  value={perfFormData.shippingFee || ''}
+                  onChange={e => setPerfFormData({...perfFormData, shippingFee: Number(e.target.value)})}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">부가세 (VAT - 10% 자동계산)</label>
+                <input 
+                  type="number"
+                  value={perfFormData.vat || ''}
+                  onChange={e => setPerfFormData({...perfFormData, vat: Number(e.target.value)})}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 수량 *</label>
-                      <input 
-                        required
-                        type="number"
-                        value={perfFormData.quantity || ''}
-                        onChange={e => setPerfFormData({...perfFormData, quantity: Number(e.target.value)})}
-                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">수수료 (Commission)</label>
-                      <input 
-                        type="number"
-                        value={perfFormData.commission || ''}
-                        onChange={e => setPerfFormData({...perfFormData, commission: Number(e.target.value)})}
-                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 단가 (수정 가능)</label>
+                <input 
+                  type="number"
+                  value={perfFormData.sellingPrice || ''}
+                  onChange={e => setPerfFormData({...perfFormData, sellingPrice: Number(e.target.value)})}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">매입 단가 (수정 가능)</label>
+                <input 
+                  type="number"
+                  value={perfFormData.purchasePrice || ''}
+                  onChange={e => setPerfFormData({...perfFormData, purchasePrice: Number(e.target.value)})}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">배송비 (Shipping Fee)</label>
-                      <input 
-                        type="number"
-                        value={perfFormData.shippingFee || ''}
-                        onChange={e => setPerfFormData({...perfFormData, shippingFee: Number(e.target.value)})}
-                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">부가세 (VAT - 10% 자동계산)</label>
-                      <input 
-                        type="number"
-                        value={perfFormData.vat || ''}
-                        onChange={e => setPerfFormData({...perfFormData, vat: Number(e.target.value)})}
-                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 단가 (수정 가능)</label>
-                      <input 
-                        type="number"
-                        value={perfFormData.sellingPrice || ''}
-                        onChange={e => setPerfFormData({...perfFormData, sellingPrice: Number(e.target.value)})}
-                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">매입 단가 (수정 가능)</label>
-                      <input 
-                        type="number"
-                        value={perfFormData.purchasePrice || ''}
-                        onChange={e => setPerfFormData({...perfFormData, purchasePrice: Number(e.target.value)})}
-                        className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Real-time Calculation Summary */}
-                  <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-200 pb-2 mb-4">실시간 정산 미리보기</h4>
-                    <div className="grid grid-cols-2 gap-y-4 gap-x-8">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 font-bold">매출 합계</span>
-                        <span className="font-black text-slate-800">₩{(perfFormData.quantity * perfFormData.sellingPrice).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 font-bold">총 매입가</span>
-                        <span className="font-black text-slate-800">₩{(perfFormData.quantity * perfFormData.purchasePrice).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 font-bold">공제 비용 합계</span>
-                        <span className="font-black text-red-400">₩{(perfFormData.commission + perfFormData.shippingFee + perfFormData.vat).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 font-bold">최종 이익률</span>
-                        <span className="font-black text-[#2D336B]">
-                          {(() => {
-                            const rev = perfFormData.quantity * perfFormData.sellingPrice;
-                            const cost = (perfFormData.quantity * perfFormData.purchasePrice) + perfFormData.commission + perfFormData.shippingFee + perfFormData.vat;
-                            const profit = rev - cost;
-                            return rev > 0 ? ((profit / rev) * 100).toFixed(1) : '0.0';
-                          })()}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-slate-200 col-span-2">
-                        <span className="text-sm font-black text-[#2D336B]">영업 순이익 (Net Profit)</span>
-                        <span className="text-lg font-black text-emerald-600">
-                          ₩{(perfFormData.quantity * perfFormData.sellingPrice - ((perfFormData.quantity * perfFormData.purchasePrice) + perfFormData.commission + perfFormData.shippingFee + perfFormData.vat)).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+            {/* Real-time Calculation Summary */}
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-200 pb-2 mb-4">실시간 정산 미리보기</h4>
+              <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-bold">매출 합계</span>
+                  <span className="font-black text-slate-800">₩{(perfFormData.quantity * perfFormData.sellingPrice).toLocaleString()}</span>
                 </div>
-
-                <button 
-                  type="submit"
-                  className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl shadow-xl shadow-emerald-100 hover:bg-emerald-700 active:scale-[0.98] transition-all mt-4 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={18} /> 성과 데이터 저장 완료
-                </button>
-              </form>
-            </motion.div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-bold">총 매입가</span>
+                  <span className="font-black text-slate-800">₩{(perfFormData.quantity * perfFormData.purchasePrice).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-bold">공제 비용 합계</span>
+                  <span className="font-black text-red-400">₩{(perfFormData.commission + perfFormData.shippingFee + perfFormData.vat).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-bold">최종 이익률</span>
+                  <span className="font-black text-[#2D336B]">
+                    {(() => {
+                      const rev = perfFormData.quantity * perfFormData.sellingPrice;
+                      const cost = (perfFormData.quantity * perfFormData.purchasePrice) + perfFormData.commission + perfFormData.shippingFee + perfFormData.vat;
+                      const profit = rev - cost;
+                      return rev > 0 ? ((profit / rev) * 100).toFixed(1) : '0.0';
+                    })()}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-slate-200 col-span-2">
+                  <span className="text-sm font-black text-[#2D336B]">영업 순이익 (Net Profit)</span>
+                  <span className="text-lg font-black text-emerald-600">
+                    ₩{(perfFormData.quantity * perfFormData.sellingPrice - ((perfFormData.quantity * perfFormData.purchasePrice) + perfFormData.commission + perfFormData.shippingFee + perfFormData.vat)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          <button 
+            type="submit"
+            className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl shadow-xl shadow-emerald-100 hover:bg-emerald-700 active:scale-[0.98] transition-all mt-4 flex items-center justify-center gap-2"
+          >
+            <CheckCircle2 size={18} /> 성과 데이터 저장 완료
+          </button>
+        </form>
+      </ModalWrapper>
+      )}
       </AnimatePresence>
 
       {/* Toast Notification */}
