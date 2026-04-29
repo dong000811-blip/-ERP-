@@ -46,7 +46,7 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
         mapTypeControl: true,
       };
 
-      const map = new win.naver.maps.Map('map', mapOptions);
+      const map = new win.naver.maps.Map(mapRef.current, mapOptions);
       naverMapRef.current = map;
 
       const infoWindow = new win.naver.maps.InfoWindow({
@@ -67,6 +67,33 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
       console.error('[KoreaMap] Failed to initialize map:', err);
       setMapError('지도 초기화에 실패했습니다.');
     }
+  }, [isMapReady]);
+
+  // Responsive Resizing Logic
+  useEffect(() => {
+    if (!naverMapRef.current || !mapRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (naverMapRef.current) {
+        console.log('[KoreaMap] Map Container Resized. Refreshing Naver Map...');
+        naverMapRef.current.updateSize();
+      }
+    });
+
+    resizeObserver.observe(mapRef.current);
+    
+    // Also handle window resize as a fallback
+    const handleWindowResize = () => {
+      if (naverMapRef.current) {
+        naverMapRef.current.updateSize();
+      }
+    };
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+    };
   }, [isMapReady]);
 
   // Marker Management (Precise Geocoding)
@@ -168,7 +195,7 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
 
   if (mapError) {
     return (
-      <div className="relative w-full h-[500px] flex flex-col items-center justify-center bg-rose-50 rounded-xl border border-rose-200 p-8 text-center">
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-rose-50 rounded-xl border border-rose-200 p-8 text-center min-h-[500px]">
         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
           <AlertCircle className="text-rose-500" size={24} />
         </div>
@@ -192,8 +219,8 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
   const selectedShelter = shelters.find(s => s.id === selectedShelterId);
 
   return (
-    <div className="relative w-full h-[500px] rounded-xl shadow-md border border-slate-200 overflow-hidden bg-slate-50">
-      <div id="map" ref={mapRef} style={{ width: '100%', height: '500px' }} />
+    <div className="relative w-full h-full min-h-[500px] rounded-xl shadow-md border border-slate-200 overflow-hidden bg-slate-50 flex flex-col">
+      <div id="map" ref={mapRef} className="flex-1 w-full" style={{ minHeight: '500px' }} />
 
       {!isMapReady && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/90 z-50">

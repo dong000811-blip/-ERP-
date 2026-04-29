@@ -1394,7 +1394,10 @@ export default function ShelterDashboard() {
         </header>
 
         {/* View Content Area */}
-        <div className="flex-1 overflow-hidden p-[2.5rem] flex flex-col gap-[1.5rem] relative z-10">
+        <div className={cn(
+          "flex-1 overflow-hidden p-[2.5rem] flex flex-col gap-[1.5rem] relative z-10",
+          activeView === 'dashboard' && "pb-0"
+        )}>
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeView}
