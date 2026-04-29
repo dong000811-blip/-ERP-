@@ -15,20 +15,22 @@ if (typeof window !== 'undefined') {
 console.log("Check API KEY:", import.meta.env.VITE_FIREBASE_API_KEY);
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: "AIzaSyDf4iJA5g4iAO0U8Y4a1DK0TwQxLiR3hFk",
+  authDomain: "shelter-erp.firebaseapp.com",
+  projectId: "shelter-erp",
+  storageBucket: "shelter-erp.firebasestorage.app",
+  messagingSenderId: "530592332450",
+  appId: "1:530592332450:web:2f04da7818533d1c13f5fb",
+  measurementId: "G-S02XJ1XYTX",
 };
+
+console.log("Firebase Config Mode: HARDCODED");
 
 // Safeguard: Check if critical config members are present
 const requiredFields: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', 'appId'];
 const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 
-const NAVER_MAPS_KEY_ID = import.meta.env.VITE_NAVER_MAPS_CLIENT_ID;
+const NAVER_MAPS_KEY_ID = "aiiii8qhjj";
 
 if (missingFields.length > 0) {
   const msg = `CRITICAL ERROR: Firebase Environment Variables not loaded.

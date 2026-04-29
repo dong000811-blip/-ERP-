@@ -4,7 +4,7 @@ import { AlertCircle, Map as MapIcon, ArrowRight, Home } from 'lucide-react';
 import { useShelters } from '../context/ShelterContext';
 import { cn } from '../lib/utils';
 
-const NAVER_KEY_ID = import.meta.env.VITE_NAVER_MAPS_CLIENT_ID;
+const NAVER_KEY_ID = "aiiii8qhjj";
 
 export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string) => void }) {
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
