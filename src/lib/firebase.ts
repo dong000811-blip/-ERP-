@@ -5,15 +5,10 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 
 // DEBUG: Log the API key presence and value (as requested for troubleshooting)
 if (typeof window !== 'undefined') {
-  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-  alert("API KEY LOADED: " + (apiKey ? "YES" : "NO"));
-  
-  if (!apiKey) {
-    console.log("Full Environment Check (VITE_):", 
-      Object.keys(import.meta.env)
-        .filter(k => k.startsWith('VITE_'))
-        .reduce((acc, k) => ({...acc, [k]: 'PRESENT'}), {})
-    );
+  // DANGEROUS DEBUG as requested - logs the value to help identify if it's correct
+  console.log("DANGEROUS DEBUG - API KEY:", import.meta.env.VITE_FIREBASE_API_KEY ? "EXISTS" : "MISSING");
+  if (import.meta.env.VITE_FIREBASE_API_KEY) {
+     console.log("DANGEROUS DEBUG - Value Check:", import.meta.env.VITE_FIREBASE_API_KEY.substring(0, 5) + "...");
   }
 }
 
@@ -29,11 +24,6 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Key Load Test as requested - only logs presence of keys
-console.log("Firebase Key Load Test (API KEY):", !!import.meta.env.VITE_FIREBASE_API_KEY);
-console.log("Firebase Key Load Test (Project ID):", !!import.meta.env.VITE_FIREBASE_PROJECT_ID);
-console.log("Naver Maps Key Load Test:", !!import.meta.env.VITE_NAVER_MAPS_CLIENT_ID);
-
 // Safeguard: Check if critical config members are present
 const requiredFields: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', 'appId'];
 const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
@@ -41,19 +31,13 @@ const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 const NAVER_MAPS_KEY_ID = import.meta.env.VITE_NAVER_MAPS_CLIENT_ID;
 
 if (missingFields.length > 0) {
-  const msg = `CRITICAL ERROR: Environment Variables not loaded correctly. 
-Missing fields: ${missingFields.join(", ")}. 
-Please check Vercel [Environment Variables] settings.`;
-  console.error(msg, firebaseConfig);
-  
-  // Re-throw to prevent initialization with invalid config
-  if (typeof window !== 'undefined') {
-    // We don't use alert() as per guidelines, but the console.error will be visible.
-    // Throwing an error will cause the app to crash early with a clear message.
-  }
+  const msg = `CRITICAL ERROR: Firebase Environment Variables not loaded.
+Missing: ${missingFields.join(", ")}.
+Check Vercel Environment Variables and REDEPLOY.`;
+  console.error(msg);
 }
 
-console.log("Naver Maps Key ID integrated:", NAVER_MAPS_KEY_ID);
+console.log("Naver Maps Key ID integrated:", !!NAVER_MAPS_KEY_ID);
 
 // Debug: Log the config being used
 console.log("Attempting Firebase initialization for project:", firebaseConfig.projectId);
