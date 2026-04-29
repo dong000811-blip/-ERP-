@@ -4,6 +4,19 @@ import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // DEBUG: Log the API key presence and value (as requested for troubleshooting)
+if (typeof window !== 'undefined') {
+  const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  alert("API KEY LOADED: " + (apiKey ? "YES" : "NO"));
+  
+  if (!apiKey) {
+    console.log("Full Environment Check (VITE_):", 
+      Object.keys(import.meta.env)
+        .filter(k => k.startsWith('VITE_'))
+        .reduce((acc, k) => ({...acc, [k]: 'PRESENT'}), {})
+    );
+  }
+}
+
 console.log("Check API KEY:", import.meta.env.VITE_FIREBASE_API_KEY);
 
 const firebaseConfig = {
