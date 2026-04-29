@@ -821,10 +821,12 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                     <CheckCircle2 size={12} />
                   </button>
                 </th>
-                <th className="px-6 py-4 w-[35%]">보호소명</th>
-                <th className="px-6 py-4 w-[15%]">지역</th>
-                <th className="px-6 py-4 w-[15%] text-center">규모 (마리)</th>
-                <th className="px-6 py-4 w-[25%]">대표자</th>
+                <th className="px-6 py-4 w-[20%]">보호소명</th>
+                <th className="px-6 py-4 w-[10%]">지역</th>
+                <th className="px-6 py-4 w-[10%]">우편번호</th>
+                <th className="px-6 py-4 w-[25%]">주소(ADDRESS)</th>
+                <th className="px-6 py-4 w-[10%] text-center">규모 (마리)</th>
+                <th className="px-6 py-4 w-[15%]">대표자</th>
                 <th className="px-6 py-4 text-right w-[10%]">기능</th>
               </tr>
             </thead>
@@ -859,6 +861,10 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                       <span className="flex items-center gap-1.5 text-slate-500 font-medium tracking-tight">
                         <MapPin size={12} className="text-slate-300" /> {shelter.region}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 font-medium font-mono">{shelter.zipCode || '-'}</td>
+                    <td className="px-6 py-4 text-slate-500 font-medium truncate max-w-[200px]" title={shelter.address}>
+                      {shelter.address || '-'}
                     </td>
                     <td className="px-6 py-4 text-center font-mono font-bold text-slate-600">{shelter.size}</td>
                     <td className="px-6 py-4 font-medium text-slate-700">{shelter.representative}</td>
