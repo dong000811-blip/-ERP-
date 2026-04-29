@@ -22,6 +22,7 @@ import {
   Plus,
   ArrowRight,
   Filter,
+  ShoppingBag,
   MoreVertical,
   CalendarDays,
   FileText,
@@ -54,6 +55,7 @@ import InventoryLogisticsView from './InventoryLogisticsView';
 import PartnerManagement from './PartnerManagement';
 import SalesTaskManager from './SalesTaskManager';
 import ActivityLogManagementView from './ActivityLogManagementView';
+import SalesManagementView from './SalesManagementView';
 import { 
   LIVE_EVENTS, 
   LEAD_SHELTERS, 
@@ -1183,7 +1185,7 @@ export default function ShelterDashboard() {
       console.error("Logout failed:", error);
     }
   };
-  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales' | 'orders'>('dashboard');
   const [crmFilter, setCrmFilter] = useState('');
 
   const navigateToCrm = (region: string) => {
@@ -1214,6 +1216,7 @@ export default function ShelterDashboard() {
       case 'partners': return <PartnerManagement />;
       case 'products': return <ProductRegistry />;
       case 'sales': return <SalesTaskManager />;
+      case 'orders': return <SalesManagementView />;
       case 'settings': return <div className="p-10 text-center flex flex-col items-center justify-center h-full"><Settings size={48} className="text-slate-100 mb-4 animate-spin-slow" /><h3 className="text-slate-400 font-bold uppercase tracking-widest">환경 설정 콘솔</h3><p className="text-xs text-slate-300 mt-2 italic">모듈 유지 관리 중...</p></div>;
       default: return null;
     }
@@ -1263,6 +1266,14 @@ export default function ShelterDashboard() {
             active={activeView === 'inventory'} 
             label="수불/물류 관리" 
             onClick={() => setActiveView('inventory')}
+          />
+          
+          <div className="pt-[1.5rem] pb-[0.5rem] px-[0.75rem] text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">판매 관리</div>
+          <SidebarItem 
+            icon={ShoppingBag} 
+            active={activeView === 'orders'} 
+            label="주문/배송 관리" 
+            onClick={() => setActiveView('orders')}
           />
           
           <div className="pt-[1.5rem] pb-[0.5rem] px-[0.75rem] text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">기초 정보 관리</div>
@@ -1336,6 +1347,7 @@ export default function ShelterDashboard() {
                  activeView === 'dashboard' ? '대시보드 개요' :
                  activeView === 'products' ? '상품 기초 데이터 등록' :
                  activeView === 'sales' ? '영업 및 협력 테스크 관리' :
+                 activeView === 'orders' ? '실시간 주문 및 배송 현황' :
                  activeView.replace(/([A-Z])/g, ' $1').trim()}
              </h1>
           </div>
