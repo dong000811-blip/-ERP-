@@ -329,7 +329,7 @@ export default function InventoryLogisticsView() {
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full p-1 overflow-hidden">
+    <div className="flex flex-col gap-4 lg:gap-6 h-full p-1 overflow-hidden">
       {/* Top Header & Filter */}
       <div className="flex justify-between items-end">
         <div className="space-y-4">
@@ -382,9 +382,9 @@ export default function InventoryLogisticsView() {
       </div>
 
       {/* Summary Widgets */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 shrink-0">
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 shrink-0">
         {/* Real-time Balance Widget */}
-        <Card className="lg:col-span-4 flex flex-col h-[12.5rem]">
+        <Card className="lg:col-span-4 flex flex-col h-64 lg:h-72">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
@@ -439,7 +439,7 @@ export default function InventoryLogisticsView() {
         </Card>
 
         {/* Annual Logistics Chart Widget */}
-        <Card className="lg:col-span-8 h-[12.5rem] flex flex-col">
+        <Card className="lg:col-span-8 h-64 lg:h-72 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">

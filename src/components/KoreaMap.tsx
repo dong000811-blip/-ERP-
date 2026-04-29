@@ -232,7 +232,7 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
 
   if (mapError) {
     return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center bg-rose-50 rounded-xl border border-rose-200 p-8 text-center min-h-[500px]">
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-rose-50 rounded-xl border border-rose-200 p-8 text-center flex-1">
         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
           <AlertCircle className="text-rose-500" size={24} />
         </div>
@@ -263,13 +263,12 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
   }, {} as Record<string, number>);
 
   return (
-    <div className="relative w-full flex-1 min-h-[500px] mb-6 rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden bg-white flex flex-col transition-all duration-500">
+    <div className="relative w-full h-full flex-1 rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden bg-white flex flex-col transition-all duration-500">
       <div 
         id="map" 
         ref={mapRef} 
-        className="flex-1 w-full" 
+        className="flex-1 w-full h-full" 
         style={{ 
-          minHeight: '500px',
           borderRadius: '16px' 
         }} 
       />

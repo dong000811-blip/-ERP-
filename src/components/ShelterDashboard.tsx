@@ -94,7 +94,7 @@ const Card = ({ children, className }: { children: React.ReactNode, className?: 
   <motion.div 
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className={cn("bg-white rounded-xl p-[1rem] shadow-sm border border-slate-200", className)}
+    className={cn("bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-slate-200", className)}
   >
     {children}
   </motion.div>
@@ -401,9 +401,9 @@ const DashboardView = ({
   const pendingDeliveries = deliveries.filter(d => d.status === 'Pending').length;
   
   return (
-    <div className="space-y-[1rem] flex flex-col h-full overflow-hidden">
-      <section className="grid grid-cols-4 gap-[0.75rem] shrink-0">
-        <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-[0.875rem]">
+    <div className="space-y-4 lg:space-y-6 flex flex-col h-full overflow-hidden">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 shrink-0">
+        <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-4 lg:p-5">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">활성 파트너</p>
             <div className="text-[1.25rem] font-black text-slate-800">{shelters.length} 보호소</div>
@@ -413,7 +413,7 @@ const DashboardView = ({
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#FF9F1C] p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#FF9F1C] p-4 lg:p-5">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">진행 중 프로젝트</p>
             <div className="text-[1.25rem] font-black text-slate-800">{ongoingCount} 건</div>
@@ -423,7 +423,7 @@ const DashboardView = ({
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col justify-between p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between p-4 lg:p-5">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">배송 대기</p>
             <div className="text-[1.25rem] font-black text-slate-800">{pendingDeliveries} 건</div>
@@ -433,7 +433,7 @@ const DashboardView = ({
           </div>
         </Card>
 
-        <Card className="h-full flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-[0.875rem]">
+        <Card className="h-full flex flex-col justify-between bg-[#2D336B] text-white border-none shadow-lg shadow-indigo-900/10 p-4 lg:p-5">
           <div>
             <p className="text-slate-300 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">네트워크 안정성</p>
             <div className="text-[1.25rem] font-black">92.8%</div>
@@ -469,8 +469,8 @@ const DashboardView = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-[1rem] flex-1 min-h-0 bg-slate-100">
-          <div className="col-span-8 flex flex-col min-h-0 relative">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0">
+          <div className="xl:col-span-8 flex flex-col min-h-0 relative">
             <AnimatePresence mode="wait">
               {viewMode === 'map' ? (
                 <motion.div 
@@ -502,7 +502,7 @@ const DashboardView = ({
             </AnimatePresence>
           </div>
 
-          <div className="col-span-4 flex flex-col gap-[1rem] min-h-0">
+          <div className="xl:col-span-4 flex flex-col gap-4 lg:gap-6 min-h-0">
             <Card className="flex-1 flex flex-col min-h-0 bg-white/80 backdrop-blur-sm border-white/40 shadow-xl shadow-slate-200/50">
               <div className="flex items-center justify-between mb-[0.875rem] shrink-0">
                 <div>
@@ -1320,7 +1320,7 @@ export default function ShelterDashboard() {
         <div className="absolute inset-0 bg-[radial-gradient(#80BCBD15_1px,transparent_1px)] [background-size:1.25rem_1.25rem] pointer-events-none opacity-50"></div>
         
         {/* Header - Integrated & Clean */}
-        <header className="h-[4.5rem] bg-white border-b border-slate-200 px-[2.5rem] flex items-center justify-between flex-shrink-0 z-40 shadow-sm shadow-slate-200/20 sticky top-0">
+        <header className="h-[4.5rem] bg-white border-b border-slate-200 px-6 lg:px-10 flex items-center justify-between flex-shrink-0 z-40 shadow-sm shadow-slate-200/20 sticky top-0">
           <div className="flex items-center gap-[1rem]">
              <div className="w-[0.375rem] h-[1.5rem] bg-accent rounded-full shadow-[0_0_0.5rem_rgba(128,188,189,0.5)]"></div>
              <h1 className="text-[1.25rem] font-black text-slate-800 tracking-tight capitalize antialiased">
@@ -1358,7 +1358,7 @@ export default function ShelterDashboard() {
         </header>
 
         {/* View Content Area */}
-        <div className="flex-1 overflow-hidden p-[2.5rem] flex flex-col gap-[1.5rem] relative z-10">
+        <div className="flex-1 overflow-hidden p-4 lg:p-6 xl:p-8 flex flex-col gap-4 lg:gap-6 relative z-10">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeView}
@@ -1366,7 +1366,7 @@ export default function ShelterDashboard() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.99, y: -10 }}
                     transition={{ duration: 0.3, ease: 'circOut' }}
-                    className="h-full flex flex-col overflow-hidden"
+                    className="h-full w-full flex flex-col overflow-hidden"
                 >
                     {renderView()}
                 </motion.div>
