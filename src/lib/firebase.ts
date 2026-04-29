@@ -3,17 +3,7 @@ import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// DEBUG: Log the API key presence and value (as requested for troubleshooting)
-if (typeof window !== 'undefined') {
-  // DANGEROUS DEBUG as requested - logs the value to help identify if it's correct
-  console.log("DANGEROUS DEBUG - API KEY:", import.meta.env.VITE_FIREBASE_API_KEY ? "EXISTS" : "MISSING");
-  if (import.meta.env.VITE_FIREBASE_API_KEY) {
-     console.log("DANGEROUS DEBUG - Value Check:", import.meta.env.VITE_FIREBASE_API_KEY.substring(0, 5) + "...");
-  }
-}
-
-console.log("Check API KEY:", import.meta.env.VITE_FIREBASE_API_KEY);
-
+// HARDCODED CONFIGURATION for Vercel troubleshooting
 const firebaseConfig = {
   apiKey: "AIzaSyDf4iJA5g4iAO0U8Y4a1DK0TwQxLiR3hFk",
   authDomain: "shelter-erp.firebaseapp.com",
@@ -26,18 +16,7 @@ const firebaseConfig = {
 
 console.log("Firebase Config Mode: HARDCODED");
 
-// Safeguard: Check if critical config members are present
-const requiredFields: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', 'appId'];
-const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
-
 const NAVER_MAPS_KEY_ID = "aiiii8qhjj";
-
-if (missingFields.length > 0) {
-  const msg = `CRITICAL ERROR: Firebase Environment Variables not loaded.
-Missing: ${missingFields.join(", ")}.
-Check Vercel Environment Variables and REDEPLOY.`;
-  console.error(msg);
-}
 
 console.log("Naver Maps Key ID integrated:", !!NAVER_MAPS_KEY_ID);
 
