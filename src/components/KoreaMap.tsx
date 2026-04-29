@@ -24,6 +24,12 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
       return;
     }
 
+    if (!NAVER_KEY_ID) {
+      console.error('[KoreaMap] VITE_NAVER_MAPS_CLIENT_ID is missing in environment variables.');
+      setMapError('네이버 클라이언트 ID가 설정되지 않았습니다. (VITE_NAVER_MAPS_CLIENT_ID)');
+      return;
+    }
+
     console.log('[KoreaMap] Starting Dynamic SDK Load for Vercel...');
     const script = document.createElement('script');
     script.id = scriptId;
@@ -100,7 +106,10 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
     const resizeObserver = new ResizeObserver(() => {
       if (naverMapRef.current) {
         console.log('[KoreaMap] Map Container Resized. Refreshing Naver Map...');
-        naverMapRef.current.updateSize();
+        // Debounce or add small delay to prevent "Script error." during rapid resize
+        setTimeout(() => {
+          if (naverMapRef.current) naverMapRef.current.refresh();
+        }, 100);
       }
     });
 
@@ -109,7 +118,9 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
     // Also handle window resize as a fallback
     const handleWindowResize = () => {
       if (naverMapRef.current) {
-        naverMapRef.current.updateSize();
+        setTimeout(() => {
+          if (naverMapRef.current) naverMapRef.current.refresh();
+        }, 150);
       }
     };
     window.addEventListener('resize', handleWindowResize);
