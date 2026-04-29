@@ -2,13 +2,23 @@ import { initializeApp, getApp, getApps, FirebaseApp } from "firebase/app";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import firebaseConfig from "../../firebase-applet-config.json";
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "(default)"
+};
 
 // Safeguard: Check if critical config members are present
 const requiredFields: (keyof typeof firebaseConfig)[] = ['apiKey', 'projectId', 'appId'];
 const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
 
-const NAVER_MAPS_KEY_ID = 'aiiii8qhjj';
+const NAVER_MAPS_KEY_ID = import.meta.env.VITE_NAVER_MAPS_CLIENT_ID;
 
 if (missingFields.length > 0) {
   const msg = `CRITICAL: Firebase configuration is missing required fields: ${missingFields.join(", ")}`;

@@ -4,7 +4,7 @@ import { AlertCircle, Map as MapIcon, ArrowRight, Home } from 'lucide-react';
 import { useShelters } from '../context/ShelterContext';
 import { cn } from '../lib/utils';
 
-const NAVER_KEY_ID = 'aiiii8qhjj'; // Force provided Client ID (NCP Key ID)
+const NAVER_KEY_ID = import.meta.env.VITE_NAVER_MAPS_CLIENT_ID || 'aiiii8qhjj';
 
 export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string) => void }) {
   const [selectedShelterId, setSelectedShelterId] = useState<string | null>(null);
@@ -16,21 +16,45 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
   const markersRef = useRef<naver.maps.Marker[]>([]);
   const infoWindowRef = useRef<naver.maps.InfoWindow | null>(null);
 
-  // Simple Polling for naver object
+  // --- Dynamic Naver Script Loading ---
   useEffect(() => {
-    console.log('[KoreaMap] Naver SDK Load Status: Checking...');
-    console.log('[KoreaMap] App Origin:', window.location.origin);
-    
-    const checkNaver = () => {
-      const win = window as any;
-      if (win.naver && win.naver.maps && win.naver.maps.Map) {
-        console.log('[KoreaMap] Naver Maps SDK Load Status: SUCCESS');
-        setIsMapReady(true);
-      } else {
-        setTimeout(checkNaver, 500);
-      }
+    const scriptId = 'naver-maps-sdk';
+    if (document.getElementById(scriptId)) {
+      if ((window as any).naver?.maps) setIsMapReady(true);
+      return;
+    }
+
+    console.log('[KoreaMap] Starting Dynamic SDK Load for Vercel...');
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.type = 'text/javascript';
+    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_KEY_ID}&submodules=geocoder`;
+    script.async = true;
+
+    script.onload = () => {
+      console.log('[KoreaMap] Naver Maps SDK injected successfully.');
+      // Wait a tiny bit for the object to be fully usable on some environments
+      let attempts = 0;
+      const checkInterval = setInterval(() => {
+        attempts++;
+        if ((window as any).naver?.maps?.Map) {
+          console.log('[KoreaMap] Naver object confirmed ready.');
+          setIsMapReady(true);
+          clearInterval(checkInterval);
+        }
+        if (attempts > 20) {
+          setMapError('네이버 지도 객체 로드에 실패했습니다.');
+          clearInterval(checkInterval);
+        }
+      }, 100);
     };
-    checkNaver();
+
+    script.onerror = () => {
+      console.error('[KoreaMap] Script load failed.');
+      setMapError('네이버 지도 스크립트를 불러오지 못했습니다. 네트워크를 확인하세요.');
+    };
+
+    document.head.appendChild(script);
   }, []);
 
   // Map Initialization (The most basic form)
