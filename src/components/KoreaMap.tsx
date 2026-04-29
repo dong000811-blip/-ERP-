@@ -118,9 +118,10 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
             let position: naver.maps.LatLng | null = null;
 
             // Step 1: Try to geocode the address for 100% precision as requested
-            if (shelter.detailedAddress) {
+            const geocodeQuery = shelter.address || shelter.detailedAddress;
+            if (geocodeQuery) {
               const coords = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
-                win.naver.maps.Service.geocode({ query: shelter.detailedAddress }, (status: any, response: any) => {
+                win.naver.maps.Service.geocode({ query: geocodeQuery }, (status: any, response: any) => {
                   if (status === win.naver.maps.Service.Status.OK && response.v2.addresses.length > 0) {
                     const result = response.v2.addresses[0];
                     resolve({ lat: parseFloat(result.y), lng: parseFloat(result.x) });
@@ -161,8 +162,9 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
                         <p style="margin:0; font-weight:800; font-size:15px; color:#0f172a; letter-spacing:-0.02em;">${shelter.name}</p>
                       </div>
                       <div style="border-top:1px solid #f1f5f9; padding-top:8px;">
-                        <p style="margin:0; font-size:11px; color:#64748b; font-weight:500; line-height:1.4;">${shelter.detailedAddress || '주소 정보 없음'}</p>
-                        <p style="margin:4px 0 0; font-size:10px; color:#94a3b8;">${shelter.region} | ${shelter.representative} 대표</p>
+                        <p style="margin:0; font-size:11px; color:#1e293b; font-weight:700; line-height:1.4;">[${shelter.zipCode || ''}] ${shelter.address || ''}</p>
+                        <p style="margin:2px 0 0; font-size:11px; color:#64748b; font-weight:500; line-height:1.4;">${shelter.detailedAddress || ''}</p>
+                        <p style="margin:6px 0 0; font-size:10px; color:#94a3b8;">${shelter.region} | ${shelter.representative} 대표</p>
                       </div>
                       <div style="margin-top:10px; display:flex; gap:4px;">
                         <span style="padding:2px 6px; background:#f1f5f9; border-radius:4px; font-size:9px; font-weight:700; color:#475569;">${shelter.stage}</span>
@@ -218,30 +220,73 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
 
   const selectedShelter = shelters.find(s => s.id === selectedShelterId);
 
+  // Calculate statistics for the summary panel
+  const totalShelters: number = shelters.length;
+  const regionStats: Record<string, number> = shelters.reduce((acc: Record<string, number>, s) => {
+    acc[s.region] = (acc[s.region] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
-    <div className="relative w-full h-full min-h-[500px] rounded-xl shadow-md border border-slate-200 overflow-hidden bg-slate-50 flex flex-col">
-      <div id="map" ref={mapRef} className="flex-1 w-full" style={{ minHeight: '500px' }} />
+    <div className="relative w-full flex-1 min-h-[500px] mb-6 rounded-2xl shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden bg-white flex flex-col transition-all duration-500">
+      <div 
+        id="map" 
+        ref={mapRef} 
+        className="flex-1 w-full" 
+        style={{ 
+          minHeight: '500px',
+          borderRadius: '16px' 
+        }} 
+      />
 
       {!isMapReady && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/90 z-50">
-          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-xs font-bold text-slate-600 tracking-tight">네이버 지도 인증 대기 중...</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-50 backdrop-blur-md">
+          <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-xs font-bold text-slate-800 tracking-tight">네이버 지도 로드 중...</p>
         </div>
       )}
 
-      {/* Basic Overlays */}
-      <div className="absolute top-4 left-4 z-10 pointer-events-none">
-        <div className="bg-white/90 backdrop-blur-sm border border-slate-200 p-3 rounded-lg shadow-sm">
-          <h3 className="text-xs font-bold text-slate-800 mb-0.5">보호소 지도 서비스</h3>
-          <p className="text-[9px] text-slate-400">Naver Maps Engine v3.0</p>
+      {/* Slim Network Status Overlay */}
+      <div className="absolute top-6 left-6 z-10 pointer-events-auto group">
+        <div className="bg-white/70 backdrop-blur-md border border-white/40 p-3 rounded-2xl shadow-xl shadow-slate-900/5 min-w-[120px] transition-all duration-300 hover:bg-white/90">
+          <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-900/5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">전체 네트워크</span>
+            <span className="text-sm font-black text-slate-900">{totalShelters.toString()}</span>
+          </div>
+
+          <div className="space-y-1.5">
+            {Object.entries(regionStats).map(([region, count]: [string, number]) => (
+              <div key={region} className="flex items-center justify-between gap-4">
+                <span className="text-[10px] font-bold text-slate-500">{region}</span>
+                <span className="text-[10px] font-black text-slate-900 bg-slate-900/5 px-1.5 py-0.5 rounded-md">{count.toString()}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {selectedShelter && (
-        <div className="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-xl border border-slate-100 min-w-[200px] z-10 animate-in fade-in slide-in-from-bottom-2">
-          <p className="text-[10px] font-bold text-accent mb-1 uppercase tracking-tighter">선택된 보호소</p>
-          <p className="text-sm font-bold text-slate-800 truncate mb-1">{selectedShelter.name}</p>
-          <p className="text-[10px] text-slate-500">{selectedShelter.region} | {selectedShelter.representative}</p>
+        <div className="absolute bottom-6 right-6 bg-white/95 p-5 rounded-2xl shadow-2xl border border-slate-100 min-w-[240px] z-10 animate-in fade-in zoom-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between mb-3">
+            <span className="px-2 py-1 bg-slate-900 text-[9px] font-black text-white rounded-md uppercase tracking-widest">Selected Shelter</span>
+            <span className="text-[10px] font-bold text-slate-400">ID: {selectedShelter.id.slice(-4).toUpperCase()}</span>
+          </div>
+          <p className="text-base font-black text-slate-900 mb-2 leading-tight">{selectedShelter.name}</p>
+          <div className="space-y-1.5 border-t border-slate-50 pt-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-start gap-2">
+                <span className="text-slate-400 text-xs">📍</span>
+                <p className="text-[11px] text-slate-800 font-bold leading-relaxed">[{selectedShelter.zipCode || ''}] {selectedShelter.address || ''}</p>
+              </div>
+              {selectedShelter.detailedAddress && (
+                <p className="text-[10px] text-slate-500 font-medium ml-5 leading-tight">{selectedShelter.detailedAddress}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-xs">👤</span>
+              <p className="text-[11px] text-slate-500 font-bold">{selectedShelter.representative} 대표</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

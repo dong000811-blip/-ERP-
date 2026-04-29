@@ -75,19 +75,22 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Self-healing: Update coordinates for existing shelters that missing precise location
   useEffect(() => {
-    const missingCoords = shelters.filter(s => !s.location && s.detailedAddress);
+    const missingCoords = shelters.filter(s => !s.location && (s.address || s.detailedAddress));
     if (missingCoords.length > 0 && !isLoading) {
       console.log(`[Self-Healing] Found ${missingCoords.length} shelters with missing coordinates. Updating...`);
       // Process a few at a time to avoid rate limits
       missingCoords.slice(0, 3).forEach(async (shelter) => {
         try {
-          const coords = await geocodeAddress(shelter.detailedAddress!, true);
-          if (coords) {
-            await updateShelter(shelter.id, { 
-              lat: coords.lat, 
-              lng: coords.lng,
-              location: coords 
-            });
+          const geocodeQuery = shelter.address || shelter.detailedAddress;
+          if (geocodeQuery) {
+            const coords = await geocodeAddress(geocodeQuery, true);
+            if (coords) {
+              await updateShelter(shelter.id, { 
+                lat: coords.lat, 
+                lng: coords.lng,
+                location: coords 
+              });
+            }
           }
         } catch (e) {
           console.error('[Self-Healing] Failed to update coords for:', shelter.id, e);
@@ -150,14 +153,16 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     try {
       let coords = manualCoords;
+      
+      const geocodeQuery = newShelterData.address || newShelterData.detailedAddress;
 
-      if (!coords && newShelterData.detailedAddress) {
-        console.log('Fetching coordinates for address:', newShelterData.detailedAddress);
-        coords = await geocodeAddress(newShelterData.detailedAddress);
+      if (!coords && geocodeQuery) {
+        console.log('Fetching coordinates for address:', geocodeQuery);
+        coords = await geocodeAddress(geocodeQuery);
       }
       
-      if (!coords && newShelterData.detailedAddress) {
-        console.warn('Geocoding failed for detailed address. Falling back to regional coordinates if necessary.');
+      if (!coords && geocodeQuery) {
+        console.warn('Geocoding failed for address. Falling back to regional coordinates if necessary.');
       }
 
       const regionCenter = REGIONAL_SHELTER_DATA.find(r => r.region === newShelterData.region) || REGIONAL_SHELTER_DATA[0];
@@ -189,9 +194,11 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.log(`[Shelter UPDATE START] Attempting to update shelter: ${id}`, updates);
       let newCoords = manualCoords;
       
-      if (!newCoords && updates.detailedAddress) {
-        console.log(`[Shelter UPDATE] Geocoding new address: ${updates.detailedAddress}`);
-        newCoords = await geocodeAddress(updates.detailedAddress);
+      const geocodeQuery = updates.address || updates.detailedAddress;
+      
+      if (!newCoords && geocodeQuery) {
+        console.log(`[Shelter UPDATE] Geocoding new address: ${geocodeQuery}`);
+        newCoords = await geocodeAddress(geocodeQuery);
       }
 
       const finalUpdates = { ...updates };

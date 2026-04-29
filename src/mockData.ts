@@ -20,6 +20,8 @@ export interface Shelter {
   managerGender?: 'Male' | 'Female';
   managerPhone?: string;
   region: string;
+  zipCode?: string;
+  address?: string;
   detailedAddress?: string;
   location?: {
     lat: number;
@@ -120,7 +122,9 @@ export const MOCK_SHELTERS: Shelter[] = [
     managerGender: 'Female',
     managerPhone: '010-8765-4321',
     region: '서울', 
-    detailedAddress: '서울특별시 서초구 서초대로 123',
+    zipCode: '06611',
+    address: '서울특별시 서초구 서초대로 123',
+    detailedAddress: '왕왕랜드 빌딩 1층',
     lat: 37.4918,
     lng: 127.0076,
     size: 150,
@@ -134,7 +138,9 @@ export const MOCK_SHELTERS: Shelter[] = [
     representative: '이영희', 
     representativeGender: 'Female',
     region: '경기', 
-    detailedAddress: '경기도 고양시 덕양구 삼송로 456',
+    zipCode: '10567',
+    address: '경기도 고양시 덕양구 삼송로 456',
+    detailedAddress: '삼송아파트 상가 201호',
     lat: 37.6530,
     lng: 126.8967,
     size: 280,
@@ -148,7 +154,9 @@ export const MOCK_SHELTERS: Shelter[] = [
     representative: '박지성', 
     representativeGender: 'Male',
     region: '부산', 
-    detailedAddress: '부산광역시 해운대구 해운대로 789',
+    zipCode: '48058',
+    address: '부산광역시 해운대구 해운대로 789',
+    detailedAddress: '해운대 타워 15층',
     lat: 35.1631,
     lng: 129.1636,
     size: 85,

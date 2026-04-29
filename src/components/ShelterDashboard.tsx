@@ -579,7 +579,8 @@ const DashboardView = ({
 interface AddShelterFormData {
   name: string;
   region: string;
-  detailedAddress: string;
+  zipCode: string;
+  address: string;
   size: number;
   representative: string;
   representativeGender: 'Male' | 'Female';
@@ -587,6 +588,7 @@ interface AddShelterFormData {
   managerName: string;
   managerGender: 'Male' | 'Female';
   managerPhone: string;
+  stage: string;
 }
 
 const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
@@ -598,6 +600,8 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShelterId, setEditingShelterId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  
+  const detailAddressRef = useRef<HTMLInputElement>(null);
 
   const [selectedShelterIds, setSelectedShelterIds] = useState<Set<string>>(new Set());
   
@@ -623,15 +627,30 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
 
         setFormData(prev => ({
           ...prev,
-          detailedAddress: fullAddress
+          zipCode: data.zonecode,
+          address: fullAddress
         }));
 
-        // Auto-detect region from Kakao address components (sido)
-        const matchedRegion = REGIONAL_SHELTER_DATA.find(r => 
-          data.sido.includes(r.region) || r.region.includes(data.sido)
-        );
-        if (matchedRegion) {
-          setFormData(prev => ({ ...prev, region: matchedRegion.region }));
+        // AUTOMATIC GEOCODING: Convert the selected address to coordinates in the background
+        const win = window as any;
+        if (win.naver && win.naver.maps && win.naver.maps.Service) {
+          win.naver.maps.Service.geocode({ query: fullAddress }, (status: any, response: any) => {
+            if (status === win.naver.maps.Service.Status.OK && response.v2.addresses.length > 0) {
+              const result = response.v2.addresses[0];
+              const coords = { lat: parseFloat(result.y), lng: parseFloat(result.x) };
+              console.log('[Geocoding] Precise coordinates captured:', coords);
+              setPickedLocation(coords);
+
+              // Auto-detect region from geocoded address if possible
+              const sido = result.addressElements.find((el: any) => el.types.includes('SIDO'))?.longName || '';
+              const matchedRegion = REGIONAL_SHELTER_DATA.find(r => 
+                sido.includes(r.region) || r.region.includes(sido)
+              );
+              if (matchedRegion) {
+                setFormData(prev => ({ ...prev, region: matchedRegion.region }));
+              }
+            }
+          });
         }
       }
     }).open();
@@ -648,14 +667,16 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
   const [formData, setFormData] = useState<AddShelterFormData>({
     name: '',
     region: '서울',
-    detailedAddress: '',
+    zipCode: '',
+    address: '',
     size: 0,
     representative: '',
     representativeGender: 'Male',
     representativePhone: '',
     managerName: '',
     managerGender: 'Male',
-    managerPhone: ''
+    managerPhone: '',
+    stage: '운영준비'
   });
 
   const filteredShelters = shelters.filter(s => {
@@ -670,14 +691,16 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
     setFormData({
       name: shelter.name,
       region: shelter.region,
-      detailedAddress: shelter.detailedAddress || '',
+      zipCode: shelter.zipCode || '',
+      address: shelter.address || shelter.detailedAddress || '',
       size: shelter.size,
       representative: shelter.representative,
       representativeGender: shelter.representativeGender || 'Male',
       representativePhone: shelter.representativePhone || '',
       managerName: shelter.managerName || '',
       managerGender: shelter.managerGender || 'Male',
-      managerPhone: shelter.managerPhone || ''
+      managerPhone: shelter.managerPhone || '',
+      stage: shelter.stage || '운영준비'
     });
     setPickedLocation({ lat: shelter.lat, lng: shelter.lng });
     setEditingShelterId(shelter.id);
@@ -734,14 +757,16 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       setFormData({
         name: '',
         region: '서울',
-        detailedAddress: '',
+        zipCode: '',
+        address: '',
         size: 0,
         representative: '',
         representativeGender: 'Male',
         representativePhone: '',
         managerName: '',
         managerGender: 'Male',
-        managerPhone: ''
+        managerPhone: '',
+        stage: '운영준비'
       });
       setPickedLocation(null);
     } catch (err) {
@@ -1050,8 +1075,8 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
               {/* Modal Body - Scrollable */}
               <form onSubmit={handleAddOrUpdateShelter} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                 <div className="p-[1.5rem] space-y-[1.25rem] bg-white">
-                  <div className="grid grid-cols-2 gap-[1rem]">
-                    <div className="space-y-[0.375rem] flex flex-col">
+                  <div className="grid grid-cols-2 gap-[1.5rem]">
+                    <div className="space-y-[0.5rem] flex flex-col">
                       <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">보호소명 *</label>
                       <input 
                         required
@@ -1059,39 +1084,45 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                         value={formData.name}
                         onChange={e => setFormData({...formData, name: e.target.value})}
                         placeholder="기관명을 입력하세요"
-                        className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                        className="px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-slate-900/5 outline-none transition-all shadow-sm"
                       />
                     </div>
-                    <div className="space-y-[0.375rem] flex flex-col">
+                    <div className="space-y-[0.5rem] flex flex-col">
                       <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">지역 (시/도) *</label>
                       <select 
                         value={formData.region}
                         onChange={e => setFormData({...formData, region: e.target.value})}
-                        className="px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                        className="px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold focus:ring-2 focus:ring-slate-900/5 outline-none transition-all shadow-sm"
                       >
                         {REGIONAL_SHELTER_DATA.map(r => <option key={r.id}>{r.region}</option>)}
                       </select>
                     </div>
                   </div>
 
-                  <div className="space-y-[0.375rem] flex flex-col">
-                    <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">상세 주소 (네이버 정밀 위치 보정)</label>
-                    <div className="relative group flex gap-2">
+                  <div className="grid grid-cols-12 gap-[1rem]">
+                    <div className="col-span-3 space-y-[0.5rem] flex flex-col">
+                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">우편번호 *</label>
                       <input 
+                        required
+                        readOnly
+                        type="text" 
+                        value={formData.zipCode}
+                        placeholder="00000"
+                        className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-default shadow-inner"
+                      />
+                    </div>
+                    <div className="col-span-9 space-y-[0.5rem] flex flex-col">
+                      <label className="text-[0.625rem] font-bold text-slate-400 uppercase tracking-widest pl-[0.25rem]">주소 (ADDRESS) *</label>
+                      <input 
+                        required
                         type="text" 
                         readOnly
-                        value={formData.detailedAddress}
+                        value={formData.address}
                         onClick={handleSearchAddress}
-                        placeholder="우측 버튼을 눌러 주소를 검색하세요"
-                        className="flex-1 px-[1rem] py-[0.75rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all placeholder:font-normal"
+                        onFocus={handleSearchAddress}
+                        placeholder="클릭하여 주소를 검색하세요"
+                        className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all placeholder:font-normal shadow-sm"
                       />
-                      <button 
-                        type="button"
-                        onClick={handleSearchAddress}
-                        className="px-4 py-2 bg-slate-900 text-white text-[11px] font-black rounded-2xl hover:bg-black transition-all flex items-center gap-2 shrink-0"
-                      >
-                        <Search size={14} /> 우편번호 검색
-                      </button>
                     </div>
                   </div>
 
@@ -1394,10 +1425,7 @@ export default function ShelterDashboard() {
         </header>
 
         {/* View Content Area */}
-        <div className={cn(
-          "flex-1 overflow-hidden p-[2.5rem] flex flex-col gap-[1.5rem] relative z-10",
-          activeView === 'dashboard' && "pb-0"
-        )}>
+        <div className="flex-1 overflow-hidden p-[2.5rem] flex flex-col gap-[1.5rem] relative z-10">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeView}
