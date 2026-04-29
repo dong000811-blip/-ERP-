@@ -69,57 +69,101 @@ export function KoreaMap({ onSelectRegion }: { onSelectRegion?: (region: string)
     }
   }, [isMapReady]);
 
-  // Marker Management (Simplified)
+  // Marker Management (Precise Geocoding)
   useEffect(() => {
     const win = window as any;
-    if (!naverMapRef.current || !infoWindowRef.current || !win.naver?.maps) return;
+    if (!naverMapRef.current || !infoWindowRef.current || !win.naver?.maps?.Service) return;
 
-    try {
-      markersRef.current.forEach(m => m.setMap(null));
-      markersRef.current = [];
+    const updateMarkers = async () => {
+      try {
+        // Clear existing markers
+        markersRef.current.forEach(m => m.setMap(null));
+        markersRef.current = [];
 
-      if (!shelters || shelters.length === 0) return;
+        if (!shelters || shelters.length === 0) return;
 
-      const bounds = new win.naver.maps.LatLngBounds();
-      let hasValidMarker = false;
+        const bounds = new win.naver.maps.LatLngBounds();
+        let hasValidMarker = false;
 
-      shelters.forEach(shelter => {
-        if (!shelter.lat || !shelter.lng) return;
+        // Process markers
+        for (const shelter of shelters) {
+          try {
+            let position: naver.maps.LatLng | null = null;
 
-        try {
-          const position = new win.naver.maps.LatLng(shelter.lat, shelter.lng);
-          bounds.extend(position);
-          hasValidMarker = true;
+            // Step 1: Try to geocode the address for 100% precision as requested
+            if (shelter.detailedAddress) {
+              const coords = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+                win.naver.maps.Service.geocode({ query: shelter.detailedAddress }, (status: any, response: any) => {
+                  if (status === win.naver.maps.Service.Status.OK && response.v2.addresses.length > 0) {
+                    const result = response.v2.addresses[0];
+                    resolve({ lat: parseFloat(result.y), lng: parseFloat(result.x) });
+                  } else {
+                    resolve(null);
+                  }
+                });
+              });
 
-          const marker = new win.naver.maps.Marker({
-            position,
-            map: naverMapRef.current!,
-          });
-
-          win.naver.maps.Event.addListener(marker, 'click', () => {
-            setSelectedShelterId(shelter.id);
-            if (infoWindowRef.current) {
-              infoWindowRef.current.setContent(`
-                <div style="padding:10px; background:white; border-radius:8px; box-shadow:0 10px 15px rgba(0,0,0,0.1); border:1px solid #e2e8f0;">
-                  <p style="margin:0; font-weight:bold; font-size:14px; color:#1e293b;">${shelter.name}</p>
-                </div>
-              `);
-              infoWindowRef.current.open(naverMapRef.current!, marker);
+              if (coords) {
+                position = new win.naver.maps.LatLng(coords.lat, coords.lng);
+              }
             }
-          });
 
-          markersRef.current.push(marker);
-        } catch (e) {
-          // Skip marker error
+            // Step 2: Fallback to existing coordinates if geocoding failed or address missing
+            if (!position && shelter.lat && shelter.lng) {
+              position = new win.naver.maps.LatLng(shelter.lat, shelter.lng);
+            }
+
+            if (position) {
+              bounds.extend(position);
+              hasValidMarker = true;
+
+              const marker = new win.naver.maps.Marker({
+                position,
+                map: naverMapRef.current!,
+                title: shelter.name,
+                animation: win.naver.maps.Animation.DROP
+              });
+
+              win.naver.maps.Event.addListener(marker, 'click', () => {
+                setSelectedShelterId(shelter.id);
+                if (infoWindowRef.current) {
+                  const content = `
+                    <div style="padding:15px; background:white; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); border:1px solid #f1f5f9; min-width:220px;">
+                      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <span style="font-size:16px;">🏠</span>
+                        <p style="margin:0; font-weight:800; font-size:15px; color:#0f172a; letter-spacing:-0.02em;">${shelter.name}</p>
+                      </div>
+                      <div style="border-top:1px solid #f1f5f9; padding-top:8px;">
+                        <p style="margin:0; font-size:11px; color:#64748b; font-weight:500; line-height:1.4;">${shelter.detailedAddress || '주소 정보 없음'}</p>
+                        <p style="margin:4px 0 0; font-size:10px; color:#94a3b8;">${shelter.region} | ${shelter.representative} 대표</p>
+                      </div>
+                      <div style="margin-top:10px; display:flex; gap:4px;">
+                        <span style="padding:2px 6px; background:#f1f5f9; border-radius:4px; font-size:9px; font-weight:700; color:#475569;">${shelter.stage}</span>
+                      </div>
+                    </div>
+                  `;
+                  infoWindowRef.current.setContent(content);
+                  infoWindowRef.current.open(naverMapRef.current!, marker);
+                  naverMapRef.current!.panTo(position!);
+                }
+              });
+
+              markersRef.current.push(marker);
+            }
+          } catch (e) {
+            console.warn(`[KoreaMap] Failed to process marker for ${shelter.name}`, e);
+          }
         }
-      });
 
-      if (hasValidMarker) {
-        naverMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+        if (hasValidMarker) {
+          naverMapRef.current.fitBounds(bounds, { top: 100, right: 100, bottom: 100, left: 100 });
+        }
+      } catch (err) {
+        console.warn('[KoreaMap] Marker refresh issue:', err);
       }
-    } catch (err) {
-      console.warn('[KoreaMap] Marker refresh issue:', err);
-    }
+    };
+
+    updateMarkers();
   }, [shelters, isMapReady]);
 
   if (mapError) {
