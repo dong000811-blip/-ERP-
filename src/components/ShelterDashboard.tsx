@@ -651,7 +651,7 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       setEditingShelterId(null);
       setFormData({
         name: '',
-        region: '서울',
+        region: '전체 지역',
         zipCode: '',
         address: '',
         size: 0,
@@ -1046,7 +1046,12 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                       type="text" 
                       value={formData.zipCode}
                       placeholder="00000"
-                      className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-default shadow-inner"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleSearchAddress();
+                      }}
+                      className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all shadow-inner"
                     />
                   </div>
                   <div className="col-span-9 space-y-[0.5rem] flex flex-col">
@@ -1058,6 +1063,7 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                       value={formData.address}
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         handleSearchAddress();
                       }}
                       placeholder="클릭하여 주소를 검색하세요"

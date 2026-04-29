@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   PlusCircle, 
   MinusCircle, 
@@ -314,6 +314,13 @@ export default function InventoryLogisticsView() {
        showToast('저장 중 오류가 발생했습니다.', 'error');
     }
   };
+
+  // Reset form when closing modal
+  useEffect(() => {
+    if (!isStockInModalOpen && !isStockOutModalOpen && !editingEntry) {
+      resetForm();
+    }
+  }, [isStockInModalOpen, isStockOutModalOpen, editingEntry]);
 
   const resetForm = () => {
     setFormData({
@@ -673,8 +680,8 @@ export default function InventoryLogisticsView() {
             exit={{ y: 50, opacity: 0 }}
             className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 backdrop-blur-md"
           >
-            <CheckCircle2 className="text-emerald-400" size={18} />
-            <span className="text-[13px] font-black tracking-tight">{toast}</span>
+            <CheckCircle2 className={cn(toast.type === 'success' ? "text-emerald-400" : "text-rose-400")} size={18} />
+            <span className="text-[13px] font-black tracking-tight">{toast.message}</span>
           </motion.div>
         )}
       </AnimatePresence>
