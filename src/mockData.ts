@@ -6,7 +6,9 @@ export interface Product {
   standard: string; 
   unit: string; 
   purchasePrice: number;
+  isPurchaseVatIncl?: boolean;
   sellingPrice: number;
+  isSalesVatIncl?: boolean;
   remarks?: string;
 }
 

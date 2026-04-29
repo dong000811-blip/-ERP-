@@ -28,7 +28,9 @@ interface AddProductFormData {
   standard: string;
   unit: string;
   purchasePrice: string;
+  isPurchaseVatIncl: boolean;
   sellingPrice: string;
+  isSalesVatIncl: boolean;
   remarks: string;
 }
 
@@ -48,7 +50,9 @@ const ProductRegistry = () => {
     standard: '',
     unit: '포',
     purchasePrice: '',
+    isPurchaseVatIncl: true,
     sellingPrice: '',
+    isSalesVatIncl: true,
     remarks: ''
   });
 
@@ -82,7 +86,9 @@ const ProductRegistry = () => {
         standard: product.standard,
         unit: product.unit,
         purchasePrice: String(product.purchasePrice),
+        isPurchaseVatIncl: product.isPurchaseVatIncl ?? true,
         sellingPrice: String(product.sellingPrice),
+        isSalesVatIncl: product.isSalesVatIncl ?? true,
         remarks: product.remarks || ''
       });
     } else {
@@ -93,7 +99,9 @@ const ProductRegistry = () => {
         standard: '',
         unit: '포',
         purchasePrice: '',
+        isPurchaseVatIncl: true,
         sellingPrice: '',
+        isSalesVatIncl: true,
         remarks: ''
       });
     }
@@ -116,7 +124,9 @@ const ProductRegistry = () => {
           standard: formData.standard,
           unit: formData.unit,
           purchasePrice: parseInt(formData.purchasePrice),
+          isPurchaseVatIncl: formData.isPurchaseVatIncl,
           sellingPrice: parseInt(formData.sellingPrice),
+          isSalesVatIncl: formData.isSalesVatIncl,
           remarks: formData.remarks
         });
         showToast('상품 정보가 수정되었습니다.');
@@ -132,7 +142,9 @@ const ProductRegistry = () => {
           standard: formData.standard,
           unit: formData.unit,
           purchasePrice: parseInt(formData.purchasePrice),
+          isPurchaseVatIncl: formData.isPurchaseVatIncl,
           sellingPrice: parseInt(formData.sellingPrice),
+          isSalesVatIncl: formData.isSalesVatIncl,
           remarks: formData.remarks
         });
         showToast('새로운 상품이 등록되었습니다.');
@@ -510,7 +522,28 @@ const ProductRegistry = () => {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 border-b border-rose-100">매입 단가 (₩) *</label>
+                    <div className="flex items-center justify-between pl-1 border-b border-rose-100 pb-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">매입 단가 (₩) *</label>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, isPurchaseVatIncl: !formData.isPurchaseVatIncl})}
+                        className="flex items-center gap-1.5 group select-none"
+                      >
+                        <div className={cn(
+                          "w-7 h-4 rounded-full relative transition-all duration-300",
+                          formData.isPurchaseVatIncl ? "bg-indigo-500" : "bg-slate-300"
+                        )}>
+                          <div className={cn(
+                            "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300",
+                            formData.isPurchaseVatIncl ? "left-3.5" : "left-0.5"
+                          )} />
+                        </div>
+                        <span className={cn(
+                          "text-[9px] font-black tracking-tight transition-colors",
+                          formData.isPurchaseVatIncl ? "text-indigo-600" : "text-slate-400"
+                        )}>VAT 포함</span>
+                      </button>
+                    </div>
                     <input 
                       type="number" 
                       className="w-full px-4 py-3 bg-rose-50/30 border-none rounded-xl text-sm font-black text-rose-600 focus:ring-2 focus:ring-rose-200 outline-none"
@@ -521,7 +554,28 @@ const ProductRegistry = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 border-b border-indigo-100">판매/공급 단가 (₩) *</label>
+                  <div className="flex items-center justify-between pl-1 border-b border-indigo-100 pb-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">판매/공급 단가 (₩) *</label>
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({...formData, isSalesVatIncl: !formData.isSalesVatIncl})}
+                      className="flex items-center gap-1.5 group select-none"
+                    >
+                      <div className={cn(
+                        "w-7 h-4 rounded-full relative transition-all duration-300",
+                        formData.isSalesVatIncl ? "bg-indigo-500" : "bg-slate-300"
+                      )}>
+                        <div className={cn(
+                          "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300",
+                          formData.isSalesVatIncl ? "left-3.5" : "left-0.5"
+                        )} />
+                      </div>
+                      <span className={cn(
+                        "text-[9px] font-black tracking-tight transition-colors",
+                        formData.isSalesVatIncl ? "text-indigo-600" : "text-slate-400"
+                      )}>VAT 포함</span>
+                    </button>
+                  </div>
                   <div className="relative">
                     <input 
                       type="number" 
@@ -549,7 +603,7 @@ const ProductRegistry = () => {
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-start gap-3">
                   <Info size={16} className="text-[#2D336B] mt-0.5 shrink-0" />
                   <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
-                    등록된 정보는 출고 관리 및 보호소 매출 정산 시 사료 선택 리스트로 활용됩니다. 원가 정보는 마진율 계산에만 사용되며 보안이 유지됩니다.
+                    등록된 정보는 출고 관리 및 보호소 매출 정산 시 사료 선택 리스트로 활용됩니다. 선택하신 VAT 포함 여부에 따라 최종 마진율이 계산됩니다. 원가 정보는 보안이 유지됩니다.
                   </p>
                 </div>
 
