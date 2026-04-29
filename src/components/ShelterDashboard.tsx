@@ -562,7 +562,6 @@ interface AddShelterFormData {
   managerName: string;
   managerGender: 'Male' | 'Female';
   managerPhone: string;
-  stage: string;
 }
 
 const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
@@ -583,11 +582,18 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
   const [pickedLocation, setPickedLocation] = useState<{ lat: number, lng: number } | null>(null);
 
   // Kakao Postcode Integration
+  const [isPostcodeOpen, setIsPostcodeOpen] = useState(false);
+
   const handleSearchAddress = () => {
+    if (isPostcodeOpen) return;
+    
     if (typeof (window as any).daum === 'undefined' || !(window as any).daum.Postcode) {
       alert('주소 검색 서비스(Kakao)를 로드할 수 없습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.');
       return;
     }
+
+    setIsPostcodeOpen(true);
+    
     new (window as any).daum.Postcode({
       oncomplete: (data: any) => {
         let fullAddress = data.address;
@@ -626,7 +632,13 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
             }
           });
         }
-      }
+        setIsPostcodeOpen(false);
+      },
+      onclose: () => {
+        setIsPostcodeOpen(false);
+      },
+      width: '100%',
+      height: '100%'
     }).open();
   };
 
@@ -650,7 +662,6 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
     managerName: '',
     managerGender: 'Male',
     managerPhone: '',
-    stage: '운영준비'
   });
 
   const filteredShelters = shelters.filter(s => {
@@ -674,7 +685,6 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       managerName: shelter.managerName || '',
       managerGender: shelter.managerGender || 'Male',
       managerPhone: shelter.managerPhone || '',
-      stage: shelter.stage || '운영준비'
     });
     setPickedLocation({ lat: shelter.lat, lng: shelter.lng });
     setEditingShelterId(shelter.id);
@@ -740,7 +750,6 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
         managerName: '',
         managerGender: 'Male',
         managerPhone: '',
-        stage: '운영준비'
       });
       setPickedLocation(null);
     } catch (err) {
@@ -812,12 +821,10 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                     <CheckCircle2 size={12} />
                   </button>
                 </th>
-                <th className="px-6 py-4 w-[20%]">보호소명</th>
-                <th className="px-6 py-4 w-[10%]">지역</th>
-                <th className="px-6 py-4 w-[10%] text-center">규모 (마리)</th>
-                <th className="px-6 py-4 w-[15%]">대표자</th>
-                <th className="px-6 py-4 w-[15%]">영업 단계</th>
-                <th className="px-6 py-4 w-[15%]">마지막 컨택</th>
+                <th className="px-6 py-4 w-[35%]">보호소명</th>
+                <th className="px-6 py-4 w-[15%]">지역</th>
+                <th className="px-6 py-4 w-[15%] text-center">규모 (마리)</th>
+                <th className="px-6 py-4 w-[25%]">대표자</th>
                 <th className="px-6 py-4 text-right w-[10%]">기능</th>
               </tr>
             </thead>
@@ -855,19 +862,6 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                     </td>
                     <td className="px-6 py-4 text-center font-mono font-bold text-slate-600">{shelter.size}</td>
                     <td className="px-6 py-4 font-medium text-slate-700">{shelter.representative}</td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight inline-block",
-                        shelter.stage === 'Partnered' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                        shelter.stage === 'Negotiating' ? "bg-orange-50 text-orange-600 border border-orange-100" :
-                        shelter.stage === 'Sample Sent' ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-slate-100 text-slate-500 border border-slate-200"
-                      )}>
-                        {shelter.stage === 'Partnered' ? '협력 완료' :
-                         shelter.stage === 'Negotiating' ? '협상 중' :
-                         shelter.stage === 'Sample Sent' ? '샘플 배송' : '가망 고객'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 font-medium tracking-tighter">{shelter.lastContactDate}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="relative inline-block text-left">
                         <button 
@@ -1052,8 +1046,10 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                       type="text" 
                       readOnly
                       value={formData.address}
-                      onClick={handleSearchAddress}
-                      onFocus={handleSearchAddress}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSearchAddress();
+                      }}
                       placeholder="클릭하여 주소를 검색하세요"
                       className="w-full px-[1rem] py-[0.875rem] bg-slate-50 border border-slate-100 rounded-2xl text-[0.875rem] font-bold outline-none cursor-pointer hover:bg-slate-100 transition-all placeholder:font-normal shadow-sm"
                     />

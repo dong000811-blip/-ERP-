@@ -32,8 +32,6 @@ export interface Shelter {
   lat: number;
   lng: number;
   size: number; // Puppy count
-  stage: 'Lead' | 'Sample Sent' | 'Negotiating' | 'Partnered';
-  lastContactDate: string;
   painPoints: string;
 }
 
@@ -130,8 +128,6 @@ export const MOCK_SHELTERS: Shelter[] = [
     lat: 37.4918,
     lng: 127.0076,
     size: 150,
-    stage: 'Partnered', 
-    lastContactDate: '2024-04-20', 
     painPoints: '운영 효율성 문제, 고품질 사료 솔루션 필요.' 
   },
   { 
@@ -146,8 +142,6 @@ export const MOCK_SHELTERS: Shelter[] = [
     lat: 37.6530,
     lng: 126.8967,
     size: 280,
-    stage: 'Negotiating', 
-    lastContactDate: '2024-04-25', 
     painPoints: '의료 비품 및 자원봉사자 부족.' 
   },
   { 
@@ -162,8 +156,6 @@ export const MOCK_SHELTERS: Shelter[] = [
     lat: 35.1631,
     lng: 129.1636,
     size: 85,
-    stage: 'Sample Sent', 
-    lastContactDate: '2024-04-22', 
     painPoints: '까다로운 구조 동물들을 위한 기호성 높은 사료 탐색 중.' 
   },
   { 
@@ -176,8 +168,6 @@ export const MOCK_SHELTERS: Shelter[] = [
     lat: 37.4472,
     lng: 126.7313,
     size: 45,
-    stage: 'Lead', 
-    lastContactDate: '2024-04-18', 
     painPoints: '최근 확장됨, 장기적인 파트너십 구축 희망.' 
   },
   { 
@@ -190,8 +180,6 @@ export const MOCK_SHELTERS: Shelter[] = [
     lat: 37.8689,
     lng: 127.7441,
     size: 120,
-    stage: 'Partnered', 
-    lastContactDate: '2024-04-15', 
     painPoints: '운송 비용이 큰 부담이 됨.' 
   },
 ];

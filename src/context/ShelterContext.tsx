@@ -22,7 +22,7 @@ interface ShelterContextType {
   regionalData: ShelterData[];
   isLoading: boolean;
   currentUser: User | null;
-  addShelter: (shelter: Omit<Shelter, 'id' | 'lastContactDate' | 'stage' | 'painPoints' | 'lat' | 'lng'>) => Promise<void>;
+  addShelter: (shelter: Omit<Shelter, 'id' | 'painPoints' | 'lat' | 'lng'>) => Promise<void>;
   updateShelter: (id: string, updates: Partial<Shelter>) => Promise<void>;
   deleteShelter: (id: string) => Promise<void>;
   deleteShelters: (ids: string[]) => Promise<void>;
@@ -63,7 +63,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })) as Shelter[];
       
       // Client-side sorting substitute for server-side orderBy
-      setShelters(shelterData.sort((a, b) => (b.lastContactDate || '').localeCompare(a.lastContactDate || '')));
+      setShelters(shelterData.sort((a, b) => a.name.localeCompare(b.name)));
       setIsLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'shelters');
@@ -146,7 +146,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return { ...regionInfo, count };
   });
 
-  const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'lastContactDate' | 'stage' | 'painPoints' | 'lat' | 'lng'>, manualCoords?: { lat: number, lng: number }) => {
+  const addShelter = async (newShelterData: Omit<Shelter, 'id' | 'painPoints' | 'lat' | 'lng'>, manualCoords?: { lat: number, lng: number }) => {
     if (!currentUser) {
       console.error('Shelter registration failed: No authenticated user.');
       throw new Error('Authentication required');
@@ -172,8 +172,6 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ...newShelterData,
         id,
         userId: currentUser.uid,
-        lastContactDate: new Date().toISOString().split('T')[0],
-        stage: 'Lead',
         painPoints: '신규 등록된 보호소입니다. 초기 연락 대기 중.',
         lat: coords?.lat ?? regionCenter.lat,
         lng: coords?.lng ?? regionCenter.lng,
