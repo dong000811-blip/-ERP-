@@ -642,10 +642,24 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
     }).open();
   };
 
-  // Reset picked location when closing modal
+  // Reset form and picked location when closing modal
   useEffect(() => {
     if (!isModalOpen) {
       setPickedLocation(null);
+      setEditingShelterId(null);
+      setFormData({
+        name: '',
+        region: '서울',
+        zipCode: '',
+        address: '',
+        size: 0,
+        representative: '',
+        representativeGender: 'Male',
+        representativePhone: '',
+        managerName: '',
+        managerGender: 'Male',
+        managerPhone: '',
+      });
     }
   }, [isModalOpen]);
 
@@ -732,26 +746,14 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
       console.log(`[Submit] Saving shelter with manualCoords:`, pickedLocation);
       if (editingShelterId) {
         await updateShelter(editingShelterId, formData, pickedLocation || undefined);
+        alert('보호소 정보가 수정되었습니다.');
       } else {
         await addShelter(formData, pickedLocation || undefined);
+        alert('신규 보호소가 성공적으로 등록되었습니다.');
       }
 
       setIsModalOpen(false);
-      setEditingShelterId(null);
-      setFormData({
-        name: '',
-        region: '서울',
-        zipCode: '',
-        address: '',
-        size: 0,
-        representative: '',
-        representativeGender: 'Male',
-        representativePhone: '',
-        managerName: '',
-        managerGender: 'Male',
-        managerPhone: '',
-      });
-      setPickedLocation(null);
+      // setEditingShelterId and setFormData are handled by the useEffect on modal close
     } catch (err) {
       console.error('UI Layer: Shelter registration failed', err);
       alert('보호소 정보를 저장하는 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
