@@ -58,6 +58,16 @@ export default function InventoryLogisticsView() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [focusedShelterId, setFocusedShelterId] = useState<string | null>(null);
   const [summaryFilter, setSummaryFilter] = useState('');
+  const [ledgerSearch, setLedgerSearch] = useState('');
+
+  const CATEGORY_OPTIONS = [
+    '일반 후원',
+    '매칭 이벤트',
+    '정기 배송',
+    '반품/환불',
+    '재고 조정',
+    '기타'
+  ];
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -112,11 +122,25 @@ export default function InventoryLogisticsView() {
 
   const filteredLedger = useMemo(() => {
     let result = [...ledger];
+    
+    // Shelter Filter
     if (selectedShelterId !== '전체') {
       result = result.filter(entry => entry.shelterId === selectedShelterId);
     }
+    
+    // Search Filter (Shelter, Category, Item Name)
+    if (ledgerSearch) {
+      const searchLower = ledgerSearch.toLowerCase();
+      result = result.filter(entry => 
+        entry.shelterName.toLowerCase().includes(searchLower) ||
+        entry.itemName.toLowerCase().includes(searchLower) ||
+        (entry.category && entry.category.toLowerCase().includes(searchLower)) ||
+        (entry.remarks && entry.remarks.toLowerCase().includes(searchLower))
+      );
+    }
+    
     return result;
-  }, [ledger, selectedShelterId]);
+  }, [ledger, selectedShelterId, ledgerSearch]);
 
   const balancesByItem = useMemo(() => {
     const balances: Record<string, { quantity: number; spec: string }> = {};
@@ -215,6 +239,7 @@ export default function InventoryLogisticsView() {
 
   const [formData, setFormData] = useState({
     shelterId: '',
+    category: '일반 후원',
     items: [{ itemName: '', quantity: 100, specification: '' }],
     itemName: '', // Legacy for single-item processing if needed
     specification: '',
@@ -229,6 +254,7 @@ export default function InventoryLogisticsView() {
     setEditingEntry(entry);
     setFormData({
       shelterId: entry.shelterId,
+      category: entry.category || '일반 후원',
       items: entry.items || [{ itemName: entry.itemName, quantity: entry.quantity, specification: entry.specification }],
       itemName: entry.itemName || '',
       specification: entry.specification || '',
@@ -273,6 +299,11 @@ export default function InventoryLogisticsView() {
     setIsDeleteConfirmOpen(false);
     setDeleteId(null);
   };
+
+  // Clear focused shelter when changing top dropdown
+  useEffect(() => {
+    setFocusedShelterId(null);
+  }, [selectedShelterId]);
 
   const handleBulkDelete = () => {
     setDeleteId(null);
@@ -374,6 +405,7 @@ export default function InventoryLogisticsView() {
   const resetForm = () => {
     setFormData({
       shelterId: '',
+      category: '일반 후원',
       items: [{ itemName: '', quantity: 100, specification: '' }],
       itemName: '',
       specification: '',
@@ -613,7 +645,9 @@ export default function InventoryLogisticsView() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
-              placeholder="품목 정보 검색..." 
+              value={ledgerSearch}
+              onChange={e => setLedgerSearch(e.target.value)}
+              placeholder="보호소, 사유, 품목 검색..." 
               className="pl-9 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[11px] font-bold w-64 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
             />
           </div>
@@ -638,6 +672,7 @@ export default function InventoryLogisticsView() {
                 </th>
                 <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">일자</th>
                 <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">구분</th>
+                <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">사유</th>
                 <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">보호소명</th>
                 <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">품목</th>
                 <th className="px-6 py-5 text-right bg-slate-50 sticky top-0 z-20">배송비(VAT포함)</th>
@@ -688,6 +723,23 @@ export default function InventoryLogisticsView() {
                     )}>
                       {entry.type}
                     </span>
+                  </td>
+                  <td className="px-6 py-4.5 whitespace-nowrap">
+                    {entry.category ? (
+                      <span className={cn(
+                        "px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider",
+                        entry.category === '일반 후원' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                        entry.category === '매칭 이벤트' ? "bg-purple-50 text-purple-600 border-purple-100" :
+                        entry.category === '정기 배송' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                        entry.category === '반품/환불' ? "bg-rose-50 text-rose-600 border-rose-100" :
+                        entry.category === '재고 조정' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                        "bg-slate-100 text-slate-600 border-slate-200"
+                      )}>
+                        {entry.category}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4.5 whitespace-nowrap">
                     <span className="text-xs font-bold text-slate-700">{entry.shelterName}</span>
@@ -866,8 +918,8 @@ export default function InventoryLogisticsView() {
           >
             <form onSubmit={(e) => { e.preventDefault(); handleSubmit('입고'); }} className="p-8 space-y-6 bg-white overflow-y-auto max-h-[85vh] custom-scrollbar">
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-1 space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">대상 보호소</label>
                     <select 
                       required
@@ -883,7 +935,7 @@ export default function InventoryLogisticsView() {
                             : formData.remarks
                         });
                       }}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     >
                       <option value="">보호소 선택</option>
                       {shelters.map(s => (
@@ -891,14 +943,27 @@ export default function InventoryLogisticsView() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="col-span-1 space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">입고 일자</label>
                     <input 
                       type="date"
                       value={formData.date}
                       onChange={e => setFormData({...formData, date: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     />
+                  </div>
+                  <div className="col-span-1 space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">수불 사유</label>
+                    <select 
+                      required
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    >
+                      {CATEGORY_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1013,8 +1078,8 @@ export default function InventoryLogisticsView() {
               )}
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-1 space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 대상 보호소</label>
                     <select 
                       required
@@ -1030,7 +1095,7 @@ export default function InventoryLogisticsView() {
                             : formData.remarks
                         });
                       }}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     >
                       <option value="">보호소 선택</option>
                       {shelters.map(s => (
@@ -1038,14 +1103,27 @@ export default function InventoryLogisticsView() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="col-span-1 space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송/출고 일자</label>
                     <input 
                       type="date"
                       value={formData.date}
                       onChange={e => setFormData({...formData, date: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     />
+                  </div>
+                  <div className="col-span-1 space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 사유</label>
+                    <select 
+                      required
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                    >
+                      {CATEGORY_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

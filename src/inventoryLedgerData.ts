@@ -15,6 +15,7 @@ export interface InventoryEntry {
   specification?: string;
   quantity?: number;
   items?: InventoryItem[];
+  category?: string;
   balance: number;
   manager: string;
   remarks: string;
@@ -32,6 +33,7 @@ export const INVENTORY_LEDGER_DATA: InventoryEntry[] = [
     itemName: '넥스트 펫밸런스 어덜트',
     specification: '10kg',
     quantity: 2000,
+    category: '일반 후원',
     balance: 2000,
     manager: '홍길동',
     remarks: '신규 후원 물품 적립 (기업 후원)'
@@ -45,6 +47,7 @@ export const INVENTORY_LEDGER_DATA: InventoryEntry[] = [
     itemName: '넥스트 펫밸런스 어덜트',
     specification: '10kg',
     quantity: 1000,
+    category: '정기 배송',
     balance: 1000,
     manager: '김철수',
     remarks: '1차 출고 (서울 서북부 배송건)'
@@ -59,6 +62,7 @@ export const INVENTORY_LEDGER_DATA: InventoryEntry[] = [
     itemName: '퍼피 프리미엄 연어',
     specification: '5kg',
     quantity: 100,
+    category: '매칭 이벤트',
     balance: 100,
     manager: '이영희',
     remarks: '물품 적립 (1회차)'
