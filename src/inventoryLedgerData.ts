@@ -1,13 +1,20 @@
 
+export interface InventoryItem {
+  itemName: string;
+  specification: string;
+  quantity: number;
+}
+
 export interface InventoryEntry {
   id: string;
   date: string;
   type: '입고' | '출고';
   shelterId: string;
   shelterName: string;
-  itemName: string;
-  specification: string;
-  quantity: number;
+  itemName?: string;
+  specification?: string;
+  quantity?: number;
+  items?: InventoryItem[];
   balance: number;
   manager: string;
   remarks: string;

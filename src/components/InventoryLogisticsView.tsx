@@ -72,10 +72,31 @@ export default function InventoryLogisticsView() {
     // Sort by date (oldest first) to calculate sequential balance
     const sorted = [...ledgerRaw].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
+    // Flatten entries that have multiple items
+    const flattened = sorted.flatMap(entry => {
+      if (entry.items && entry.items.length > 0) {
+        return entry.items.map((item, idx) => ({
+          ...entry,
+          id: `${entry.id}-${idx}`,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          specification: item.specification,
+          isBatch: true,
+          batchId: entry.id
+        }));
+      }
+      return [{
+        ...entry,
+        itemName: entry.itemName || '',
+        quantity: entry.quantity || 0,
+        specification: entry.specification || ''
+      }];
+    });
+
     // Group by shelter + item
     const groups: Record<string, number> = {};
     
-    return sorted.map(entry => {
+    return flattened.map(entry => {
       const key = `${entry.shelterId}-${entry.itemName}`;
       if (groups[key] === undefined) groups[key] = 0;
       
@@ -194,7 +215,8 @@ export default function InventoryLogisticsView() {
 
   const [formData, setFormData] = useState({
     shelterId: '',
-    itemName: '',
+    items: [{ itemName: '', quantity: 100, specification: '' }],
+    itemName: '', // Legacy for single-item processing if needed
     specification: '',
     quantity: 100,
     manager: '관리자',
@@ -203,13 +225,14 @@ export default function InventoryLogisticsView() {
     date: new Date().toISOString().split('T')[0]
   });
 
-  const handleOpenEdit = (entry: InventoryEntry) => {
+  const handleOpenEdit = (entry: any) => {
     setEditingEntry(entry);
     setFormData({
       shelterId: entry.shelterId,
-      itemName: entry.itemName,
-      specification: entry.specification,
-      quantity: entry.quantity,
+      items: entry.items || [{ itemName: entry.itemName, quantity: entry.quantity, specification: entry.specification }],
+      itemName: entry.itemName || '',
+      specification: entry.specification || '',
+      quantity: entry.quantity || 0,
       manager: entry.manager,
       remarks: entry.remarks,
       shippingFee: entry.shippingFee || 0,
@@ -221,7 +244,10 @@ export default function InventoryLogisticsView() {
 
   const handleDelete = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setDeleteId(id);
+    // Use batchId if it's a flattened row
+    const entry = ledger.find(e => e.id === id);
+    const actualId = entry?.batchId || id;
+    setDeleteId(actualId);
     setIsDeleteConfirmOpen(true);
   };
 
@@ -254,18 +280,27 @@ export default function InventoryLogisticsView() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredLedger.length) {
+    // Unique batch IDs from current filtered ledger
+    const allDocIds = Array.from(new Set(filteredLedger.map(e => e.batchId || e.id)));
+    
+    if (selectedIds.size === allDocIds.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredLedger.map(e => e.id)));
+      setSelectedIds(new Set(allDocIds));
     }
   };
 
   const toggleSelect = (id: string) => {
+    // If it's a batch, we want to select the whole batch? 
+    // Or just track the visual row? 
+    // Usually selecting one row of a batch should probably select all items in that batch document.
+    const entry = ledger.find(e => e.id === id);
+    const targetId = entry?.batchId || id;
+
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(targetId)) next.delete(targetId);
+      else next.add(targetId);
       return next;
     });
   };
@@ -274,30 +309,44 @@ export default function InventoryLogisticsView() {
     const shelter = shelters.find(s => s.id === formData.shelterId) || shelters.find(s => `SHT-${s.id}` === formData.shelterId);
     const shelterName = shelter?.name || '기타 보호소';
 
-    if (type === '출고' && !editingEntry) {
-      const currentBalance = ledger
-        .filter(e => e.shelterId === formData.shelterId && e.itemName === formData.itemName)
-        .reduce((acc, curr) => curr.type === '입고' ? acc + curr.quantity : acc - curr.quantity, 0);
+    // Validate multi-items
+    const validItems = formData.items.filter(item => item.itemName && item.quantity > 0);
+    if (validItems.length === 0 && !formData.itemName) {
+      alert('최소 하나 이상의 유효한 품목을 입력해주세요.');
+      return;
+    }
 
-      if (currentBalance < formData.quantity) {
-        alert(`재고가 부족합니다. (현재 잔고: ${currentBalance.toLocaleString()}kg)`);
-        return;
+    if (type === '출고' && !editingEntry) {
+      for (const item of validItems) {
+        const currentBalance = ledger
+          .filter(e => e.shelterId === formData.shelterId && e.itemName === item.itemName)
+          .reduce((acc, curr) => curr.type === '입고' ? acc + curr.quantity : acc - curr.quantity, 0);
+
+        if (currentBalance < item.quantity) {
+          alert(`[${item.itemName}] 재고가 부족합니다. (현재 잔고: ${currentBalance.toLocaleString()}kg)`);
+          return;
+        }
       }
     }
 
     try {
       if (editingEntry) {
-        await updateDocument('inventory', editingEntry.id, {
+        const updateData: any = {
           ...formData,
           shelterName,
           type
-        });
+        };
+        // For editing, if it was a batched item, we might need special handling.
+        // But for simplicity, we update the whole document.
+        const docId = editingEntry.batchId || editingEntry.id;
+        await updateDocument('inventory', docId, updateData);
         showToast('내역이 수정되었습니다.');
       } else {
         const id = `ENT-${Date.now()}`;
         await addDocument('inventory', {
           id,
           ...formData,
+          items: validItems,
           shelterName,
           type,
           balance: 0 // Recalculated on display
@@ -325,6 +374,7 @@ export default function InventoryLogisticsView() {
   const resetForm = () => {
     setFormData({
       shelterId: '',
+      items: [{ itemName: '', quantity: 100, specification: '' }],
       itemName: '',
       specification: '',
       quantity: 100,
@@ -332,6 +382,29 @@ export default function InventoryLogisticsView() {
       remarks: '',
       shippingFee: 0,
       date: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  const addItemRow = () => {
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, { itemName: '', quantity: 0, specification: '' }]
+    }));
+  };
+
+  const removeItemRow = (index: number) => {
+    if (formData.items.length <= 1) return;
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateItemRow = (index: number, updates: any) => {
+    setFormData(prev => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], ...updates };
+      return { ...prev, items: newItems };
     });
   };
 
@@ -555,12 +628,12 @@ export default function InventoryLogisticsView() {
                      onClick={toggleSelectAll}
                      className={cn(
                        "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                       selectedIds.size === filteredLedger.length && filteredLedger.length > 0
+                       selectedIds.size > 0 && selectedIds.size === Array.from(new Set(filteredLedger.map(e => e.batchId || e.id))).length
                          ? "bg-indigo-600 border-indigo-600 text-white"
                          : "bg-white border-slate-200"
                      )}
                    >
-                     {selectedIds.size === filteredLedger.length && filteredLedger.length > 0 && <CheckCircle2 size={12} />}
+                     {selectedIds.size > 0 && selectedIds.size === Array.from(new Set(filteredLedger.map(e => e.batchId || e.id))).length && <CheckCircle2 size={12} />}
                    </button>
                 </th>
                 <th className="px-6 py-5 bg-slate-50 sticky top-0 z-20">일자</th>
@@ -583,7 +656,7 @@ export default function InventoryLogisticsView() {
                   }}
                   className={cn(
                     "hover:bg-slate-50/50 group transition-all cursor-pointer",
-                    selectedIds.has(entry.id) ? "bg-indigo-50/20" : "",
+                    selectedIds.has(entry.batchId || entry.id) ? "bg-indigo-50/20" : "",
                     focusedShelterId === entry.shelterId ? "bg-indigo-50/40 ring-1 ring-inset ring-indigo-100" : ""
                   )}
                 >
@@ -592,16 +665,15 @@ export default function InventoryLogisticsView() {
                        onClick={(e) => { 
                          e.stopPropagation(); 
                          toggleSelect(entry.id);
-                         setFocusedShelterId(entry.shelterId);
                        }}
                        className={cn(
                          "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                         selectedIds.has(entry.id)
+                         selectedIds.has(entry.batchId || entry.id)
                            ? "bg-indigo-600 border-indigo-600 text-white"
                            : "bg-white border-slate-200 group-hover:border-slate-300"
                        )}
                     >
-                       {selectedIds.has(entry.id) && <CheckCircle2 size={12} />}
+                       {selectedIds.has(entry.batchId || entry.id) && <CheckCircle2 size={12} />}
                     </button>
                   </td>
                   <td className="px-6 py-4.5 whitespace-nowrap">
@@ -790,9 +862,9 @@ export default function InventoryLogisticsView() {
             onClose={() => setIsStockInModalOpen(false)}
             title={editingEntry ? '수불 내역 수정' : '후원 물품 적립(입고)'}
             icon={<PlusCircle size={20} />}
-            width="max-w-lg"
+            width="max-w-2xl"
           >
-            <form onSubmit={(e) => { e.preventDefault(); handleSubmit('입고'); }} className="p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit('입고'); }} className="p-8 space-y-6 bg-white overflow-y-auto max-h-[85vh] custom-scrollbar">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -830,50 +902,73 @@ export default function InventoryLogisticsView() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">품목명</label>
-                  <select 
-                    required
-                    value={formData.itemName}
-                    onChange={e => {
-                      const pName = e.target.value;
-                      const product = products.find(p => p.name === pName);
-                      setFormData({
-                        ...formData, 
-                        itemName: pName,
-                        specification: product ? `${product.standard} ${product.unit}` : formData.specification
-                      });
-                    }}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                  >
-                    <option value="">품목 선택</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.name}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">규격</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.specification}
-                      onChange={e => setFormData({...formData, specification: e.target.value})}
-                      placeholder="e.g. 10kg 포대"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                    />
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">입고 품목 목록</h4>
+                    <button 
+                      type="button"
+                      onClick={addItemRow}
+                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-indigo-100 shadow-sm"
+                    >
+                      <PlusCircle size={12} /> 품목 추가
+                    </button>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">입고 수량(kg)</label>
-                    <input 
-                      required
-                      type="number" 
-                      value={formData.quantity}
-                      onChange={e => setFormData({...formData, quantity: Number(e.target.value)})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                    />
+                  
+                  <div className="space-y-3">
+                    {formData.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-3 items-end bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative group">
+                        <div className="col-span-6 space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400">품목 {index + 1}</label>
+                          <select 
+                            required
+                            value={item.itemName}
+                            onChange={e => {
+                              const pName = e.target.value;
+                              const product = products.find(p => p.name === pName);
+                              updateItemRow(index, {
+                                itemName: pName,
+                                specification: product ? `${product.standard} ${product.unit}` : item.specification
+                              });
+                            }}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
+                          >
+                            <option value="">품목 선택</option>
+                            {products.map(p => (
+                              <option key={p.id} value={p.name}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400">수량(kg)</label>
+                          <input 
+                            required
+                            type="number"
+                            value={item.quantity}
+                            onChange={e => updateItemRow(index, { quantity: Number(e.target.value) })}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400">규격</label>
+                          <input 
+                            readOnly
+                            disabled
+                            value={item.specification}
+                            className="w-full px-3 py-2 bg-slate-100 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-400 outline-none"
+                          />
+                        </div>
+                        <div className="col-span-1 pb-1 flex justify-center">
+                          <button 
+                            type="button"
+                            onClick={() => removeItemRow(index)}
+                            disabled={formData.items.length <= 1}
+                            className="p-1.5 text-slate-300 hover:text-rose-500 disabled:opacity-30 disabled:hover:text-slate-300 transition-colors"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -904,9 +999,9 @@ export default function InventoryLogisticsView() {
             onClose={() => setIsStockOutModalOpen(false)}
             title={editingEntry ? '출고 내역 수정' : '물품 출고 및 배송 등록'}
             icon={<Truck size={20} />}
-            width="max-w-lg"
+            width="max-w-2xl"
           >
-            <form onSubmit={(e) => { e.preventDefault(); handleSubmit('출고'); }} className="p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit('출고'); }} className="p-8 space-y-6 bg-white overflow-y-auto max-h-[85vh] custom-scrollbar">
               {!editingEntry && (
                 <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3">
                    <AlertCircle className="text-amber-500 flex-shrink-0" size={18} />
@@ -944,41 +1039,6 @@ export default function InventoryLogisticsView() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 품목</label>
-                    <select 
-                      required
-                      value={formData.itemName}
-                      onChange={e => {
-                        const pName = e.target.value;
-                        const product = products.find(p => p.name === pName);
-                        setFormData({
-                          ...formData, 
-                          itemName: pName,
-                          specification: product ? `${product.standard} ${product.unit}` : formData.specification
-                        });
-                      }}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                    >
-                      <option value="">품목 선택</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.name}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">출고 수량(kg)</label>
-                    <input 
-                      required
-                      type="number" 
-                      value={formData.quantity}
-                      onChange={e => setFormData({...formData, quantity: Number(e.target.value)})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">배송/출고 일자</label>
                     <input 
                       type="date"
@@ -986,6 +1046,76 @@ export default function InventoryLogisticsView() {
                       onChange={e => setFormData({...formData, date: e.target.value})}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
                     />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">출고 품목 목록</h4>
+                    <button 
+                      type="button"
+                      onClick={addItemRow}
+                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-indigo-100 shadow-sm"
+                    >
+                      <PlusCircle size={12} /> 품목 추가
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {formData.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-3 items-end bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative group">
+                        <div className="col-span-6 space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400">품목 {index + 1}</label>
+                          <select 
+                            required
+                            value={item.itemName}
+                            onChange={e => {
+                              const pName = e.target.value;
+                              const product = products.find(p => p.name === pName);
+                              updateItemRow(index, {
+                                itemName: pName,
+                                specification: product ? `${product.standard} ${product.unit}` : item.specification
+                              });
+                            }}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
+                          >
+                            <option value="">품목 선택</option>
+                            {products.map(p => (
+                              <option key={p.id} value={p.name}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400">수량(kg)</label>
+                          <input 
+                            required
+                            type="number"
+                            value={item.quantity}
+                            onChange={e => updateItemRow(index, { quantity: Number(e.target.value) })}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-1">
+                          <label className="text-[9px] font-bold text-slate-400">규격</label>
+                          <input 
+                            readOnly
+                            disabled
+                            value={item.specification}
+                            className="w-full px-3 py-2 bg-slate-100 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-400 outline-none"
+                          />
+                        </div>
+                        <div className="col-span-1 pb-1 flex justify-center">
+                          <button 
+                            type="button"
+                            onClick={() => removeItemRow(index)}
+                            disabled={formData.items.length <= 1}
+                            className="p-1.5 text-slate-300 hover:text-rose-500 disabled:opacity-30 disabled:hover:text-slate-300 transition-colors"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
