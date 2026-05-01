@@ -301,20 +301,26 @@ export default function SalesManagementView() {
                     </div>
                   </td>
                   <td className="p-5">
-                    <select className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 outline-none">
-                      <option selected={order.shippingMethod === '택배배송'}>택배배송</option>
-                      <option selected={order.shippingMethod === '퀵서비스'}>퀵서비스</option>
-                      <option selected={order.shippingMethod === '방문수령'}>방문수령</option>
+                    <select 
+                      defaultValue={order.shippingMethod}
+                      className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 outline-none"
+                    >
+                      <option>택배배송</option>
+                      <option>퀵서비스</option>
+                      <option>방문수령</option>
                     </select>
                   </td>
                   <td className="p-5">
-                    <select className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 outline-none">
-                      <option selected={order.courier === 'CJ대한통운'}>CJ대한통운</option>
-                      <option selected={order.courier === '로젠택배'}>로젠택배</option>
-                      <option selected={order.courier === '한진택배'}>한진택배</option>
-                      <option selected={order.courier === '롯데택배'}>롯데택배</option>
-                      <option selected={order.courier === '우체국'}>우체국택배</option>
-                      <option selected={order.courier === '기타'}>기타</option>
+                    <select 
+                      defaultValue={order.courier}
+                      className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 outline-none"
+                    >
+                      <option>CJ대한통운</option>
+                      <option>로젠택배</option>
+                      <option>한진택배</option>
+                      <option>롯데택배</option>
+                      <option value="우체국">우체국택배</option>
+                      <option>기타</option>
                     </select>
                   </td>
                   <td className="p-5">

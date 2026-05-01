@@ -160,7 +160,8 @@ const ProjectsView: React.FC = () => {
       return;
     }
 
-    const shelterName = shelters.find(s => s.id === formData.shelterId)?.name || 'Unknown';
+    const selectedShelter = shelters.find(s => s.id === formData.shelterId);
+    const shelterName = formData.shelterId === 'etc' ? '기타' : (selectedShelter?.name || 'Unknown');
 
     try {
       if (editingProjectId) {
@@ -354,6 +355,7 @@ const ProjectsView: React.FC = () => {
               {shelters.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
+              <option value="etc">기타</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
@@ -698,6 +700,7 @@ const ProjectsView: React.FC = () => {
                 {shelters.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
+                <option value="etc">기타</option>
               </select>
             </div>
             <div className="space-y-1.5">
