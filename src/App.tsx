@@ -16,7 +16,9 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
+    console.log("App initializing, setting up auth listener...");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("Auth state changed. User:", user ? user.email : "none");
       setCurrentUser(user);
       setIsInitializing(false);
     });

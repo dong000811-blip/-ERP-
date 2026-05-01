@@ -7,7 +7,7 @@ import { LogIn } from 'lucide-react';
 export default function Login() {
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+    // provider.setCustomParameters({ prompt: 'select_account' }); // Removed to allow auto-login if already signed in to Google
 
     try {
       await signInWithPopup(auth, provider);

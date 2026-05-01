@@ -1,6 +1,6 @@
 import { initializeApp, getApp, getApps, FirebaseApp } from "firebase/app";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // HARDCODED CONFIGURATION for Vercel troubleshooting
@@ -47,6 +47,15 @@ console.log("Firestore instance created.");
 
 export const auth = getAuth(app);
 console.log("Auth instance created.");
+
+// Set persistence explicitly to browserLocalPersistence
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("Firebase Auth persistence set to local.");
+  })
+  .catch((error) => {
+    console.error("Error setting persistence:", error);
+  });
 
 // Initialize Analytics as requested, ensuring it's supported in the environment
 export const analytics = typeof window !== 'undefined' ? isSupported().then(supported => {
