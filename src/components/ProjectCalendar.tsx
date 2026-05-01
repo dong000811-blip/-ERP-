@@ -12,21 +12,38 @@ interface ProjectCalendarProps {
 }
 
 const ProjectCalendar: React.FC<ProjectCalendarProps> = ({ onEventClick, projects = PROJECT_DATA }) => {
-  const getEventStyles = (type: Project['type']) => {
-    switch (type) {
-      case 'logistics': 
-        return { bg: '#FF9F1C', border: '#f59e0b', text: '#ffffff' }; // Orange
-      case 'sales': 
-        return { bg: '#2D336B', border: '#1e234a', text: '#ffffff' }; // Deep Blue
-      case 'event': 
-        return { bg: '#80BCBD', border: '#6da9aa', text: '#ffffff' }; // Green/Teal
-      default: 
-        return { bg: '#94a3b8', border: '#64748b', text: '#ffffff' };
+  // Modern, comfortable color palette
+  const COLOR_PALETTE = [
+    { bg: '#EEF2FF', border: '#C7D2FE', text: '#4338CA' }, // Indigo
+    { bg: '#F0F9FF', border: '#BAE6FD', text: '#0369A1' }, // Sky
+    { bg: '#F5F3FF', border: '#DDD6FE', text: '#6D28D9' }, // Violet
+    { bg: '#ECFDF5', border: '#A7F3D0', text: '#047857' }, // Emerald
+    { bg: '#FFF7ED', border: '#FFEDD5', text: '#C2410C' }, // Orange
+    { bg: '#FEF2F2', border: '#FECACA', text: '#B91C1C' }, // Red
+    { bg: '#FDF2F8', border: '#FBCFE8', text: '#BE185D' }, // Pink
+    { bg: '#F0FDFA', border: '#CCFBF1', text: '#0F766E' }, // Teal
+    { bg: '#FAFAF9', border: '#E7E5E4', text: '#44403C' }, // Stone
+    { bg: '#EFF6FF', border: '#DBEAFE', text: '#1D4ED8' }, // Blue
+    { bg: '#F8FAFC', border: '#E2E8F0', text: '#334155' }, // Slate
+    { bg: '#FFFBEB', border: '#FEF3C7', text: '#B45309' }, // Amber
+    { bg: '#F5FAFE', border: '#E0F2FE', text: '#0369A1' }, // Light Blue
+    { bg: '#FDF4FF', border: '#FAE8FF', text: '#A21CAF' }, // Fuchsia
+  ];
+
+  const getEventStyles = (id: string, name: string) => {
+    // Simple deterministic hash based on ID or Name
+    const seed = id + name;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
     }
+    const index = Math.abs(hash) % COLOR_PALETTE.length;
+    return COLOR_PALETTE[index];
   };
 
   const events = projects.map(proj => {
-    const styles = getEventStyles(proj.type);
+    const styles = getEventStyles(proj.id, proj.projectName);
     return {
       id: proj.id,
       title: proj.projectName,
@@ -54,16 +71,13 @@ const ProjectCalendar: React.FC<ProjectCalendarProps> = ({ onEventClick, project
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#FF9F1C]"></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">배송/물류</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">배송/물류</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#2D336B]"></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">영업/미팅</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">영업/미팅</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#80BCBD]"></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">이벤트/캠페인</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">이벤트/캠페인</span>
           </div>
         </div>
       </div>
