@@ -19,7 +19,9 @@ import {
   Database,
   Trash2,
   Edit2,
-  TrendingUp
+  TrendingUp,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -71,6 +73,7 @@ export default function InventoryLogisticsView() {
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedBatchIds, setExpandedBatchIds] = useState<Set<string>>(new Set());
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -141,6 +144,49 @@ export default function InventoryLogisticsView() {
     
     return result;
   }, [ledger, selectedShelterId, ledgerSearch]);
+
+  const groupedLedger = useMemo(() => {
+    const groups: any[] = [];
+    const map = new Map<string, any>();
+
+    filteredLedger.forEach(entry => {
+      const gId = entry.batchId || entry.id;
+      if (!map.has(gId)) {
+        const group = {
+          id: gId,
+          date: entry.date,
+          type: entry.type,
+          category: entry.category,
+          shelterId: entry.shelterId,
+          shelterName: entry.shelterName,
+          shippingFee: entry.shippingFee,
+          manager: entry.manager,
+          remarks: entry.remarks,
+          items: [],
+          totalQuantity: 0,
+          mainItemName: entry.itemName,
+          isBatch: !!entry.batchId
+        };
+        map.set(gId, group);
+        groups.push(group);
+      }
+      const group = map.get(gId);
+      group.items.push(entry);
+      group.totalQuantity += entry.quantity;
+    });
+
+    return groups;
+  }, [filteredLedger]);
+
+  const toggleExpand = (e: React.MouseEvent, batchId: string) => {
+    e.stopPropagation();
+    setExpandedBatchIds(prev => {
+      const next = new Set(prev);
+      if (next.has(batchId)) next.delete(batchId);
+      else next.add(batchId);
+      return next;
+    });
+  };
 
   const balancesByItem = useMemo(() => {
     const balances: Record<string, { quantity: number; spec: string }> = {};
@@ -682,105 +728,191 @@ export default function InventoryLogisticsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredLedger.map((entry) => (
-                <tr 
-                  key={entry.id} 
-                  onClick={() => {
-                    setFocusedShelterId(entry.shelterId);
-                    showToast(`${entry.shelterName}의 실시간 잔고를 조회합니다.`, 'success');
-                  }}
-                  className={cn(
-                    "hover:bg-slate-50/50 group transition-all cursor-pointer",
-                    selectedIds.has(entry.batchId || entry.id) ? "bg-indigo-50/20" : "",
-                    focusedShelterId === entry.shelterId ? "bg-indigo-50/40 ring-1 ring-inset ring-indigo-100" : ""
-                  )}
-                >
-                  <td className="px-6 py-4.5 whitespace-nowrap">
-                    <button 
-                       onClick={(e) => { 
-                         e.stopPropagation(); 
-                         toggleSelect(entry.id);
-                       }}
-                       className={cn(
-                         "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                         selectedIds.has(entry.batchId || entry.id)
-                           ? "bg-indigo-600 border-indigo-600 text-white"
-                           : "bg-white border-slate-200 group-hover:border-slate-300"
-                       )}
-                    >
-                       {selectedIds.has(entry.batchId || entry.id) && <CheckCircle2 size={12} />}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4.5 whitespace-nowrap">
-                    <span className="text-[11px] font-black text-slate-800 tracking-tighter">{entry.date}</span>
-                  </td>
-                  <td className="px-6 py-4.5 whitespace-nowrap min-w-[5rem]">
-                    <span className={cn(
-                      "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight inline-block",
-                      entry.type === '입고' 
-                        ? "bg-blue-50 text-blue-600 border border-blue-100" 
-                        : "bg-red-50 text-red-600 border border-red-100"
-                    )}>
-                      {entry.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4.5 whitespace-nowrap">
-                    {entry.category ? (
-                      <span className={cn(
-                        "px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider",
-                        entry.category === '일반 후원' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                        entry.category === '매칭 이벤트' ? "bg-purple-50 text-purple-600 border-purple-100" :
-                        entry.category === '정기 배송' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
-                        entry.category === '반품/환불' ? "bg-rose-50 text-rose-600 border-rose-100" :
-                        entry.category === '재고 조정' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                        "bg-slate-100 text-slate-600 border-slate-200"
-                      )}>
-                        {entry.category}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">-</span>
+              {groupedLedger.map((group) => (
+                <React.Fragment key={group.id}>
+                  <tr 
+                    onClick={() => {
+                      setFocusedShelterId(group.shelterId);
+                      showToast(`${group.shelterName}의 실시간 잔고를 조회합니다.`, 'success');
+                    }}
+                    className={cn(
+                      "hover:bg-slate-50/50 group transition-all cursor-pointer border-b border-slate-100",
+                      selectedIds.has(group.id) ? "bg-indigo-50/20" : "",
+                      focusedShelterId === group.shelterId ? "bg-indigo-50/40" : "",
+                      expandedBatchIds.has(group.id) ? "bg-slate-50/80" : ""
                     )}
-                  </td>
-                  <td className="px-6 py-4.5 whitespace-nowrap">
-                    <span className="text-xs font-bold text-slate-700">{entry.shelterName}</span>
-                  </td>
-                  <td className="px-6 py-4.5 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                       <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 transition-colors">
-                         <Box size={14} />
-                       </div>
-                       <span className="text-xs font-bold text-slate-600">{entry.itemName}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4.5 text-right whitespace-nowrap">
-                    {entry.type === '출고' ? (
-                      <span className="text-[11px] font-black text-slate-800 tabular-nums">
-                        {entry.shippingFee ? `₩${(Math.round(entry.shippingFee * 1.1)).toLocaleString()}` : '₩0'}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">-</span>
-                    )}
-                  </td>
-                  <td className={cn(
-                    "px-6 py-4.5 text-right font-black text-sm tabular-nums whitespace-nowrap",
-                    entry.type === '입고' ? "text-blue-600" : "text-red-600"
-                  )}>
-                    {entry.type === '입고' ? '+' : '-'}{entry.quantity.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4.5 text-right font-black text-sm text-slate-800 tabular-nums whitespace-nowrap">
-                    {entry.balance.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4.5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  >
+                    <td className="px-6 py-4.5 whitespace-nowrap">
                       <button 
-                        onClick={() => handleOpenEdit(entry)}
-                        className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-indigo-600 border border-transparent hover:border-indigo-100 transition-all shadow-sm"
+                         onClick={(e) => { 
+                           e.stopPropagation(); 
+                           toggleSelect(group.id);
+                         }}
+                         className={cn(
+                           "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
+                           selectedIds.has(group.id)
+                             ? "bg-indigo-600 border-indigo-600 text-white"
+                             : "bg-white border-slate-200 group-hover:border-slate-300"
+                         )}
                       >
-                        <Edit2 size={14} />
+                         {selectedIds.has(group.id) && <CheckCircle2 size={12} />}
                       </button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-6 py-4.5 whitespace-nowrap">
+                      <span className="text-[11px] font-black text-slate-800 tracking-tighter">{group.date}</span>
+                    </td>
+                    <td className="px-6 py-4.5 whitespace-nowrap min-w-[5rem]">
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight inline-block",
+                        group.type === '입고' 
+                          ? "bg-blue-50 text-blue-600 border border-blue-100" 
+                          : "bg-red-50 text-red-600 border border-red-100"
+                      )}>
+                        {group.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4.5 whitespace-nowrap">
+                      {group.category ? (
+                        <span className={cn(
+                          "px-2 py-1 rounded-lg text-[9px] font-black border uppercase tracking-wider",
+                          group.category === '일반 후원' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                          group.category === '매칭 이벤트' ? "bg-purple-50 text-purple-600 border-purple-100" :
+                          group.category === '정기 배송' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                          group.category === '반품/환불' ? "bg-rose-50 text-rose-600 border-rose-100" :
+                          group.category === '재고 조정' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                          "bg-slate-100 text-slate-600 border-slate-200"
+                        )}>
+                          {group.category}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4.5 whitespace-nowrap">
+                      <span className="text-xs font-bold text-slate-700">{group.shelterName}</span>
+                    </td>
+                    <td className="px-6 py-4.5 whitespace-nowrap">
+                      <div 
+                        className="flex items-center gap-2"
+                        onClick={(e) => group.isBatch && toggleExpand(e, group.id)}
+                      >
+                         <div className={cn(
+                           "w-8 h-8 rounded-lg border flex items-center justify-center transition-colors shadow-sm",
+                           group.isBatch ? "bg-indigo-50 border-indigo-100 text-indigo-500" : "bg-slate-50 border-slate-100 text-slate-400 group-hover:text-indigo-500"
+                         )}>
+                           {group.isBatch ? (
+                             expandedBatchIds.has(group.id) ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                           ) : (
+                             <Box size={14} />
+                           )}
+                         </div>
+                         <div className="flex flex-col">
+                           <span className={cn("text-xs font-bold", group.isBatch ? "text-indigo-600" : "text-slate-600")}>
+                             {group.mainItemName}
+                             {group.isBatch && group.items.length > 1 && (
+                               <span className="ml-1.5 text-[10px] font-black text-indigo-400">외 {group.items.length - 1}건</span>
+                             )}
+                           </span>
+                           {group.isBatch && (
+                             <span className="text-[9px] font-bold text-slate-400 uppercase leading-none">복수 품목 트랜잭션</span>
+                           )}
+                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4.5 text-right whitespace-nowrap">
+                      {group.type === '출고' ? (
+                        <span className="text-[11px] font-black text-slate-800 tabular-nums">
+                          {group.shippingFee ? `₩${(Math.round(group.shippingFee * 1.1)).toLocaleString()}` : '₩0'}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
+                    <td className={cn(
+                      "px-6 py-4.5 text-right font-black text-sm tabular-nums whitespace-nowrap",
+                      group.type === '입고' ? "text-blue-600" : "text-red-600"
+                    )}>
+                      {group.type === '입고' ? '+' : '-'}{group.totalQuantity.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4.5 text-right font-black text-sm text-slate-400 tabular-nums whitespace-nowrap italic">
+                      {group.isBatch ? '-' : (group.items[0]?.balance || 0).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEdit(group.items[0]);
+                          }}
+                          className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-indigo-600 border border-transparent hover:border-indigo-100 transition-all shadow-sm"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  {/* Expanded Items */}
+                  <AnimatePresence>
+                    {expandedBatchIds.has(group.id) && (
+                      <tr>
+                        <td colSpan={10} className="p-0 border-none bg-slate-50/30">
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-24 py-4 space-y-2">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-1.5 h-4 bg-indigo-400 rounded-full" />
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">상세 품목 내역</h4>
+                              </div>
+                              
+                              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                <table className="w-full text-left">
+                                  <thead className="bg-slate-50/50 text-[9px] font-black text-slate-400 uppercase tracking-tighter border-b border-slate-100">
+                                    <tr>
+                                      <th className="px-6 py-3">No.</th>
+                                      <th className="px-6 py-3">품목명</th>
+                                      <th className="px-6 py-3">규격</th>
+                                      <th className="px-6 py-3 text-right">개별 수량</th>
+                                      <th className="px-6 py-3 text-right">개별 잔고</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-50">
+                                    {group.items.map((item: any, idx: number) => (
+                                      <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
+                                        <td className="px-6 py-2.5 text-[10px] font-bold text-slate-400">{idx + 1}</td>
+                                        <td className="px-6 py-2.5">
+                                          <span className="text-[11px] font-black text-slate-700">{item.itemName}</span>
+                                        </td>
+                                        <td className="px-6 py-2.5">
+                                          <span className="text-[10px] font-bold text-slate-400 uppercase">{item.specification}</span>
+                                        </td>
+                                        <td className={cn(
+                                          "px-6 py-2.5 text-right text-[11px] font-black tabular-nums",
+                                          item.type === '입고' ? "text-blue-500" : "text-red-500"
+                                        )}>
+                                          {item.type === '입고' ? '+' : '-'}{item.quantity.toLocaleString()}kg
+                                        </td>
+                                        <td className="px-6 py-2.5 text-right">
+                                          <span className="text-[11px] font-black text-slate-800 tabular-nums">
+                                            {item.balance.toLocaleString()}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </motion.div>
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
