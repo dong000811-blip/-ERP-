@@ -124,6 +124,22 @@ const ProjectsView: React.FC = () => {
     );
   }, [partnerSearch]);
 
+  const resetFormData = () => {
+    setEditingProjectId(null);
+    setFormData({
+      projectName: '',
+      shelterId: '',
+      startDate: '',
+      endDate: '',
+      description: '',
+      status: 'Upcoming',
+      type: 'event',
+      partnerIds: []
+    });
+    setPartnerSearch('');
+    setIsPartnerDropdownOpen(false);
+  };
+
   const handleOpenModal = (project?: Project) => {
     if (project) {
       setEditingProjectId(project.id);
@@ -138,17 +154,7 @@ const ProjectsView: React.FC = () => {
         partnerIds: project.partnerIds || []
       });
     } else {
-      setEditingProjectId(null);
-      setFormData({
-        projectName: '',
-        shelterId: '',
-        startDate: '',
-        endDate: '',
-        description: '',
-        status: 'Upcoming',
-        type: 'event',
-        partnerIds: []
-      });
+      resetFormData();
     }
     setIsModalOpen(true);
   };
@@ -180,6 +186,7 @@ const ProjectsView: React.FC = () => {
         showToast('새 프로젝트가 등록되었습니다.');
       }
       setIsModalOpen(false);
+      resetFormData();
     } catch (error) {
       console.error(error);
       showToast('프로젝트 저장에 실패했습니다.', 'error');
@@ -668,7 +675,10 @@ const ProjectsView: React.FC = () => {
         {isModalOpen && (
           <ModalWrapper
             isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
+            onClose={() => {
+              setIsModalOpen(false);
+              resetFormData();
+            }}
             title={editingProjectId ? '프로젝트 정보 수정' : '신규 프로젝트 등록'}
             icon={<Briefcase size={20} />}
             width="max-w-2xl"

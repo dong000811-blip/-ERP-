@@ -12,24 +12,32 @@ interface ProjectCalendarProps {
 }
 
 const ProjectCalendar: React.FC<ProjectCalendarProps> = ({ onEventClick, projects = PROJECT_DATA }) => {
-  const getEventColor = (type: Project['type']) => {
+  const getEventStyles = (type: Project['type']) => {
     switch (type) {
-      case 'logistics': return '#FF9F1C'; // Orange
-      case 'sales': return '#2D336B'; // Deep Blue
-      case 'event': return '#80BCBD'; // Green
-      default: return '#94a3b8';
+      case 'logistics': 
+        return { bg: '#FF9F1C', border: '#f59e0b', text: '#ffffff' }; // Orange
+      case 'sales': 
+        return { bg: '#2D336B', border: '#1e234a', text: '#ffffff' }; // Deep Blue
+      case 'event': 
+        return { bg: '#80BCBD', border: '#6da9aa', text: '#ffffff' }; // Green/Teal
+      default: 
+        return { bg: '#94a3b8', border: '#64748b', text: '#ffffff' };
     }
   };
 
-  const events = projects.map(proj => ({
-    id: proj.id,
-    title: proj.projectName,
-    start: proj.startDate,
-    end: proj.endDate,
-    backgroundColor: getEventColor(proj.type),
-    borderColor: getEventColor(proj.type),
-    extendedProps: { ...proj }
-  }));
+  const events = projects.map(proj => {
+    const styles = getEventStyles(proj.type);
+    return {
+      id: proj.id,
+      title: proj.projectName,
+      start: proj.startDate,
+      end: proj.endDate,
+      backgroundColor: styles.bg,
+      borderColor: styles.border,
+      textColor: styles.text,
+      extendedProps: { ...proj }
+    };
+  });
 
   const handleEventClick = (info: any) => {
     if (onEventClick) {
@@ -71,10 +79,34 @@ const ProjectCalendar: React.FC<ProjectCalendarProps> = ({ onEventClick, project
           .fc .fc-col-header-cell-cushion { color: #94a3b8; font-weight: 800; text-transform: uppercase; padding: 10px 0; }
           .fc .fc-daygrid-day-number { color: #64748b; font-weight: 600; padding: 8px; }
           .fc .fc-day-today { background-color: #f0fdf4 !important; }
-          .fc .fc-event { border-radius: 4px; padding: 2px 4px; border: none; font-weight: 600; }
+          .fc .fc-event { 
+            border-radius: 6px; 
+            padding: 2px 6px; 
+            border-width: 1px;
+            font-weight: 700; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            margin-bottom: 2px;
+          }
+          .fc .fc-event:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            filter: brightness(1.05);
+            z-index: 50;
+          }
+          .fc .fc-event-main {
+            color: inherit !important;
+          }
+          .fc .fc-event-title {
+            color: inherit !important;
+            font-size: 10px;
+            letter-spacing: -0.01em;
+          }
           .fc .fc-daygrid-event { margin-top: 2px; }
           .calendar-container { height: 100%; min-height: 400px; }
           .fc-header-toolbar { margin-bottom: 1rem !important; }
+          .fc .fc-daygrid-day-frame:hover { background-color: #f8fafc; }
         `}</style>
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
