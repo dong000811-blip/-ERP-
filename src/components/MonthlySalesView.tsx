@@ -67,6 +67,13 @@ interface RawSalesRow {
 // --- Constants ---
 const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#94A3B8'];
 
+// Custom aliases for flexible matching (e.g., "드림테일즈" in product name -> "드림테일즈 레스큐")
+const SHELTER_ALIASES: Record<string, string> = {
+  "드림테일즈": "드림테일즈 레스큐",
+  "똥강아지": "똥강아지 공화국",
+  "삼송": "삼송보호소",
+};
+
 interface KPICardProps {
   data: MonthlyKPI;
 }
@@ -142,8 +149,36 @@ const MonthlySalesView: React.FC = () => {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws) as any[];
 
-        const shelterNames = shelters.map(s => s.name);
-        
+        const findBestShelterMatch = (productName: string) => {
+          const normalizedProduct = productName.replace(/\s+/g, '');
+          
+          // 1. Alias Check (Highest Priority)
+          for (const [alias, realName] of Object.entries(SHELTER_ALIASES)) {
+            const normalizedAlias = alias.replace(/\s+/g, '');
+            if (normalizedProduct.includes(normalizedAlias)) {
+              return realName;
+            }
+          }
+
+          // 2. Normalized Inclusion Check
+          for (const s of shelters) {
+            const normalizedShelter = s.name.replace(/\s+/g, '');
+            if (normalizedProduct.includes(normalizedShelter)) {
+              return s.name;
+            }
+          }
+
+          // 3. Core Keyword Check (First word of shelter name)
+          for (const s of shelters) {
+            const coreKeyword = s.name.trim().split(/\s+/)[0];
+            if (coreKeyword && normalizedProduct.includes(coreKeyword.replace(/\s+/g, ''))) {
+              return s.name;
+            }
+          }
+
+          return null;
+        };
+
         let totalRaw = 0;
         const rows: RawSalesRow[] = data.map((row, index) => {
           const productName = String(row['상품명'] || '');
@@ -157,8 +192,8 @@ const MonthlySalesView: React.FC = () => {
           
           totalRaw += revenue;
 
-          // Initial matching logic
-          const matchedShelter = shelterNames.find(name => productName.includes(name));
+          // Advanced matching logic
+          const matchedShelter = findBestShelterMatch(productName);
           const initialCategory = matchedShelter ? `${matchedShelter}` : '일반 판매 (B2C)';
 
           return {
