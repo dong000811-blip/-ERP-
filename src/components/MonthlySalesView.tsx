@@ -674,7 +674,7 @@ const MonthlySalesView: React.FC = () => {
                       <td className="p-4 text-center">
                         <span className={cn(
                           "px-2 py-0.5 rounded text-[9px] font-black uppercase",
-                          row.status.includes('완료') || row.status.includes('구매확정') ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                          row.status.includes('취소') ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
                         )}>
                           {row.status.includes('취소') ? '취소' : '정상'}
                         </span>
