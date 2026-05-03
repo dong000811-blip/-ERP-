@@ -1231,7 +1231,7 @@ export default function ShelterDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen w-screen bg-slate-100 font-sans text-slate-800">
+    <div className="flex h-screen w-screen bg-slate-100 font-sans text-slate-800 overflow-hidden">
       {/* Sidebar - Proportional Scaling */}
       <aside className="w-[14rem] bg-white border-r border-slate-200 flex flex-col shrink-0 z-50 sticky top-0 h-screen">
         <div className="p-[1.75rem] flex items-center gap-[0.75rem] mb-[1.5rem]">
@@ -1345,7 +1345,7 @@ export default function ShelterDashboard() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col bg-slate-100 relative min-w-0">
+      <main className="flex-1 flex flex-col overflow-hidden bg-slate-100 relative min-w-0">
         <div className="absolute inset-0 bg-[radial-gradient(#80BCBD15_1px,transparent_1px)] [background-size:1.25rem_1.25rem] pointer-events-none opacity-50"></div>
         
         {/* Header - Integrated & Clean */}
@@ -1389,7 +1389,7 @@ export default function ShelterDashboard() {
         </header>
 
         {/* View Content Area */}
-        <div className="p-4 lg:p-6 xl:p-8 flex flex-col gap-4 lg:gap-6 relative z-10">
+        <div className="flex-1 overflow-hidden min-h-0 p-4 lg:p-6 xl:p-8 flex flex-col gap-4 lg:gap-6 relative z-10">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeView}
@@ -1397,7 +1397,7 @@ export default function ShelterDashboard() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.99, y: -10 }}
                     transition={{ duration: 0.3, ease: 'circOut' }}
-                    className="w-full"
+                    className="h-full w-full flex flex-col overflow-hidden"
                 >
                     {renderView()}
                 </motion.div>
