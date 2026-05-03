@@ -56,6 +56,7 @@ import PartnerManagement from './PartnerManagement';
 import SalesTaskManager from './SalesTaskManager';
 import ActivityLogManagementView from './ActivityLogManagementView';
 import SalesManagementView from './SalesManagementView';
+import MonthlySalesView from './MonthlySalesView';
 import { 
   LIVE_EVENTS, 
   LEAD_SHELTERS, 
@@ -1191,7 +1192,7 @@ export default function ShelterDashboard() {
       console.error("Logout failed:", error);
     }
   };
-  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales' | 'orders'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales' | 'orders' | 'monthly-sales'>('dashboard');
   const [crmFilter, setCrmFilter] = useState('');
 
   const navigateToCrm = (region: string) => {
@@ -1223,6 +1224,7 @@ export default function ShelterDashboard() {
       case 'products': return <ProductRegistry />;
       case 'sales': return <SalesTaskManager />;
       case 'orders': return <SalesManagementView />;
+      case 'monthly-sales': return <MonthlySalesView />;
       case 'settings': return <div className="p-10 text-center flex flex-col items-center justify-center h-full"><Settings size={48} className="text-slate-100 mb-4 animate-spin-slow" /><h3 className="text-slate-400 font-bold uppercase tracking-widest">환경 설정 콘솔</h3><p className="text-xs text-slate-300 mt-2 italic">모듈 유지 관리 중...</p></div>;
       default: return null;
     }
@@ -1280,6 +1282,12 @@ export default function ShelterDashboard() {
             active={activeView === 'orders'} 
             label="주문/배송 관리" 
             onClick={() => setActiveView('orders')}
+          />
+          <SidebarItem 
+            icon={TrendingUp} 
+            active={activeView === 'monthly-sales'} 
+            label="월별 매출 현황" 
+            onClick={() => setActiveView('monthly-sales')}
           />
           
           <div className="pt-[1.5rem] pb-[0.5rem] px-[0.75rem] text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">기초 정보 관리</div>
@@ -1354,6 +1362,7 @@ export default function ShelterDashboard() {
                  activeView === 'products' ? '상품 기초 데이터 등록' :
                  activeView === 'sales' ? '영업 및 협력 테스크 관리' :
                  activeView === 'orders' ? '실시간 주문 및 배송 현황' :
+                 activeView === 'monthly-sales' ? '월별 실적 및 재무 통계' :
                  activeView.replace(/([A-Z])/g, ' $1').trim()}
              </h1>
           </div>
