@@ -707,7 +707,7 @@ const MonthlySalesView: React.FC = () => {
 
         {/* Verification Bottom Bar */}
         {isPreviewMode && (
-          <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 sticky bottom-0 z-40 rounded-b-2xl shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+          <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 rounded-b-2xl">
              <div className="flex items-center gap-2 text-slate-400">
                <AlertIcon size={14} />
                <span className="text-[10px] font-bold italic">매핑이 불확실한 항목(노란색)은 드롭다운을 통해 직접 보호소를 지정할 수 있습니다.</span>
