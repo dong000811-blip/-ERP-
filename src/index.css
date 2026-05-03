@@ -18,25 +18,22 @@
   html {
      /* Fluid scaling: 12px min, 0.833% of viewport width (so at 1920px it is 16px), 16px max */
      font-size: clamp(12px, 0.833vw, 16px);
-     height: 100vh;
+     min-height: 100vh;
      width: 100vw;
-     overflow: hidden;
   }
 
   body {
     @apply bg-slate-100 text-slate-800 antialiased;
-    height: 100%;
+    min-height: 100vh;
     width: 100%;
     margin: 0;
-    overflow: hidden;
   }
 
   #root {
-    height: 100%;
+    min-height: 100vh;
     width: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
   }
 
   .custom-scrollbar::-webkit-scrollbar {

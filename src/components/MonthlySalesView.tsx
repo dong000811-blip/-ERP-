@@ -336,7 +336,7 @@ const MonthlySalesView: React.FC = () => {
   }, [salesData, searchTerm]);
 
   return (
-    <div className="flex flex-col h-full gap-6 overflow-hidden">
+    <div className="flex flex-col gap-8 pb-20">
       {/* Header with Month Filter & Upload */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/50 p-4 rounded-2xl border border-white shrink-0">
         <div className="flex items-center gap-3">
@@ -472,8 +472,8 @@ const MonthlySalesView: React.FC = () => {
       </div>
 
       {/* Detailed Aggregation Table / Staging View */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10 shrink-0">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[600px]">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-[72px] z-30 shrink-0 rounded-t-2xl shadow-sm">
             <div>
               <h4 className="text-[13px] font-black text-slate-800 tracking-tight">
                 {isPreviewMode ? "검증 및 데이터 매핑 (Staging)" : "보호소별/카테고리별 정산 내역"}
@@ -531,10 +531,10 @@ const MonthlySalesView: React.FC = () => {
             )}
         </div>
 
-        <div className="flex-1 overflow-auto custom-scrollbar">
+        <div className="flex-1">
           {!isPreviewMode ? (
             <table className="w-full text-left border-collapse min-w-[1000px]">
-              <thead className="sticky top-0 bg-slate-50 z-20 shadow-sm">
+              <thead className="sticky top-[152px] bg-slate-50 z-20 shadow-sm">
                 <tr>
                   <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">구분 (보호소명/기타)</th>
                   <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">정상 결제건수</th>
@@ -548,7 +548,7 @@ const MonthlySalesView: React.FC = () => {
               <tbody className="divide-y divide-slate-100 font-mono">
                 {/* TOTAL ROW AT THE TOP */}
                 {salesData.length > 0 && (
-                  <tr className="bg-indigo-50/50 sticky top-0 z-10 border-b-2 border-indigo-100">
+                  <tr className="bg-indigo-50/50 sticky top-[197px] z-10 border-b-2 border-indigo-100">
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-white text-[10px] font-black">Σ</div>
@@ -600,9 +600,9 @@ const MonthlySalesView: React.FC = () => {
               </tbody>
             </table>
           ) : (
-            <div className="flex flex-col min-h-0">
+            <div className="flex flex-col">
                <table className="w-full text-left border-collapse min-w-[1000px] table-fixed">
-                <thead className="sticky top-0 bg-slate-50 z-20 shadow-sm border-b border-slate-100">
+                <thead className="sticky top-[152px] bg-slate-50 z-20 shadow-sm border-b border-slate-100">
                   <tr>
                     <th className="w-1/4 p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">상품명</th>
                     <th className="w-1/6 p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">구분(매핑)</th>
@@ -672,7 +672,7 @@ const MonthlySalesView: React.FC = () => {
 
         {/* Verification Bottom Bar */}
         {isPreviewMode && (
-          <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+          <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0 sticky bottom-0 z-40 rounded-b-2xl shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
              <div className="flex items-center gap-2 text-slate-400">
                <AlertIcon size={14} />
                <span className="text-[10px] font-bold italic">매핑이 불확실한 항목(노란색)은 드롭다운을 통해 직접 보호소를 지정할 수 있습니다.</span>
