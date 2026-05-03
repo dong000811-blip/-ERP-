@@ -545,10 +545,10 @@ const MonthlySalesView: React.FC = () => {
                   <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right text-rose-500">취소 금액</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
+              <tbody className="divide-y divide-slate-100">
                 {/* TOTAL ROW AT THE TOP */}
                 {salesData.length > 0 && (
-                  <tr className="bg-indigo-50/50 sticky top-[197px] z-10 border-b-2 border-indigo-100">
+                  <tr className="bg-indigo-50/50 sticky top-[197px] z-10 border-b-2 border-indigo-100 font-bold">
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-white text-[10px] font-black">Σ</div>
@@ -612,7 +612,7 @@ const MonthlySalesView: React.FC = () => {
                     <th className="w-1/6 p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">정산예정액</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
+                <tbody className="divide-y divide-slate-100">
                   {stagingRows.map((row) => (
                     <tr key={row.id} className={cn(
                       "hover:bg-slate-50 transition-colors group",
