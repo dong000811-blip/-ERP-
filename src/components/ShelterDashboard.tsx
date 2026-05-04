@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  Copy,
   MessageSquare as MsgIcon
 } from 'lucide-react';
 import { 
@@ -586,6 +587,21 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
 
   // Kakao Postcode Integration
   const [isPostcodeOpen, setIsPostcodeOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    if (!text || text === '--') return;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`${label}가 복사되었습니다.`);
+    }).catch(err => {
+      console.error('Copy failed:', err);
+    });
+  };
 
   const handleSearchAddress = () => {
     if (isPostcodeOpen) return;
@@ -765,6 +781,21 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
 
   return (
     <div className="flex h-full gap-6 overflow-hidden relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 20, x: '-50%' }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-6 py-3 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-3 border border-white/10"
+          >
+            <CheckCircle2 size={16} className="text-emerald-400" />
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main List Table */}
       <div className={cn(
         "flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col transition-all duration-300",
@@ -925,9 +956,45 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
                 <h4 className="text-[10px] font-black text-[#2D336B] uppercase tracking-[0.2em] flex items-center gap-2">
                   <MapPin size={12} /> 위치 및 주소
                 </h4>
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
-                  <p className="text-xs font-bold text-slate-800">{selectedShelter.region}</p>
-                  <p className="text-xs text-slate-500 mt-1">{selectedShelter.detailedAddress || '상세 주소 정보가 없습니다.'}</p>
+                <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  {/* Zip Code Row */}
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200/50">
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">우편번호</span>
+                        <span className="text-xs font-bold text-[#2D336B]">{selectedShelter.zipCode || '--'}</span>
+                      </div>
+                    </div>
+                    {selectedShelter.zipCode && (
+                      <button 
+                        onClick={() => copyToClipboard(selectedShelter.zipCode!, '우편번호')}
+                        className="p-2 hover:bg-white rounded-lg text-slate-300 hover:text-[#2D336B] transition-all border border-transparent hover:border-slate-200 shadow-sm"
+                        title="우편번호 복사"
+                      >
+                        <Copy size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Address Row */}
+                  <div className="flex items-center justify-between group/addr pt-1">
+                    <div className="italic">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">상세 주소</span>
+                      <p className="text-xs font-bold text-slate-800">{selectedShelter.region}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {selectedShelter.address || selectedShelter.detailedAddress || '상세 주소 정보가 없습니다.'}
+                      </p>
+                    </div>
+                    {(selectedShelter.address || selectedShelter.detailedAddress) && (
+                      <button 
+                        onClick={() => copyToClipboard(`${selectedShelter.address || ''} ${selectedShelter.detailedAddress || ''}`.trim(), '주소')}
+                        className="p-2 hover:bg-white rounded-lg text-slate-300 hover:text-[#2D336B] transition-all border border-transparent hover:border-slate-200 shadow-sm"
+                        title="주소 복사"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -935,16 +1002,38 @@ const ShelterListView = ({ initialFilter }: { initialFilter?: string }) => {
               <div className="grid grid-cols-2 gap-4">
                 <section className="space-y-3">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">대표자</h4>
-                  <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
-                    <p className="text-sm font-bold text-slate-800">{selectedShelter.representative}</p>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">{selectedShelter.representativeGender === 'Male' ? '남성' : '여성'} | {selectedShelter.representativePhone}</p>
+                  <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm flex items-center justify-between group/rep">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{selectedShelter.representative}</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-0.5">{selectedShelter.representativeGender === 'Male' ? '남성' : '여성'} | {selectedShelter.representativePhone}</p>
+                    </div>
+                    {selectedShelter.representativePhone && (
+                      <button 
+                        onClick={() => copyToClipboard(selectedShelter.representativePhone!, '연락처')}
+                        className="p-1.5 hover:bg-slate-50 rounded text-slate-300 hover:text-indigo-500 transition-all"
+                        title="연락처 복사"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    )}
                   </div>
                 </section>
                 <section className="space-y-3">
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">매니저</h4>
-                  <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
-                    <p className="text-sm font-bold text-slate-800">{selectedShelter.managerName || '--'}</p>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">{selectedShelter.managerGender ? (selectedShelter.managerGender === 'Male' ? '남성' : '여성') : '--'} | {selectedShelter.managerPhone || '--'}</p>
+                  <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm flex items-center justify-between group/mgr">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{selectedShelter.managerName || '--'}</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-0.5">{selectedShelter.managerGender ? (selectedShelter.managerGender === 'Male' ? '남성' : '여성') : '--'} | {selectedShelter.managerPhone || '--'}</p>
+                    </div>
+                    {selectedShelter.managerPhone && selectedShelter.managerPhone !== '--' && (
+                      <button 
+                        onClick={() => copyToClipboard(selectedShelter.managerPhone!, '연락처')}
+                        className="p-1.5 hover:bg-slate-50 rounded text-slate-300 hover:text-indigo-500 transition-all"
+                        title="연락처 복사"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    )}
                   </div>
                 </section>
               </div>
