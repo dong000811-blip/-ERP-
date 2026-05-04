@@ -239,8 +239,8 @@ const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask
     }));
 
     return [...logEvents, ...taskEvents]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 20); // Limit to recent 20
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 20); // Sorted by date ascending (closest/earliest first)
   }, [tasks, logs]);
 
   const getIcon = (category: string) => {
@@ -390,10 +390,12 @@ const TaskDrawer = ({ task, onClose }: { task: SalesTask | null, onClose: () => 
 const DashboardView = ({ 
   onSelectRegion, 
   onProjectClick,
+  onViewAllSales,
   projects
 }: { 
   onSelectRegion: (region: string) => void, 
   onProjectClick?: (proj: Project) => void,
+  onViewAllSales: () => void,
   projects: Project[]
 }) => {
   const { shelters } = useShelters();
@@ -531,7 +533,10 @@ const DashboardView = ({
                   </h3>
                   <p className="text-[0.625rem] text-slate-400 font-bold uppercase tracking-widest mt-[0.125rem]">최근 활동 및 업무 추진 현황</p>
                 </div>
-                <button className="text-[10px] font-black text-slate-300 hover:text-slate-500 uppercase flex items-center gap-1 transition-colors">
+                <button 
+                  onClick={onViewAllSales}
+                  className="text-[10px] font-black text-slate-300 hover:text-slate-500 uppercase flex items-center gap-1 transition-colors"
+                >
                   All <ArrowRight size={10} />
                 </button>
               </div>
@@ -1300,6 +1305,7 @@ export default function ShelterDashboard() {
             setCrmFilter(proj.shelterName);
             setActiveView('crm');
           }}
+          onViewAllSales={() => setActiveView('sales')}
           projects={projects}
         />
       );
