@@ -57,12 +57,21 @@ setPersistence(auth, browserLocalPersistence)
     console.error("Error setting persistence:", error);
   });
 
-// Initialize Analytics as requested, ensuring it's supported in the environment
+// Initialize Analytics with error handling to prevent issues if APIs are blocked
 export const analytics = typeof window !== 'undefined' ? isSupported().then(supported => {
   if (supported) {
-    console.log("Firebase Analytics supported and initializing.");
-    return getAnalytics(app);
+    try {
+      console.log("Firebase Analytics supported and initializing.");
+      const instance = getAnalytics(app);
+      return instance;
+    } catch (err) {
+      console.warn("Firebase Analytics initialization skipped: This likely means the 'Firebase Installations API' needs to be enabled in the Google Cloud Console for your project.", err);
+      return null;
+    }
   }
   console.log("Firebase Analytics not supported in this environment.");
+  return null;
+}).catch(err => {
+  console.warn("Firebase Analytics support check failed:", err);
   return null;
 }) : null;

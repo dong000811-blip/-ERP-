@@ -36,6 +36,7 @@ interface FirestoreContextType {
   deliveries: Delivery[];
   inventory: InventoryEntry[];
   settlements: any[];
+  adjustments: any[];
   isLoading: boolean;
   currentUser: User | null;
   
@@ -58,6 +59,7 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [inventory, setInventory] = useState<InventoryEntry[]>([]);
   const [settlements, setSettlements] = useState<any[]>([]);
+  const [adjustments, setAdjustments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -136,6 +138,10 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       onSnapshot(query(collection(db, 'settlements'), where('userId', '==', uid)), 
         (s) => setSettlements(s.docs.map(d => ({ ...d.data(), id: d.id }))),
         (e) => handleFirestoreError(e, OperationType.GET, 'settlements')
+      ),
+      onSnapshot(query(collection(db, 'adjustments'), where('userId', '==', uid)), 
+        (s) => setAdjustments(s.docs.map(d => ({ ...d.data(), id: d.id }))),
+        (e) => handleFirestoreError(e, OperationType.GET, 'adjustments')
       )
     ];
 
@@ -201,7 +207,7 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   return (
     <FirestoreContext.Provider value={{ 
-      projects, tasks, logs, partners, products, donations, deliveries, inventory, settlements, isLoading, currentUser,
+      projects, tasks, logs, partners, products, donations, deliveries, inventory, settlements, adjustments, isLoading, currentUser,
       addDocument, updateDocument, deleteDocument, deleteDocuments
     }}>
       {children}

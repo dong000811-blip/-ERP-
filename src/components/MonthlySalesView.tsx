@@ -14,7 +14,12 @@ import {
   FileSpreadsheet,
   Upload,
   CheckCircle2,
-  AlertCircle as AlertIcon
+  AlertCircle as AlertIcon,
+  PlusCircle,
+  Plus,
+  Trash2,
+  X,
+  CreditCard
 } from 'lucide-react';
 import { 
   XAxis, 
@@ -63,6 +68,18 @@ interface RawSalesRow {
   settlement: number;
   fees: number;
   originalRow: any;
+  isAdjustment?: boolean;
+}
+
+interface SettlementAdjustment {
+  id: string;
+  month: string; // e.g., '2026-05'
+  shelterName: string;
+  type: '사후 취소' | '반품 정산' | '기타 차감';
+  amount: number; // 차감 매출액 (Deduction Amount)
+  commission: number; // 환급 수수료 (Refunded Commission)
+  memo: string;
+  createdAt: string;
 }
 // --- Constants ---
 const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#10B981', '#F59E0B', '#94A3B8'];
@@ -105,7 +122,6 @@ const KPICard: React.FC<KPICardProps> = ({ data }) => (
 
 const MonthlySalesView: React.FC = () => {
   const { shelters } = useShelters();
-  const { addDocument } = useFirestore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedMonth, setSelectedMonth] = useState('2026-05');
@@ -120,7 +136,30 @@ const MonthlySalesView: React.FC = () => {
   const [excelTotalAmount, setExcelTotalAmount] = useState(0);
 
   // Firestore Data
-  const { settlements } = useFirestore();
+  const { settlements, adjustments, addDocument, deleteDocument, currentUser } = useFirestore();
+
+  const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [newAdjustment, setNewAdjustment] = useState<Partial<SettlementAdjustment>>({
+    type: '사후 취소',
+    amount: 0,
+    commission: 0,
+    memo: ''
+  });
+
+  // Current month adjustments
+  const currentMonthAdjustments = useMemo(() => {
+    return (adjustments || []).filter(a => a.month === selectedMonth);
+  }, [adjustments, selectedMonth]);
+
+  const adjustmentRevenueTotal = useMemo(() => {
+    return currentMonthAdjustments.reduce((sum, a) => sum - a.amount, 0);
+  }, [currentMonthAdjustments]);
+
+  const adjustmentSettlementTotal = useMemo(() => {
+    // Net impact on settlement: -(Amount - Commission)
+    return currentMonthAdjustments.reduce((sum, a) => sum - (a.amount - a.commission), 0);
+  }, [currentMonthAdjustments]);
 
   // Load saved data for selected month
   useEffect(() => {
@@ -294,6 +333,48 @@ const MonthlySalesView: React.FC = () => {
     }
   };
 
+  const handleSaveAdjustment = () => {
+    if (!newAdjustment.shelterName || !newAdjustment.amount) {
+      alert('대상 보호소와 차감 금액을 입력해주세요.');
+      return;
+    }
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmAdjustment = async () => {
+    try {
+      setIsProcessing(true);
+      const adjustmentData = {
+        ...newAdjustment,
+        month: selectedMonth,
+        createdAt: new Date().toISOString(),
+        userId: currentUser?.uid // Ensure userId is attached for consistency
+      };
+      await addDocument('adjustments', adjustmentData);
+      
+      setIsConfirmModalOpen(false);
+      setIsAdjustmentModalOpen(false);
+      setNewAdjustment({ type: '사후 취소', amount: 0, commission: 0, memo: '' });
+      
+      alert('조정 내역이 성공적으로 등록되었습니다.');
+    } catch (error) {
+      console.error(error);
+      alert('저장 중 오류가 발생했습니다.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteAdjustment = async (id: string) => {
+    if (!window.confirm('조정 내역을 삭제하시겠습니까?')) return;
+    try {
+      await deleteDocument('adjustments', id);
+    } catch (error) {
+      console.error(error);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   const handleUpdateCategory = (rowId: string, newCategory: string) => {
     setStagingRows(prev => prev.map(row => 
       row.id === rowId ? { ...row, category: newCategory } : row
@@ -326,16 +407,16 @@ const MonthlySalesView: React.FC = () => {
   const kpis: MonthlyKPI[] = useMemo(() => [
     { 
       label: '총 매출액', 
-      value: `₩${totals.totalRevenue.toLocaleString()}`, 
-      subValue: '정산기준금액 합계', 
+      value: `₩${(totals.totalRevenue + adjustmentRevenueTotal).toLocaleString()}`, 
+      subValue: '엑셀 합계 + 수동 조정', 
       change: salesData.length > 0 ? 12.5 : 0, 
       icon: DollarSign, 
       color: 'text-indigo-600' 
     },
     { 
       label: '총 정산금액', 
-      value: `₩${totals.totalSettlement.toLocaleString()}`, 
-      subValue: `실 수령액 (수수료 제외)`, 
+      value: `₩${(totals.totalSettlement + adjustmentSettlementTotal).toLocaleString()}`, 
+      subValue: `최종 실 수령액`, 
       change: salesData.length > 0 ? 8.2 : 0, 
       icon: TrendingUp, 
       color: 'text-emerald-600' 
@@ -349,14 +430,14 @@ const MonthlySalesView: React.FC = () => {
       color: 'text-amber-600' 
     },
     { 
-      label: '취소/반품 총액', 
-      value: `₩${totals.cancelAmount.toLocaleString()}`, 
-      subValue: `${totals.cancelCount}건의 취소 데이터`, 
+      label: '취소/반품/조정 총액', 
+      value: `₩${(totals.cancelAmount + Math.abs(adjustmentRevenueTotal)).toLocaleString()}`, 
+      subValue: `${totals.cancelCount}건 + ${currentMonthAdjustments.length}건 조정`, 
       change: salesData.length > 0 ? -1.2 : 0, 
       icon: TrendingDown, 
       color: 'text-rose-600' 
     },
-  ], [totals, salesData]);
+  ], [totals, salesData, adjustmentRevenueTotal, adjustmentSettlementTotal, currentMonthAdjustments]);
 
   const pieData = useMemo(() => {
     return salesData
@@ -419,6 +500,14 @@ const MonthlySalesView: React.FC = () => {
                 <Upload size={16} />
               )}
               정산 엑셀 업로드
+            </button>
+
+            <button 
+              onClick={() => setIsAdjustmentModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-amber-500 text-white shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all active:scale-95"
+            >
+              <PlusCircle size={16} />
+              추가 조정 내역 등록
             </button>
 
             <AnimatePresence>
@@ -731,6 +820,271 @@ const MonthlySalesView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Manual Adjustments Table */}
+      {!isPreviewMode && currentMonthAdjustments.length > 0 && (
+         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col shrink-0 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-amber-50/30">
+               <div>
+                  <h4 className="text-[13px] font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <AlertIcon size={16} className="text-amber-500" />
+                    당월 수동 조정 내역
+                  </h4>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Manual Post-Settlement Adjustments</p>
+               </div>
+               <div className="bg-amber-100 px-3 py-1 rounded-full text-[10px] font-black text-amber-700">
+                  총 차감액: ₩{Math.abs(adjustmentRevenueTotal).toLocaleString()}
+               </div>
+            </div>
+            <table className="w-full text-left border-collapse">
+               <thead className="bg-slate-50">
+                  <tr>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">대상 보호소</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">조정 구분</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">차감 매출액</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">환급 수수료</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">메모</th>
+                    <th className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">작업</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                  {currentMonthAdjustments.map((a) => (
+                    <tr key={a.id} className="hover:bg-amber-50/20 transition-colors group">
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                           <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-black rounded tracking-widest">수동</span>
+                           <span className="text-xs font-black text-slate-800">{a.shelterName}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg border border-slate-200">
+                           {a.type}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="text-xs font-black text-rose-600">-₩{a.amount.toLocaleString()}</span>
+                      </td>
+                      <td className="p-4 text-right text-[11px] text-emerald-600 font-bold">
+                        +₩{a.commission.toLocaleString()}
+                      </td>
+                      <td className="p-4">
+                        <span className="text-[11px] text-slate-500 italic">{a.memo || '--'}</span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button 
+                          onClick={() => handleDeleteAdjustment(a.id)}
+                          className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+      )}
+
+      {/* Manual Adjustment Modal */}
+      <AnimatePresence>
+        {isAdjustmentModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setIsAdjustmentModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl border border-white/20 w-full max-w-md overflow-hidden relative z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                      <PlusCircle size={20} />
+                   </div>
+                   <div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">추가 조정 내역 등록</h3>
+                      <p className="text-[10px] text-slate-400 font-bold">사후 취소 및 반품 전용 차감 등록</p>
+                   </div>
+                </div>
+                <button onClick={() => setIsAdjustmentModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                   <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                {/* Shelter Select */}
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">대상 보호소 (공급처)</label>
+                   <div className="relative">
+                      <Users size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                      <select 
+                        value={newAdjustment.shelterName || ''}
+                        onChange={(e) => setNewAdjustment(prev => ({ ...prev, shelterName: e.target.value }))}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-11 pr-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                      >
+                         <option value="">보호소 선택</option>
+                         <option value="일반 판매 (B2C)">일반 판매 (B2C)</option>
+                         {shelters.map(s => (
+                           <option key={s.id} value={s.name}>{s.name}</option>
+                         ))}
+                      </select>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">조정 구분</label>
+                      <select 
+                        value={newAdjustment.type}
+                        onChange={(e) => setNewAdjustment(prev => ({ ...prev, type: e.target.value as any }))}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                      >
+                         <option value="사후 취소">사후 취소</option>
+                         <option value="반품 정산">반품 정산</option>
+                         <option value="기타 차감">기타 차감</option>
+                      </select>
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">차감 매출액 (₩)</label>
+                      <input 
+                        type="number"
+                        placeholder="0"
+                        value={newAdjustment.amount || ''}
+                        onChange={(e) => setNewAdjustment(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                      />
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">환급 수수료 (₩)</label>
+                      <input 
+                        type="number"
+                        placeholder="0"
+                        value={newAdjustment.commission || ''}
+                        onChange={(e) => setNewAdjustment(prev => ({ ...prev, commission: Number(e.target.value) }))}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      />
+                   </div>
+                   <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center">
+                      <div className="text-center">
+                         <p className="text-[9px] font-black text-indigo-400 uppercase">예상 정산 차감액</p>
+                         <p className="text-sm font-black text-indigo-700">
+                           ₩{((newAdjustment.amount || 0) - (newAdjustment.commission || 0)).toLocaleString()}
+                         </p>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">조정 메모 (사유)</label>
+                    <textarea 
+                      placeholder="예: 고객 단순 변심 반품 (정산 확정 후)"
+                      value={newAdjustment.memo}
+                      onChange={(e) => setNewAdjustment(prev => ({ ...prev, memo: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 min-h-[80px]"
+                    />
+                </div>
+              </div>
+
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+                 <button 
+                  onClick={() => setIsAdjustmentModalOpen(false)}
+                  className="flex-1 py-3 rounded-xl border border-slate-200 text-xs font-black text-slate-400 hover:bg-white hover:text-slate-600 transition-all"
+                 >
+                   취소
+                 </button>
+                 <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSaveAdjustment();
+                  }}
+                  disabled={isProcessing}
+                  className="flex-3 bg-amber-500 text-white py-3 rounded-xl text-xs font-black shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 font-mono"
+                 >
+                   조정 내역 등록
+                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 2-Step Confirmation Modal */}
+      <AnimatePresence>
+        {isConfirmModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl border border-white/20 w-full max-w-sm overflow-hidden relative z-10"
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertIcon size={32} />
+                </div>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight">최종 등록 확인</h3>
+                <p className="text-[11px] text-slate-500 font-bold mt-2 leading-relaxed">
+                  아래 내용으로 취소 데이터를 확정하시겠습니까?<br />
+                  이 작업은 재무 통계에 즉시 반영됩니다.
+                </p>
+
+                <div className="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">대상 보호소</span>
+                    <span className="text-xs font-black text-slate-800">{newAdjustment.shelterName}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">조정 금액</span>
+                    <span className="text-xs font-black text-rose-600">-₩{newAdjustment.amount?.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">환급 수수료</span>
+                    <span className="text-xs font-black text-emerald-600">+₩{newAdjustment.commission?.toLocaleString()}</span>
+                  </div>
+                  <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">실 정산 영향</span>
+                    <span className="text-sm font-black text-indigo-700">
+                      -₩{((newAdjustment.amount || 0) - (newAdjustment.commission || 0)).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button 
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="flex-1 py-4 rounded-xl border border-slate-200 text-xs font-black text-slate-400 hover:bg-white hover:text-slate-600 transition-all font-mono"
+                >
+                  돌아가기
+                </button>
+                <button 
+                  onClick={handleConfirmAdjustment}
+                  disabled={isProcessing}
+                  className="flex-2 bg-[#2D336B] text-white py-4 rounded-xl text-xs font-black shadow-lg shadow-indigo-100 hover:bg-[#1D235B] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 font-mono"
+                >
+                  {isProcessing ? '처리 중...' : '최종 승인 및 저장'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
 
   );
