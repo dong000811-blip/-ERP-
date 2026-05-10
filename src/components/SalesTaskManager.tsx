@@ -48,6 +48,7 @@ export default function SalesTaskManager() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [shelterFilter, setShelterFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<string>('전체');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<SalesTask | null>(null);
 
@@ -84,9 +85,13 @@ export default function SalesTaskManager() {
                           shelter?.name.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = categoryFilter === 'All' || task.category === categoryFilter;
       const matchesShelter = shelterFilter === 'All' || task.shelterId === shelterFilter;
-      return matchesSearch && matchesCategory && matchesShelter;
+      
+      const normalizedTaskStatus = task.status === '진행중' ? '진행 중' : task.status;
+      const matchesStatus = statusFilter === '전체' || normalizedTaskStatus === statusFilter;
+      
+      return matchesSearch && matchesCategory && matchesShelter && matchesStatus;
     }).sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime());
-  }, [tasks, search, categoryFilter, shelterFilter, shelters]);
+  }, [tasks, search, categoryFilter, shelterFilter, shelters, statusFilter]);
 
   const handleOpenModal = (task?: SalesTask) => {
     if (task) {
@@ -225,39 +230,41 @@ export default function SalesTaskManager() {
   return (
     <div className="flex flex-col h-full gap-[1rem]">
       {/* Search & Filter Header */}
-      <div className="bg-white p-[1rem] rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-[1rem] items-center justify-between shrink-0">
-        <div className="flex flex-wrap gap-[1rem] items-center">
-          {/* View Toggle */}
-          <div className="flex bg-slate-100 p-[0.25rem] rounded-xl mr-[0.5rem]">
-            <button 
-              onClick={() => setViewMode('List')}
-              className={cn(
-                "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
-                viewMode === 'List' ? "bg-white text-accent shadow-sm" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              <ListIcon size={14} /> 리스트
-            </button>
-            <button 
-              onClick={() => setViewMode('Kanban')}
-              className={cn(
-                "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
-                viewMode === 'Kanban' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              <LayoutGrid size={14} /> 보드
-            </button>
-          </div>
+      <div className="bg-white p-[1rem] rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-[1rem] shrink-0">
+        <div className="flex flex-wrap gap-[1rem] items-center justify-between">
+          <div className="flex flex-wrap gap-[1rem] items-center">
+            {/* View Toggle */}
+            <div className="flex bg-slate-100 p-[0.25rem] rounded-xl mr-[0.5rem]">
+              <button 
+                onClick={() => setViewMode('List')}
+                className={cn(
+                  "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
+                  viewMode === 'List' ? "bg-white text-accent shadow-sm" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                <ListIcon size={14} /> 리스트
+              </button>
+              <button 
+                onClick={() => setViewMode('Kanban')}
+                className={cn(
+                  "px-[0.75rem] py-[0.375rem] rounded-lg text-[0.6875rem] font-black flex items-center gap-[0.375rem] transition-all",
+                  viewMode === 'Kanban' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                <LayoutGrid size={14} /> 보드
+              </button>
+            </div>
 
-          <div className="relative">
-            <Search size={16} className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="업무명 또는 보호소 검색..." 
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-[2.5rem] pr-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] w-[14rem] focus:ring-2 focus:ring-accent/10 outline-none transition-all font-bold"
-            />
+            <div className="relative">
+              <Search size={16} className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="업무명 또는 보호소 검색..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-[2.5rem] pr-[1rem] py-[0.625rem] bg-slate-50 border border-slate-100 rounded-xl text-[0.75rem] w-[14rem] focus:ring-2 focus:ring-accent/10 outline-none transition-all font-bold"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-[0.5rem]">
@@ -279,6 +286,36 @@ export default function SalesTaskManager() {
               <Plus size={18} /> 새 업무 등록
             </button>
           </div>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-2 border-t border-slate-50 pt-3">
+          {['전체', '대기', '진행 중', '완료'].map((status) => {
+            const count = status === '전체' 
+              ? tasks.length 
+              : tasks.filter(t => (t.status === '진행중' ? '진행 중' : t.status) === status).length;
+            
+            return (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-[0.75rem] font-black transition-all flex items-center gap-2",
+                  statusFilter === status 
+                    ? "bg-[#2D336B] text-white shadow-lg shadow-indigo-100" 
+                    : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                )}
+              >
+                {status}
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded-lg",
+                  statusFilter === status ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
