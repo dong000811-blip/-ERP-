@@ -228,15 +228,17 @@ const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask
       shelterId: l.targetId
     }));
 
-    const taskEvents = tasks.map(t => ({
-      id: t.id,
-      date: t.deadline,
-      message: t.taskName,
-      type: 'task',
-      category: t.category,
-      shelterId: t.shelterId,
-      originalTask: t
-    }));
+    const taskEvents = tasks
+      .filter(t => t.status !== '완료')
+      .map(t => ({
+        id: t.id,
+        date: t.deadline,
+        message: t.taskName,
+        type: 'task',
+        category: t.category,
+        shelterId: t.shelterId,
+        originalTask: t
+      }));
 
     return [...logEvents, ...taskEvents]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -252,39 +254,49 @@ const ActivityTimelineWidget = ({ onTaskClick }: { onTaskClick: (task: SalesTask
 
   return (
     <div className="space-y-[0.75rem] overflow-y-auto pr-[0.5rem] custom-scrollbar flex-1 min-h-0">
-      <div className="relative pl-[1.25rem]">
-        <div className="absolute left-[0.4375rem] top-0 bottom-0 w-[0.125rem] bg-slate-100" />
-        
-        {activities.map((activity, idx) => {
-          const shelter = shelters.find(s => s.id === activity.shelterId);
-          return (
-            <div 
-              key={`${activity.id}-${idx}`} 
-              className="relative mb-[1rem] group cursor-pointer"
-              onClick={() => {
-                if ('originalTask' in activity) onTaskClick(activity.originalTask as SalesTask);
-              }}
-            >
-              <div className="absolute -left-[1.25rem] top-[0.25rem] w-[0.875rem] h-[0.875rem] rounded-full border-2 border-white bg-slate-200 group-hover:bg-accent group-hover:scale-110 transition-all z-10" />
-              
-              <div className="p-[0.75rem] bg-slate-50/50 border border-slate-100 rounded-xl group-hover:bg-white group-hover:shadow-md group-hover:border-accent/10 transition-all">
-                <div className="flex justify-between items-center mb-[0.25rem]">
-                  <div className="flex items-center gap-[0.375rem]">
-                    {getIcon(activity.category)}
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activity.category}</span>
+      {activities.length > 0 ? (
+        <div className="relative pl-[1.25rem]">
+          <div className="absolute left-[0.4375rem] top-0 bottom-0 w-[0.125rem] bg-slate-100" />
+          
+          {activities.map((activity, idx) => {
+            const shelter = shelters.find(s => s.id === activity.shelterId);
+            return (
+              <div 
+                key={`${activity.id}-${idx}`} 
+                className="relative mb-[1rem] group cursor-pointer"
+                onClick={() => {
+                  if ('originalTask' in activity) onTaskClick(activity.originalTask as SalesTask);
+                }}
+              >
+                <div className="absolute -left-[1.25rem] top-[0.25rem] w-[0.875rem] h-[0.875rem] rounded-full border-2 border-white bg-slate-200 group-hover:bg-accent group-hover:scale-110 transition-all z-10" />
+                
+                <div className="p-[0.75rem] bg-slate-50/50 border border-slate-100 rounded-xl group-hover:bg-white group-hover:shadow-md group-hover:border-accent/10 transition-all">
+                  <div className="flex justify-between items-center mb-[0.25rem]">
+                    <div className="flex items-center gap-[0.375rem]">
+                      {getIcon(activity.category)}
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activity.category}</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-slate-300">{activity.date}</span>
                   </div>
-                  <span className="text-[10px] font-mono font-bold text-slate-300">{activity.date}</span>
-                </div>
-                <p className="text-[0.75rem] font-bold text-slate-700 leading-tight mb-[0.25rem]">{activity.message}</p>
-                <div className="flex items-center gap-[0.25rem] text-[0.625rem] font-bold text-slate-400">
-                  <span className="w-1 h-1 rounded-full bg-slate-300" />
-                  <span className="truncate">{shelter?.name}</span>
+                  <p className="text-[0.75rem] font-bold text-slate-700 leading-tight mb-[0.25rem]">{activity.message}</p>
+                  <div className="flex items-center gap-[0.25rem] text-[0.625rem] font-bold text-slate-400">
+                    <span className="w-1 h-1 rounded-full bg-slate-300" />
+                    <span className="truncate">{shelter?.name}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="h-full flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle2 size={32} className="text-emerald-500 opacity-20" />
+          </div>
+          <p className="text-sm font-black text-slate-800 mb-1">현재 진행 중인 업무가 없습니다. 🎉</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">모든 긴급 과제가 완료되었습니다</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -407,8 +419,8 @@ const DashboardView = ({
   const pendingDeliveries = deliveries.filter(d => d.status === 'Pending').length;
   
   return (
-    <div className="space-y-4 lg:space-y-6 flex flex-col h-full overflow-hidden">
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 shrink-0">
+    <div className="flex flex-col gap-4 lg:gap-6 w-full h-full overflow-hidden">
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
         <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-4 lg:p-5">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">활성 파트너</p>
@@ -475,8 +487,8 @@ const DashboardView = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0">
-          <div className="xl:col-span-8 flex flex-col min-h-0 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+          <div className="lg:col-span-2 flex flex-col min-h-[500px] w-full relative">
             <AnimatePresence mode="wait">
               {viewMode === 'map' ? (
                 <motion.div 
@@ -508,7 +520,7 @@ const DashboardView = ({
             </AnimatePresence>
           </div>
 
-          <div className="xl:col-span-4 flex flex-col gap-4 lg:gap-6 min-h-0">
+          <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
             <Card className="flex-1 flex flex-col min-h-0 bg-white/80 backdrop-blur-sm border-white/40 shadow-xl shadow-slate-200/50">
               <div className="flex items-center justify-between mb-[0.875rem] shrink-0">
                 <div>

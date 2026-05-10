@@ -57,7 +57,11 @@ setPersistence(auth, browserLocalPersistence)
     console.error("Error setting persistence:", error);
   });
 
-// Initialize Analytics with error handling to prevent issues if APIs are blocked
+// Firebase Analytics is disabled because it requires the 'Firebase Installations API' 
+// to be enabled in the Google Cloud Console, which is currently causing a 403 Permission Denied error.
+// If you need Analytics, please enable that API and uncomment the code below.
+export const analytics = null;
+/*
 export const analytics = typeof window !== 'undefined' ? isSupported().then(supported => {
   if (supported) {
     try {
@@ -75,3 +79,4 @@ export const analytics = typeof window !== 'undefined' ? isSupported().then(supp
   console.warn("Firebase Analytics support check failed:", err);
   return null;
 }) : null;
+*/
