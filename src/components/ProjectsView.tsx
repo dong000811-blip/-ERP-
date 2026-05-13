@@ -43,7 +43,7 @@ interface ProjectFormData {
 }
 
 const ProjectsView: React.FC = () => {
-  const { projects, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
+  const { projects, products, addDocument, updateDocument, deleteDocument, deleteDocuments } = useFirestore();
   const { shelters } = useShelters();
   
   const [shelterFilter, setShelterFilter] = useState<string>('all');
@@ -67,6 +67,9 @@ const ProjectsView: React.FC = () => {
 
   const [partnerSearch, setPartnerSearch] = useState('');
   const [isPartnerDropdownOpen, setIsPartnerDropdownOpen] = useState(false);
+
+  const [productSearch, setProductSearch] = useState('');
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
 
   const [perfFormData, setPerfFormData] = useState<ProjectPerformance>({
     productId: '',
@@ -123,6 +126,14 @@ const ProjectsView: React.FC = () => {
       p.type.toLowerCase().includes(partnerSearch.toLowerCase())
     );
   }, [partnerSearch]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => 
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.id.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.category.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch]);
 
   const resetFormData = () => {
     setEditingProjectId(null);
@@ -197,6 +208,7 @@ const ProjectsView: React.FC = () => {
     setPerfProjectId(project.id);
     if (project.performance) {
       setPerfFormData(project.performance);
+      setProductSearch(project.performance.productName);
     } else {
       setPerfFormData({
         productId: '',
@@ -208,7 +220,9 @@ const ProjectsView: React.FC = () => {
         shippingFee: 0,
         vat: 0
       });
+      setProductSearch('');
     }
+    setIsProductDropdownOpen(false);
     setIsPerfModalOpen(true);
   };
 
@@ -909,30 +923,77 @@ const ProjectsView: React.FC = () => {
           >
         <form onSubmit={handleSavePerformance} className="flex-1 p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar">
           <div className="space-y-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 relative">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">판매 품목 *</label>
-              <select 
-                required
-                value={perfFormData.productId}
-                onChange={e => {
-                  const product = MASTER_PRODUCT_DATA.find(p => p.id === e.target.value);
-                  if (product) {
-                    setPerfFormData({
-                      ...perfFormData,
-                      productId: product.id,
-                      productName: product.name,
-                      purchasePrice: product.purchasePrice,
-                      sellingPrice: product.sellingPrice
-                    });
-                  }
-                }}
-                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all cursor-pointer"
-              >
-                <option value="" disabled>상품을 선택하세요</option>
-                {MASTER_PRODUCT_DATA.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.standard})</option>
-                ))}
-              </select>
+              <div className="relative">
+                <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  required
+                  type="text" 
+                  value={productSearch}
+                  onFocus={() => setIsProductDropdownOpen(true)}
+                  onChange={e => {
+                    setProductSearch(e.target.value);
+                    setPerfFormData(prev => ({ ...prev, productName: e.target.value, productId: '' }));
+                    setIsProductDropdownOpen(true);
+                  }}
+                  placeholder="품목 조회 또는 직접 입력..."
+                  className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                />
+                
+                {/* Product Dropdown */}
+                <AnimatePresence>
+                  {isProductDropdownOpen && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute z-50 left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"
+                    >
+                      {filteredProducts.length > 0 ? (
+                        filteredProducts.map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setPerfFormData({
+                                ...perfFormData,
+                                productId: p.id,
+                                productName: p.name,
+                                purchasePrice: p.purchasePrice,
+                                sellingPrice: p.sellingPrice
+                              });
+                              setProductSearch(p.name);
+                              setIsProductDropdownOpen(false);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between group border-b border-slate-50 last:border-0"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-xs font-black text-slate-700">
+                                <span className="text-emerald-500 mr-2 text-[10px] uppercase font-mono">[{p.category}]</span>
+                                {p.name}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 font-mono">{p.standard} · {p.unit} · ₩{p.sellingPrice.toLocaleString()}</span>
+                            </div>
+                            <Plus size={14} className="text-slate-200 group-hover:text-emerald-400" />
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-loose">
+                          기존 품목 목록에 없습니다.<br />
+                          입력하신 이름으로 직접 등록됩니다.
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              {isProductDropdownOpen && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsProductDropdownOpen(false)}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
