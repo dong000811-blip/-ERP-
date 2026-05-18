@@ -58,6 +58,7 @@ import SalesTaskManager from './SalesTaskManager';
 import ActivityLogManagementView from './ActivityLogManagementView';
 import SalesManagementView from './SalesManagementView';
 import MonthlySalesView from './MonthlySalesView';
+import IndividualSalesView from './IndividualSalesView';
 import { 
   LIVE_EVENTS, 
   LEAD_SHELTERS, 
@@ -420,7 +421,7 @@ const DashboardView = ({
   
   return (
     <div className="flex flex-col gap-4 lg:gap-6 w-full h-full overflow-hidden">
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
         <Card className="h-full flex flex-col justify-between border-l-[0.25rem] border-l-[#2D336B] p-4 lg:p-5">
           <div>
             <p className="text-slate-400 text-[0.625rem] font-bold uppercase tracking-wider mb-[0.125rem]">활성 파트너</p>
@@ -487,8 +488,8 @@ const DashboardView = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
-          <div className="lg:col-span-2 flex flex-col min-h-[500px] w-full relative">
+        <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+          <div className="flex-[2] flex flex-col min-h-[500px] w-full relative">
             <AnimatePresence mode="wait">
               {viewMode === 'map' ? (
                 <motion.div 
@@ -520,7 +521,7 @@ const DashboardView = ({
             </AnimatePresence>
           </div>
 
-          <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 flex flex-col gap-4 min-h-0">
             <Card className="flex-1 flex flex-col min-h-0 bg-white/80 backdrop-blur-sm border-white/40 shadow-xl shadow-slate-200/50">
               <div className="flex items-center justify-between mb-[0.875rem] shrink-0">
                 <div>
@@ -1298,7 +1299,7 @@ export default function ShelterDashboard() {
       console.error("Logout failed:", error);
     }
   };
-  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales' | 'orders' | 'monthly-sales'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'crm' | 'donations' | 'activities' | 'inventory' | 'settings' | 'products' | 'partners' | 'sales' | 'orders' | 'monthly-sales' | 'individual-sales'>('dashboard');
   const [crmFilter, setCrmFilter] = useState('');
 
   const navigateToCrm = (region: string) => {
@@ -1332,6 +1333,7 @@ export default function ShelterDashboard() {
       case 'sales': return <SalesTaskManager />;
       case 'orders': return <SalesManagementView />;
       case 'monthly-sales': return <MonthlySalesView />;
+      case 'individual-sales': return <IndividualSalesView />;
       case 'settings': return <div className="p-10 text-center flex flex-col items-center justify-center h-full"><Settings size={48} className="text-slate-100 mb-4 animate-spin-slow" /><h3 className="text-slate-400 font-bold uppercase tracking-widest">환경 설정 콘솔</h3><p className="text-xs text-slate-300 mt-2 italic">모듈 유지 관리 중...</p></div>;
       default: return null;
     }
@@ -1395,6 +1397,12 @@ export default function ShelterDashboard() {
             active={activeView === 'monthly-sales'} 
             label="월별 매출 현황" 
             onClick={() => setActiveView('monthly-sales')}
+          />
+          <SidebarItem 
+            icon={ShoppingBag} 
+            active={activeView === 'individual-sales'} 
+            label="낱개판매관리" 
+            onClick={() => setActiveView('individual-sales')}
           />
           
           <div className="pt-[1.5rem] pb-[0.5rem] px-[0.75rem] text-[0.625rem] font-black text-slate-300 uppercase tracking-widest">기초 정보 관리</div>
@@ -1470,6 +1478,7 @@ export default function ShelterDashboard() {
                  activeView === 'sales' ? '영업 및 협력 테스크 관리' :
                  activeView === 'orders' ? '실시간 주문 및 배송 현황' :
                  activeView === 'monthly-sales' ? '월별 실적 및 재무 통계' :
+                 activeView === 'individual-sales' ? '낱개 판매 주문 관리' :
                  activeView.replace(/([A-Z])/g, ' $1').trim()}
              </h1>
           </div>

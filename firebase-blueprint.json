@@ -133,6 +133,27 @@
         "quantity": { "type": "number" },
         "balance": { "type": "number" }
       }
+    },
+    "individualSale": {
+      "title": "Individual Sale",
+      "description": "Records of individual sales",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderDate": { "type": "string" },
+        "orderer": { "type": "string" },
+        "contact": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unitPrice": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "shippingAddress": { "type": "string" },
+        "memo": { "type": "string" },
+        "shelterId": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["orderDate", "orderer", "productId", "quantity", "totalAmount"]
     }
   },
   "firestore": {
@@ -144,6 +165,7 @@
     "products": { "schema": "product", "description": "Collection of products" },
     "donations": { "schema": "donation", "description": "Collection of donations" },
     "deliveries": { "schema": "delivery", "description": "Collection of deliveries" },
-    "inventory": { "schema": "inventory", "description": "Collection of inventory records" }
+    "inventory": { "schema": "inventory", "description": "Collection of inventory records" },
+    "individualSales": { "schema": "individualSale", "description": "Collection of individual sales records" }
   }
 }

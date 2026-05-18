@@ -1,7 +1,6 @@
 import { initializeApp, getApp, getApps, FirebaseApp } from "firebase/app";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { getAnalytics, isSupported } from "firebase/analytics";
 
 // HARDCODED CONFIGURATION for Vercel troubleshooting
 const firebaseConfig = {
@@ -56,27 +55,3 @@ setPersistence(auth, browserLocalPersistence)
   .catch((error) => {
     console.error("Error setting persistence:", error);
   });
-
-// Firebase Analytics is disabled because it requires the 'Firebase Installations API' 
-// to be enabled in the Google Cloud Console, which is currently causing a 403 Permission Denied error.
-// If you need Analytics, please enable that API and uncomment the code below.
-export const analytics = null;
-/*
-export const analytics = typeof window !== 'undefined' ? isSupported().then(supported => {
-  if (supported) {
-    try {
-      console.log("Firebase Analytics supported and initializing.");
-      const instance = getAnalytics(app);
-      return instance;
-    } catch (err) {
-      console.warn("Firebase Analytics initialization skipped: This likely means the 'Firebase Installations API' needs to be enabled in the Google Cloud Console for your project.", err);
-      return null;
-    }
-  }
-  console.log("Firebase Analytics not supported in this environment.");
-  return null;
-}).catch(err => {
-  console.warn("Firebase Analytics support check failed:", err);
-  return null;
-}) : null;
-*/
