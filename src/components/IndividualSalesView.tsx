@@ -49,7 +49,9 @@ const IndividualSalesView: React.FC = () => {
     shippingAddress: '',
     memo: '',
     shelterId: '',
-    orderDate: new Date().toISOString().split('T')[0]
+    orderDate: new Date().toISOString().split('T')[0],
+    dispatchDate: '',
+    dispatchStatus: '발송전'
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -130,7 +132,9 @@ const IndividualSalesView: React.FC = () => {
       shippingAddress: '',
       memo: '',
       shelterId: '',
-      orderDate: new Date().toISOString().split('T')[0]
+      orderDate: new Date().toISOString().split('T')[0],
+      dispatchDate: '',
+      dispatchStatus: '발송전'
     });
     setProductSearch('');
     setIsModalOpen(false);
@@ -161,7 +165,9 @@ const IndividualSalesView: React.FC = () => {
       shippingAddress: sale.shippingAddress || '',
       memo: sale.memo || '',
       shelterId: sale.shelterId || '',
-      orderDate: sale.orderDate
+      orderDate: sale.orderDate,
+      dispatchDate: sale.dispatchDate || '',
+      dispatchStatus: sale.dispatchStatus || '발송전'
     });
     setProductSearch(sale.productName);
     setIsEditing(true);
@@ -286,6 +292,7 @@ const IndividualSalesView: React.FC = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">제품명</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-center">수량</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">총 결제금액</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">발송상태</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">배송지</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">기타사항</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">관리</th>
@@ -310,6 +317,16 @@ const IndividualSalesView: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-xs font-black text-indigo-600">₩{sale.totalAmount.toLocaleString()}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter",
+                      sale.dispatchStatus === '발송완료' 
+                        ? "bg-emerald-100 text-emerald-600" 
+                        : "bg-amber-100 text-amber-600"
+                    )}>
+                      {sale.dispatchStatus || '발송전'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-xs font-bold text-slate-500 max-w-[200px] truncate" title={sale.shippingAddress}>
                     {sale.shippingAddress || '-'}
@@ -496,18 +513,6 @@ const IndividualSalesView: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">연관 보호소 (선택)</label>
-                <select 
-                  value={formData.shelterId}
-                  onChange={e => setFormData(prev => ({ ...prev, shelterId: e.target.value }))}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10"
-                >
-                  <option value="">연관 보호소 없음</option>
-                  {shelters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">받는곳 (배송지)</label>
                 <input 
                   type="text" 
@@ -516,6 +521,32 @@ const IndividualSalesView: React.FC = () => {
                   placeholder="상세 주소를 입력하세요"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">발송일</label>
+                  <div className="relative">
+                    <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="date" 
+                      value={formData.dispatchDate}
+                      onChange={e => setFormData(prev => ({ ...prev, dispatchDate: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">발송여부</label>
+                  <select 
+                    value={formData.dispatchStatus}
+                    onChange={e => setFormData(prev => ({ ...prev, dispatchStatus: e.target.value }))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-emerald-500/10"
+                  >
+                    <option value="발송전">발송전</option>
+                    <option value="발송완료">발송완료</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -591,6 +622,13 @@ const IndividualSalesView: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">수량</span>
                     <span className="text-xs font-black text-slate-800">{formData.quantity}EA</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">발송상태</span>
+                    <span className={cn(
+                      "text-xs font-black uppercase",
+                      formData.dispatchStatus === '발송완료' ? "text-emerald-500" : "text-amber-500"
+                    )}>{formData.dispatchStatus}</span>
                   </div>
                    <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
                     <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">최종 결제액</span>
