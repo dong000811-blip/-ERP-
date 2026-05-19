@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ArrowRight,
   Trash2,
-  DollarSign
+  DollarSign,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFirestore } from '../FirestoreContext';
@@ -25,7 +26,7 @@ import { ModalWrapper } from './ModalWrapper';
 import { cn } from '../lib/utils';
 
 const IndividualSalesView: React.FC = () => {
-  const { individualSales, products, addDocument, deleteDocument, currentUser } = useFirestore();
+  const { individualSales, products, addDocument, updateDocument, deleteDocument, currentUser } = useFirestore();
   const { shelters } = useShelters();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,8 +48,12 @@ const IndividualSalesView: React.FC = () => {
     totalAmount: 0,
     shippingAddress: '',
     memo: '',
-    shelterId: ''
+    shelterId: '',
+    orderDate: new Date().toISOString().split('T')[0]
   });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentEditingId, setCurrentEditingId] = useState<string | null>(null);
 
   const [productSearch, setProductSearch] = useState('');
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
@@ -124,12 +129,15 @@ const IndividualSalesView: React.FC = () => {
       totalAmount: 0,
       shippingAddress: '',
       memo: '',
-      shelterId: ''
+      shelterId: '',
+      orderDate: new Date().toISOString().split('T')[0]
     });
     setProductSearch('');
     setIsModalOpen(false);
     setIsConfirmModalOpen(false);
     setIsProcessing(false);
+    setIsEditing(false);
+    setCurrentEditingId(null);
   };
 
   const handlePreSubmit = (e: React.FormEvent) => {
@@ -141,31 +149,57 @@ const IndividualSalesView: React.FC = () => {
     setIsConfirmModalOpen(true);
   };
 
+  const handleEdit = (sale: any) => {
+    setFormData({
+      orderer: sale.orderer,
+      contact: sale.contact || '',
+      productId: sale.productId,
+      productName: sale.productName,
+      quantity: sale.quantity,
+      unitPrice: sale.unitPrice,
+      totalAmount: sale.totalAmount,
+      shippingAddress: sale.shippingAddress || '',
+      memo: sale.memo || '',
+      shelterId: sale.shelterId || '',
+      orderDate: sale.orderDate
+    });
+    setProductSearch(sale.productName);
+    setIsEditing(true);
+    setCurrentEditingId(sale.id);
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = async () => {
     try {
       setIsProcessing(true);
-      const saleData = {
-        ...formData,
-        orderDate: today,
-        createdAt: new Date().toISOString(),
-        userId: currentUser?.uid
-      };
       
-      // Using addDocument from context which uses setDoc with generated ID
-      await addDocument('individualOrders', saleData);
+      if (isEditing && currentEditingId) {
+        await updateDocument('individualOrders', currentEditingId, {
+          ...formData,
+          updatedAt: new Date().toISOString()
+        });
+        alert('주문 정보가 수정되었습니다.');
+      } else {
+        const saleData = {
+          ...formData,
+          createdAt: new Date().toISOString(),
+          userId: currentUser?.uid
+        };
+        await addDocument('individualOrders', saleData);
+        alert('주문이 성공적으로 등록되었습니다.');
+      }
       
-      alert('주문이 성공적으로 등록되었습니다.');
       handleResetForm();
     } catch (error) {
-      console.error('Individual order registration failed:', error);
-      alert('주문 등록 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
+      console.error('Operation failed:', error);
+      alert('처리 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
       setIsProcessing(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('이 주문 내역을 삭제하시겠습니까?')) {
-      await deleteDocument('individualSales', id);
+      await deleteDocument('individualOrders', id);
     }
   };
 
@@ -284,12 +318,24 @@ const IndividualSalesView: React.FC = () => {
                     {sale.memo || '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => handleDelete(sale.id)}
-                      className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => handleEdit(sale)}
+                        className="p-1.5 text-slate-300 hover:text-indigo-600 transition-all opacity-0 group-hover:opacity-100"
+                        title="수정"
+                      >
+                        <Edit2 size={14} />
+                        <div className="sr-only">수정</div>
+                        <span className="text-[10px] font-black uppercase ml-1">Edit</span>
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(sale.id)}
+                        className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -316,13 +362,26 @@ const IndividualSalesView: React.FC = () => {
           <ModalWrapper
             isOpen={isModalOpen}
             onClose={handleResetForm}
-            title="신규 낱개 주문 등록"
-            icon={<Plus size={18} />}
-            headerColor="bg-accent"
+            title={isEditing ? "주문 정보 수정" : "신규 낱개 주문 등록"}
+            icon={isEditing ? <Edit2 size={18} /> : <Plus size={18} />}
+            headerColor={isEditing ? "bg-indigo-600" : "bg-accent"}
             width="max-w-2xl"
           >
             <form onSubmit={handlePreSubmit} className="p-8 space-y-6">
               <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">주문 날짜 *</label>
+                  <div className="relative">
+                    <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      required
+                      type="date" 
+                      value={formData.orderDate}
+                      onChange={e => setFormData(prev => ({ ...prev, orderDate: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">주문자 *</label>
                   <input 
@@ -334,6 +393,9 @@ const IndividualSalesView: React.FC = () => {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">연락처</label>
                   <input 
@@ -343,6 +405,20 @@ const IndividualSalesView: React.FC = () => {
                     placeholder="010-0000-0000"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">연관 보호소 (선택)</label>
+                  <div className="relative">
+                    <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <select 
+                      value={formData.shelterId}
+                      onChange={e => setFormData(prev => ({ ...prev, shelterId: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10 appearance-none"
+                    >
+                      <option value="">연관 보호소 없음</option>
+                      {shelters.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -463,9 +539,9 @@ const IndividualSalesView: React.FC = () => {
                 <button 
                   type="submit"
                   disabled={isProcessing}
-                  className="flex-2 py-4 bg-[#2D336B] text-white font-black text-xs rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-widest"
+                  className="flex-2 bg-[#2D336B] text-white font-black text-xs rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
-                  {isProcessing ? '저장 중...' : '신규 주문 등록 완료'}
+                  {isProcessing ? '저장 중...' : (isEditing ? '수정 내용 저장 완료' : '신규 주문 등록 완료')}
                 </button>
               </div>
             </form>
@@ -493,13 +569,17 @@ const IndividualSalesView: React.FC = () => {
                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 size={32} />
                 </div>
-                <h3 className="text-lg font-black text-slate-800 tracking-tight">주문 데이터 확정</h3>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight">{isEditing ? '주문 데이터 수정 확정' : '주문 데이터 확정'}</h3>
                 <p className="text-[11px] text-slate-500 font-bold mt-2 leading-relaxed">
-                  아래 내용으로 낱개 주문을 확정하시겠습니까?<br />
-                  등록 버튼을 누르면 DB에 기록됩니다.
+                  아래 내용으로 낱개 주문을 {isEditing ? '수정' : '확정'}하시겠습니까?<br />
+                  {isEditing ? '수정 완료' : '등록'} 버튼을 누르면 DB에 기록됩니다.
                 </p>
 
                 <div className="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">주문 날짜</span>
+                    <span className="text-xs font-black text-slate-800">{formData.orderDate}</span>
+                  </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">주문자</span>
                     <span className="text-xs font-black text-slate-800">{formData.orderer}</span>
