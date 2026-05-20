@@ -60,14 +60,26 @@ const IndividualSalesView: React.FC = () => {
   const [productSearch, setProductSearch] = useState('');
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
 
+  // States for deleting custom confirmation and optimistic updates
+  const [optimisticallyDeletedIds, setOptimisticallyDeletedIds] = useState<Set<string>>(new Set());
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteTargetOrderer, setDeleteTargetOrderer] = useState<string>('');
+  const [deleteTargetDetails, setDeleteTargetDetails] = useState<{ productName: string, totalAmount: number, orderDate: string, quantity: number } | null>(null);
+
   // Constants
   const today = new Date().toISOString().split('T')[0];
   const currentMonth = today.substring(0, 7);
 
+  // Active Sales excluding optimistically deleted rows
+  const activeSales = useMemo(() => {
+    return individualSales.filter(s => !optimisticallyDeletedIds.has(s.id));
+  }, [individualSales, optimisticallyDeletedIds]);
+
   // KPI Calculations
   const stats = useMemo(() => {
-    const todaySales = individualSales.filter(s => s.orderDate === today);
-    const monthSales = individualSales.filter(s => s.orderDate.startsWith(currentMonth));
+    const todaySales = activeSales.filter(s => s.orderDate === today);
+    const monthSales = activeSales.filter(s => s.orderDate.startsWith(currentMonth));
 
     const todayRevenue = todaySales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
     const monthRevenue = monthSales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
@@ -78,18 +90,18 @@ const IndividualSalesView: React.FC = () => {
       monthRevenue,
       todayCount
     };
-  }, [individualSales, today, currentMonth]);
+  }, [activeSales, today, currentMonth]);
 
   // Filtered Sales
   const filteredSales = useMemo(() => {
-    return individualSales.filter(s => {
+    return activeSales.filter(s => {
       const matchesDate = s.orderDate.startsWith(dateFilter);
       const matchesShelter = shelterFilter === 'All' || s.shelterId === shelterFilter;
       const matchesSearch = s.orderer.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            s.productName.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesDate && matchesShelter && matchesSearch;
     }).sort((a, b) => b.orderDate.localeCompare(a.orderDate));
-  }, [individualSales, dateFilter, shelterFilter, searchTerm]);
+  }, [activeSales, dateFilter, shelterFilter, searchTerm]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => 
@@ -137,6 +149,7 @@ const IndividualSalesView: React.FC = () => {
       dispatchStatus: '발송전'
     });
     setProductSearch('');
+    setIsProductDropdownOpen(false);
     setIsModalOpen(false);
     setIsConfirmModalOpen(false);
     setIsProcessing(false);
@@ -179,12 +192,13 @@ const IndividualSalesView: React.FC = () => {
     try {
       setIsProcessing(true);
       
-      if (isEditing && currentEditingId) {
-        await updateDocument('individualOrders', currentEditingId, {
+      const isEditMode = isEditing && currentEditingId;
+      
+      if (isEditMode) {
+        await updateDocument('individualOrders', currentEditingId!, {
           ...formData,
           updatedAt: new Date().toISOString()
         });
-        alert('주문 정보가 수정되었습니다.');
       } else {
         const saleData = {
           ...formData,
@@ -192,10 +206,20 @@ const IndividualSalesView: React.FC = () => {
           userId: currentUser?.uid
         };
         await addDocument('individualOrders', saleData);
-        alert('주문이 성공적으로 등록되었습니다.');
       }
       
+      // 1. Reset all state, close modal & confirmation modal IMMEDIATELY
+      // This prevents the UI from getting stuck in "Processing..." or failing to close if alert blocks.
       handleResetForm();
+      
+      // 2. Clear current search filter so the newly added order is guaranteed to be visible immediately in the list
+      setSearchTerm('');
+      
+      // 3. Show non-blocking feedback alert slightly after modal closed transition animation
+      setTimeout(() => {
+        alert(isEditMode ? '주문 정보가 수정되었습니다.' : '주문이 성공적으로 등록되었습니다.');
+      }, 150);
+      
     } catch (error) {
       console.error('Operation failed:', error);
       alert('처리 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
@@ -203,9 +227,49 @@ const IndividualSalesView: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('이 주문 내역을 삭제하시겠습니까?')) {
+  const triggerDeleteConfirm = (sale: any) => {
+    setDeleteTargetId(sale.id);
+    setDeleteTargetOrderer(sale.orderer);
+    setDeleteTargetDetails({
+      productName: sale.productName,
+      totalAmount: sale.totalAmount,
+      orderDate: sale.orderDate,
+      quantity: sale.quantity
+    });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+    const id = deleteTargetId;
+    try {
+      // 1. Instantly hide from UI (Optimistic Update)
+      setOptimisticallyDeletedIds(prev => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+
+      // Close the modal immediately
+      setIsDeleteModalOpen(false);
+
+      // 2. Perform background delete in Firestore database
+      console.log(`[Delete Action] Deleting document: ${id}`);
       await deleteDocument('individualOrders', id);
+      
+      // Clean up local confirm state
+      setDeleteTargetId(null);
+      setDeleteTargetOrderer('');
+      setDeleteTargetDetails(null);
+    } catch (error: any) {
+      console.error('Delete action failed:', error);
+      // Rollback optimistic delete if database call fails
+      setOptimisticallyDeletedIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      alert('삭제 처리 중 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.');
     }
   };
 
@@ -346,7 +410,7 @@ const IndividualSalesView: React.FC = () => {
                         <span className="text-[10px] font-black uppercase ml-1">Edit</span>
                       </button>
                       <button 
-                        onClick={() => handleDelete(sale.id)}
+                        onClick={() => triggerDeleteConfirm(sale)}
                         className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
                         title="삭제"
                       >
@@ -652,6 +716,82 @@ const IndividualSalesView: React.FC = () => {
                   className="flex-2 bg-[#2D336B] text-white py-4 rounded-xl text-xs font-black shadow-lg shadow-indigo-100 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-widest"
                 >
                   {isProcessing ? '처리 중...' : '최종 등록 완료'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
+              onClick={() => setIsDeleteModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl border border-white/20 w-full max-w-sm overflow-hidden relative z-10"
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 size={28} />
+                </div>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight">주문 데이터 영구 삭제</h3>
+                <p className="text-[11px] text-slate-500 font-bold mt-2 leading-relaxed">
+                  선택하신 낱개 주문 내역을 삭제하시겠습니까?<br />
+                  삭제 처리는 되살릴 수 없으며 DB에서 영구히 삭제됩니다.
+                </p>
+
+                {deleteTargetDetails && (
+                  <div className="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 text-left space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">주문자</span>
+                      <span className="text-xs font-black text-rose-600">{deleteTargetOrderer}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">주문 날짜</span>
+                      <span className="text-xs font-black text-slate-800">{deleteTargetDetails.orderDate}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">품목</span>
+                      <span className="text-xs font-bold text-slate-800 truncate max-w-[150px]" title={deleteTargetDetails.productName}>
+                        {deleteTargetDetails.productName}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">수량</span>
+                      <span className="text-xs font-black text-slate-800">{deleteTargetDetails.quantity}EA</span>
+                    </div>
+                    <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">결제 금액</span>
+                      <span className="text-xs font-black text-slate-800">
+                        ₩{deleteTargetDetails.totalAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 py-4 rounded-xl border border-slate-200 text-xs font-black text-slate-400 hover:bg-white hover:text-slate-600 transition-all uppercase tracking-widest"
+                >
+                  취소하기
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  className="flex-2 bg-rose-600 text-white py-4 rounded-xl text-xs font-black shadow-lg shadow-rose-100 transition-all active:scale-95 flex items-center justify-center gap-2 uppercase tracking-widest"
+                >
+                  영구 삭제
                 </button>
               </div>
             </motion.div>

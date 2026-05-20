@@ -38,6 +38,7 @@ interface FirestoreContextType {
   settlements: any[];
   adjustments: any[];
   individualSales: any[];
+  naverOrders: any[];
   isLoading: boolean;
   currentUser: User | null;
   
@@ -62,6 +63,7 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [settlements, setSettlements] = useState<any[]>([]);
   const [adjustments, setAdjustments] = useState<any[]>([]);
   const [individualSales, setIndividualSales] = useState<any[]>([]);
+  const [naverOrders, setNaverOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -148,6 +150,22 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       onSnapshot(query(collection(db, 'individualOrders'), where('userId', '==', uid)), 
         (s) => setIndividualSales(s.docs.map(d => ({ ...d.data(), id: d.id }))),
         (e) => handleFirestoreError(e, OperationType.GET, 'individualOrders')
+      ),
+      onSnapshot(query(collection(db, 'naverOrders')), 
+        (s) => {
+          // Map data and ensure it's sorted by syncedAt or order date if available
+          const orders = s.docs.map(d => ({ 
+            ...d.data(), 
+            id: d.id,
+            // Fallback fields for UI compatibility if needed
+            customerName: d.data().ordererName,
+            recipientPhone: d.data().ordererTelNo,
+            orderNumber: d.data().productOrderId, // Using productOrderId as orderNumber if needed
+            orderDate: d.data().syncedAt?.toDate?.()?.toISOString() || new Date().toISOString()
+          }));
+          setNaverOrders(orders);
+        },
+        (e) => handleFirestoreError(e, OperationType.GET, 'naverOrders')
       )
     ];
 
@@ -213,7 +231,7 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   return (
     <FirestoreContext.Provider value={{ 
-      projects, tasks, logs, partners, products, donations, deliveries, inventory, settlements, adjustments, individualSales, isLoading, currentUser,
+      projects, tasks, logs, partners, products, donations, deliveries, inventory, settlements, adjustments, individualSales, naverOrders, isLoading, currentUser,
       addDocument, updateDocument, deleteDocument, deleteDocuments
     }}>
       {children}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ShoppingBag, 
   XCircle, 
@@ -13,10 +13,13 @@ import {
   Send,
   MoreVertical,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
+import { useFirestore } from '../FirestoreContext';
+import bcrypt from 'bcryptjs';
 
 interface Order {
   id: string;
@@ -29,75 +32,68 @@ interface Order {
   invoiceNumber: string;
   orderDate: string;
   status: 'New' | 'Cancelled' | 'Pending' | 'Shipped' | 'Completed';
+  productOrderId?: string; // Naver unique key
+  shippingAddress?: string;
+  totalAmount?: number;
 }
 
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    orderNumber: 'ORD-20240429-001',
-    customerName: '김철수',
-    recipientPhone: '010-1234-5678',
-    productName: '펫발란스 시니어 독 사료 5kg',
-    shippingMethod: '택배배송',
-    courier: 'CJ대한통운',
-    invoiceNumber: '',
-    orderDate: '2024-04-29 09:30',
-    status: 'New'
-  },
-  {
-    id: '2',
-    orderNumber: 'ORD-20240429-002',
-    customerName: '이영희',
-    recipientPhone: '010-9876-5432',
-    productName: '프리미엄 관절 영양제 60정',
-    shippingMethod: '택배배송',
-    courier: '로젠택배',
-    invoiceNumber: '6854125369',
-    orderDate: '2024-04-28 14:15',
-    status: 'Pending'
-  },
-  {
-    id: '3',
-    orderNumber: 'ORD-20240429-003',
-    customerName: '박지민',
-    recipientPhone: '010-5555-4444',
-    productName: '저알러지 연어 트릿 150g',
-    shippingMethod: '퀵서비스',
-    courier: '기타',
-    invoiceNumber: '',
-    orderDate: '2024-04-28 18:45',
-    status: 'Cancelled'
-  },
-  {
-    id: '4',
-    orderNumber: 'ORD-20240429-004',
-    customerName: '최유진',
-    recipientPhone: '010-3333-2222',
-    productName: '천연 샴푸 & 린스 세트 (라벤더)',
-    shippingMethod: '택배배송',
-    courier: '한진택배',
-    invoiceNumber: '',
-    orderDate: '2024-04-29 11:20',
-    status: 'New'
-  },
-  {
-    id: '5',
-    orderNumber: 'ORD-20240429-005',
-    customerName: '정우성',
-    recipientPhone: '010-8888-9999',
-    productName: '커스텀 각인 이름표 (실버엠블럼)',
-    shippingMethod: '택배배송',
-    courier: 'CJ대한통운',
-    invoiceNumber: '7412589632',
-    orderDate: '2024-04-27 10:05',
-    status: 'Shipped'
-  }
-];
-
 export default function SalesManagementView() {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const { naverOrders, addDocument } = useFirestore();
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
   
+  const orders = useMemo(() => {
+    // If no synced orders, show a few mock ones for UI structure if empty, 
+    // but the user wants real integration.
+    return naverOrders as Order[];
+  }, [naverOrders]);
+
+  const handleNaverSync = async () => {
+    const clientId = "36xxPTIKriCU6I8UUv19wm";
+    const clientSecret = "$2a$04$yMEZODkzXhiUv3JMM.OJIe"; // 대문자 OD 반영
+    const timestamp = Date.now();
+
+    try {
+      setIsSyncing(true);
+      console.log("Make.com 웹훅으로 주문 동기화 신호 전송 시작...");
+      
+      // 1. 브라우저에서 안전하게 bcrypt 서명 생성
+      const password = `${clientId}_${timestamp}`;
+      const hashed = bcrypt.hashSync(password, clientSecret);
+      const base64Signature = btoa(hashed);
+
+      // 2. 오직 Make.com 고유 웹훅 주소로만 데이터 토스!
+      const makeWebhookUrl = "https://hook.us2.make.com/vohjt1sk5rsmfbjuxmsqpg1frp4gxq3h"; 
+
+      const response = await fetch(makeWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          client_id: clientId,
+          timestamp: timestamp.toString(),
+          client_secret_sign: base64Signature,
+          type: "SELF",
+          seller_id: "ncp_1o7ap6_01"
+        })
+      });
+
+      if (response.ok) {
+        console.log("Make.com에 신호 전달 완료!");
+        alert("스마트스토어 주문 수집이 시작되었습니다! 슬랙 알림을 확인하세요.");
+      } else {
+        console.warn("Make webhook response not OK:", response.status);
+        alert("수집 요청 전송에 실패했습니다. (Make.com 응답 오류)");
+      }
+    } catch (error: any) {
+      console.error("Make 웹훅 전송 실패:", error);
+      alert("연동 오류가 발생했습니다. 브라우저 콘솔을 확인해 주세요.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const toggleSelectOrder = (id: string) => {
     setSelectedOrders(prev => 
       prev.includes(id) ? prev.filter(oid => oid !== id) : [...prev, id]
@@ -113,11 +109,11 @@ export default function SalesManagementView() {
   };
 
   const stats = [
-    { label: '신규주문', count: 12, icon: ShoppingBag, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { label: '취소요청', count: 2, icon: XCircle, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: '발송대기', count: 8, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { label: '발송마감 D-1', count: 5, icon: AlertCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-    { label: '발송마감 D-day', count: 3, icon: Truck, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: '신규주문', count: orders.filter(o => o.status === 'New').length, icon: ShoppingBag, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { label: '취소요청', count: 0, icon: XCircle, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: '발송대기', count: orders.filter(o => o.status === 'Pending').length, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: '발송마감 D-1', count: 0, icon: AlertCircle, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { label: '발송마감 D-day', count: 0, icon: Truck, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   ];
 
   return (
@@ -147,7 +143,28 @@ export default function SalesManagementView() {
         ))}
       </section>
 
-      {/* 2. Filter Section */}
+      {/* 2. Sync & Actions Area */}
+      <section className="bg-slate-50/10 rounded-2xl border border-slate-200 p-4 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100">
+             <RefreshCw className={cn("w-5 h-5 text-emerald-600", isSyncing && "animate-spin")} />
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-800">네이버 스마트스토어 연동</h4>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">실시간 주문 데이터 동기화 시스템</p>
+          </div>
+        </div>
+        <button 
+          onClick={handleNaverSync}
+          disabled={isSyncing}
+          className="px-6 py-3 bg-[#2D336B] hover:bg-[#1E234A] text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 uppercase tracking-widest"
+        >
+          {isSyncing ? '동기화 중...' : '스마트스토어 주문 동기화'}
+          <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
+        </button>
+      </section>
+
+      {/* 3. Filter Section */}
       <section className="bg-slate-50/50 rounded-2xl border border-slate-200 p-6 space-y-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Date Range */}
@@ -215,7 +232,7 @@ export default function SalesManagementView() {
         </div>
       </section>
 
-      {/* 3. Actions & List Table Area */}
+      {/* 4. Actions & List Table Area */}
       <section className="flex-1 bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden flex flex-col">
         {/* Action Header */}
         <div className="p-5 border-b border-slate-50 flex flex-wrap items-center justify-between gap-4 bg-slate-50/10">
@@ -235,7 +252,7 @@ export default function SalesManagementView() {
               <Download className="w-3.5 h-3.5" /> 엑셀 다운로드
             </button>
             <div className="h-6 w-px bg-slate-200 mx-1"></div>
-            <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+            <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors" onClick={() => window.location.reload()}>
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -254,19 +271,19 @@ export default function SalesManagementView() {
                     checked={selectedOrders.length === orders.length && orders.length > 0}
                   />
                 </th>
-                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[180px]">상품주문번호</th>
-                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[100px]">구매자명</th>
-                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[140px]">수취인연락처</th>
+                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[180px]">주문번호</th>
+                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[100px]">주문자명</th>
+                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[140px]">연락처</th>
                 <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest">상품명</th>
-                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[120px]">배송방법</th>
-                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[140px]">택배사</th>
-                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[160px]">송장번호</th>
+                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[80px] text-center">수량</th>
+                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[140px] text-right">총 결제액</th>
+                <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[200px]">배송지 주소</th>
                 <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[140px]">주문일시</th>
                 <th className="p-5 text-[0.625rem] font-black text-slate-400 uppercase tracking-widest w-[110px]">주문상태</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {orders.map((order, idx) => (
+              {orders.length > 0 ? orders.map((order, idx) => (
                 <tr 
                   key={order.id} 
                   className={cn(
@@ -285,7 +302,7 @@ export default function SalesManagementView() {
                   <td className="p-5">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-[0.75rem] font-black text-slate-700 font-mono">{order.orderNumber}</span>
-                      <button className="text-[10px] font-bold text-accent hover:underline text-left">주문상세</button>
+                      {order.productOrderId && <span className="text-[9px] text-slate-400 font-mono">P-ID: {order.productOrderId}</span>}
                     </div>
                   </td>
                   <td className="p-5">
@@ -296,43 +313,25 @@ export default function SalesManagementView() {
                   </td>
                   <td className="p-5">
                     <div className="flex items-center gap-2">
-                       <div className="w-8 h-8 rounded bg-slate-100 flex-shrink-0 border border-slate-200"></div>
+                       <div className="w-8 h-8 rounded bg-indigo-50 flex-shrink-0 border border-indigo-100 flex items-center justify-center">
+                         <Database size={14} className="text-indigo-300" />
+                       </div>
                        <span className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{order.productName}</span>
                     </div>
                   </td>
-                  <td className="p-5">
-                    <select 
-                      defaultValue={order.shippingMethod}
-                      className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 outline-none"
-                    >
-                      <option>택배배송</option>
-                      <option>퀵서비스</option>
-                      <option>방문수령</option>
-                    </select>
+                  <td className="p-5 text-center">
+                    <span className="text-xs font-black text-slate-600">1</span> {/* Syncing from Naver usually implies single productOrderId detail */}
+                  </td>
+                  <td className="p-5 text-right">
+                    <span className="text-xs font-black text-indigo-600">₩{(order.totalAmount || 0).toLocaleString()}</span>
                   </td>
                   <td className="p-5">
-                    <select 
-                      defaultValue={order.courier}
-                      className="text-[10px] font-black text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 outline-none"
-                    >
-                      <option>CJ대한통운</option>
-                      <option>로젠택배</option>
-                      <option>한진택배</option>
-                      <option>롯데택배</option>
-                      <option value="우체국">우체국택배</option>
-                      <option>기타</option>
-                    </select>
+                    <span className="text-[10px] font-bold text-slate-500 truncate block max-w-[200px]" title={order.shippingAddress}>
+                      {order.shippingAddress || '-'}
+                    </span>
                   </td>
                   <td className="p-5">
-                    <input 
-                      type="text" 
-                      placeholder="송장번호입력"
-                      defaultValue={order.invoiceNumber}
-                      className="w-full text-[10px] font-mono font-black text-slate-600 bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none focus:bg-white focus:ring-1 focus:ring-accent/30 transition-all"
-                    />
-                  </td>
-                  <td className="p-5">
-                    <span className="text-[10px] font-medium text-slate-400 font-mono">{order.orderDate}</span>
+                    <span className="text-[10px] font-medium text-slate-400 font-mono">{order.orderDate.split('T')[0]}</span>
                   </td>
                   <td className="p-5">
                     <span className={cn(
@@ -350,21 +349,35 @@ export default function SalesManagementView() {
                     </span>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                   <td colSpan={10} className="p-20 text-center">
+                     <div className="flex flex-col items-center justify-center opacity-20">
+                       <ShoppingBag size={48} className="mb-4" />
+                       <p className="text-sm font-black uppercase tracking-widest">수집된 주문이 없습니다</p>
+                       <p className="text-xs font-bold mt-2">상단의 동기화 버튼을 눌러 스마트스토어 주문을 가져오세요</p>
+                     </div>
+                   </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination Placeholder */}
-        <div className="p-4 border-t border-slate-50 bg-slate-50/20 flex items-center justify-center gap-2">
-           {[1, 2, 3].map(p => (
-             <button key={p} className={cn(
-               "w-8 h-8 rounded-lg text-xs font-black transition-all",
-               p === 1 ? "bg-accent text-white shadow-md shadow-accent/20" : "text-slate-400 hover:bg-slate-100"
-             )}>{p}</button>
-           ))}
+        {/* Pagination/Status Placeholder */}
+        <div className="p-4 border-t border-slate-50 bg-slate-50/20 flex items-center justify-between px-8">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total: {orders.length} Records</p>
+           <div className="flex gap-2">
+             {[1].map(p => (
+               <button key={p} className={cn(
+                 "w-8 h-8 rounded-lg text-xs font-black transition-all",
+                 p === 1 ? "bg-accent text-white shadow-md shadow-accent/20" : "text-slate-400 hover:bg-slate-100"
+               )}>{p}</button>
+             ))}
+           </div>
         </div>
       </section>
     </div>
   );
 }
+

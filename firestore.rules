@@ -91,6 +91,25 @@ service cloud.firestore {
              data.userId == request.auth.uid;
     }
 
+    function isValidIndividualOrder(data) {
+      return data.keys().hasAll(['id', 'orderer', 'productId', 'userId']) &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidNaverOrder(data) {
+      return data.keys().hasAll(['id', 'productOrderId']);
+    }
+
+    function isValidSettlement(data) {
+      return data.keys().hasAll(['id', 'userId']) &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidAdjustment(data) {
+      return data.keys().hasAll(['id', 'userId']) &&
+             data.userId == request.auth.uid;
+    }
+
     // --- Collection Matches ---
 
     match /shelters/{shelterId} {
@@ -151,6 +170,34 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isValidDelivery(incoming());
       allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidDelivery(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /settlements/{settlementId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidSettlement(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidSettlement(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /adjustments/{adjustmentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidAdjustment(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidAdjustment(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /individualOrders/{orderId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidIndividualOrder(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidIndividualOrder(incoming());
+      allow delete: if isOwner(existing()) || isAdmin();
+    }
+
+    match /naverOrders/{orderId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidNaverOrder(incoming());
+      allow update: if isSignedIn() && (isOwner(existing()) || isAdmin()) && isValidNaverOrder(incoming());
       allow delete: if isOwner(existing()) || isAdmin();
     }
   }
