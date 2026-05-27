@@ -46,7 +46,9 @@ const IndividualSalesView: React.FC = () => {
     quantity: 1,
     unitPrice: 0,
     totalAmount: 0,
-    shippingAddress: '',
+    collectionStatus: 'UNPAID', // "UNPAID" | "COMPLETED" | "PARTIAL"
+    receivedAmount: 0,
+    outstandingAmount: 0,
     memo: '',
     shelterId: '',
     orderDate: new Date().toISOString().split('T')[0],
@@ -141,7 +143,9 @@ const IndividualSalesView: React.FC = () => {
       quantity: 1,
       unitPrice: 0,
       totalAmount: 0,
-      shippingAddress: '',
+      collectionStatus: 'UNPAID',
+      receivedAmount: 0,
+      outstandingAmount: 0,
       memo: '',
       shelterId: '',
       orderDate: new Date().toISOString().split('T')[0],
@@ -163,6 +167,10 @@ const IndividualSalesView: React.FC = () => {
       alert('필수 정보를 모두 입력해주세요.');
       return;
     }
+    if (formData.collectionStatus === 'PARTIAL' && formData.receivedAmount > formData.totalAmount) {
+      alert('당일 수금액은 총 결제금액을 초과할 수 없습니다.');
+      return;
+    }
     setIsConfirmModalOpen(true);
   };
 
@@ -175,7 +183,9 @@ const IndividualSalesView: React.FC = () => {
       quantity: sale.quantity,
       unitPrice: sale.unitPrice,
       totalAmount: sale.totalAmount,
-      shippingAddress: sale.shippingAddress || '',
+      collectionStatus: sale.collectionStatus || 'UNPAID',
+      receivedAmount: sale.receivedAmount ?? 0,
+      outstandingAmount: sale.outstandingAmount ?? 0,
       memo: sale.memo || '',
       shelterId: sale.shelterId || '',
       orderDate: sale.orderDate,
@@ -194,14 +204,37 @@ const IndividualSalesView: React.FC = () => {
       
       const isEditMode = isEditing && currentEditingId;
       
+      // Calculate financial fields programmatically for exact ledger consistency
+      let finalReceived = 0;
+      let finalOutstanding = formData.totalAmount;
+      const status = formData.collectionStatus;
+
+      if (status === 'COMPLETED') {
+        finalReceived = formData.totalAmount;
+        finalOutstanding = 0;
+      } else if (status === 'UNPAID') {
+        finalReceived = 0;
+        finalOutstanding = formData.totalAmount;
+      } else if (status === 'PARTIAL') {
+        finalReceived = formData.receivedAmount;
+        finalOutstanding = Math.max(0, formData.totalAmount - formData.receivedAmount);
+      }
+
+      const finalFormData = {
+        ...formData,
+        receivedAmount: finalReceived,
+        outstandingAmount: finalOutstanding,
+        collectionStatus: status
+      };
+
       if (isEditMode) {
         await updateDocument('individualOrders', currentEditingId!, {
-          ...formData,
+          ...finalFormData,
           updatedAt: new Date().toISOString()
         });
       } else {
         const saleData = {
-          ...formData,
+          ...finalFormData,
           createdAt: new Date().toISOString(),
           userId: currentUser?.uid
         };
@@ -357,7 +390,7 @@ const IndividualSalesView: React.FC = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-center">수량</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">총 결제금액</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">발송상태</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">배송지</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">수금 상태 / 미수금</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">기타사항</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">관리</th>
               </tr>
@@ -392,8 +425,30 @@ const IndividualSalesView: React.FC = () => {
                       {sale.dispatchStatus || '발송전'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-500 max-w-[200px] truncate" title={sale.shippingAddress}>
-                    {sale.shippingAddress || '-'}
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1">
+                      {(!sale.collectionStatus || sale.collectionStatus === 'UNPAID') && (
+                        <>
+                          <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md text-[10px] font-bold w-fit">미수금 (전액 외상)</span>
+                          <span className="text-xs font-black text-rose-600 font-mono">₩{(sale.outstandingAmount ?? (sale.totalAmount || 0)).toLocaleString()}</span>
+                        </>
+                      )}
+                      {sale.collectionStatus === 'COMPLETED' && (
+                        <>
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold w-fit">수금 완료</span>
+                          <span className="text-[10px] text-slate-400 font-bold">외상 잔액 ₩0</span>
+                        </>
+                      )}
+                      {sale.collectionStatus === 'PARTIAL' && (
+                        <>
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-md text-[10px] font-bold w-fit">일부 수금</span>
+                          <div className="text-[10px] text-slate-500 font-bold flex flex-col font-mono">
+                            <span>수금: ₩{(sale.receivedAmount || 0).toLocaleString()}</span>
+                            <span className="text-rose-500 font-black">미수: ₩{(sale.outstandingAmount ?? 0).toLocaleString()}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-xs text-slate-400 italic truncate max-w-[150px]" title={sale.memo}>
                     {sale.memo || '-'}
@@ -576,15 +631,49 @@ const IndividualSalesView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">받는곳 (배송지)</label>
-                <input 
-                  type="text" 
-                  value={formData.shippingAddress}
-                  onChange={e => setFormData(prev => ({ ...prev, shippingAddress: e.target.value }))}
-                  placeholder="상세 주소를 입력하세요"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">수금 여부 / 상태 *</label>
+                  <select 
+                    value={formData.collectionStatus}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        collectionStatus: val,
+                        receivedAmount: val === 'PARTIAL' ? prev.receivedAmount || 0 : 0
+                      }));
+                    }}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black outline-none focus:ring-2 focus:ring-emerald-500/10"
+                  >
+                    <option value="UNPAID">미수금 (전액 외상)</option>
+                    <option value="COMPLETED">수금 완료</option>
+                    <option value="PARTIAL">일부 수금</option>
+                  </select>
+                </div>
+
+                {formData.collectionStatus === 'PARTIAL' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-1.5"
+                  >
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">당일 수금액 (₩) *</label>
+                    <input 
+                      required
+                      type="number" 
+                      min="0"
+                      max={formData.totalAmount}
+                      value={formData.receivedAmount || ''}
+                      onChange={e => {
+                        const val = Math.min(formData.totalAmount, Math.max(0, parseInt(e.target.value) || 0));
+                        setFormData(prev => ({ ...prev, receivedAmount: val }));
+                      }}
+                      placeholder="수금된 금액 입력"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-black font-mono focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                    />
+                  </motion.div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-6">
@@ -690,9 +779,31 @@ const IndividualSalesView: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">발송상태</span>
                     <span className={cn(
-                      "text-xs font-black uppercase",
-                      formData.dispatchStatus === '발송완료' ? "text-emerald-500" : "text-amber-500"
+                       "text-xs font-black uppercase",
+                       formData.dispatchStatus === '발송완료' ? "text-emerald-500" : "text-amber-500"
                     )}>{formData.dispatchStatus}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">수금 구분</span>
+                    <span className="text-xs font-black text-indigo-600">
+                      {formData.collectionStatus === 'COMPLETED' ? '수금 완료' : formData.collectionStatus === 'PARTIAL' ? '일부 수금' : '미수금 (전액 외상)'}
+                    </span>
+                  </div>
+                  {formData.collectionStatus === 'PARTIAL' && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">당일 수금액</span>
+                      <span className="text-xs font-black text-emerald-600">₩{formData.receivedAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">외상매출 잔액</span>
+                    <span className="text-xs font-black text-rose-500 font-mono">
+                      ₩{(formData.collectionStatus === 'COMPLETED' 
+                        ? 0 
+                        : formData.collectionStatus === 'PARTIAL' 
+                          ? Math.max(0, formData.totalAmount - formData.receivedAmount) 
+                          : formData.totalAmount).toLocaleString()}
+                    </span>
                   </div>
                    <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
                     <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">최종 결제액</span>
