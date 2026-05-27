@@ -17,7 +17,8 @@ import {
   ArrowRight,
   Trash2,
   DollarSign,
-  Edit2
+  Edit2,
+  Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFirestore } from '../FirestoreContext';
@@ -36,6 +37,9 @@ const IndividualSalesView: React.FC = () => {
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0].substring(0, 7)); // YYYY-MM
   const [shelterFilter, setShelterFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isOnlyUnshared, setIsOnlyUnshared] = useState(false); // 미공유 주문만 보기 토글
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set()); // 선택된 ID들
+  const [isSharingBatch, setIsSharingBatch] = useState(false); // 일괄 공유 처리 로딩 상태
 
   // Form State
   const [formData, setFormData] = useState({
@@ -101,9 +105,10 @@ const IndividualSalesView: React.FC = () => {
       const matchesShelter = shelterFilter === 'All' || s.shelterId === shelterFilter;
       const matchesSearch = s.orderer.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            s.productName.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesDate && matchesShelter && matchesSearch;
+      const matchesUnshared = !isOnlyUnshared || !s.isSharedWithManager;
+      return matchesDate && matchesShelter && matchesSearch && matchesUnshared;
     }).sort((a, b) => b.orderDate.localeCompare(a.orderDate));
-  }, [activeSales, dateFilter, shelterFilter, searchTerm]);
+  }, [activeSales, dateFilter, shelterFilter, searchTerm, isOnlyUnshared]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => 
@@ -306,6 +311,73 @@ const IndividualSalesView: React.FC = () => {
     }
   };
 
+  const handleToggleSelectAll = () => {
+    if (filteredSales.length === 0) return;
+    
+    const allFilteredSelected = filteredSales.every(s => selectedIds.has(s.id));
+    if (allFilteredSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        filteredSales.forEach(s => next.delete(s.id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        filteredSales.forEach(s => next.add(s.id));
+        return next;
+      });
+    }
+  };
+
+  const handleToggleSelectOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBatchShare = async () => {
+    if (selectedIds.size === 0) return;
+    
+    let confirmResult = false;
+    try {
+      confirmResult = window.confirm(`선택한 ${selectedIds.size}건의 주문 내역을 소장님께 공유 완료 처리하시겠습니까?`);
+    } catch {
+      confirmResult = true;
+    }
+    
+    if (!confirmResult) return;
+
+    try {
+      setIsSharingBatch(true);
+      const idsToUpdate = Array.from(selectedIds);
+      
+      console.log(`[Batch Share Action] Updating documents:`, idsToUpdate);
+      const promises = idsToUpdate.map(id => 
+        updateDocument('individualOrders', id, {
+          isSharedWithManager: true,
+          sharedWithManagerAt: new Date().toISOString()
+        })
+      );
+      
+      await Promise.all(promises);
+      
+      setSelectedIds(new Set());
+      alert(`선택한 ${idsToUpdate.length}건의 주문이 소장님 공유 완료 처리되었습니다.`);
+    } catch (error) {
+      console.error('Batch share failed:', error);
+      alert('일괄 공유 완료 처리 중 오류가 발생했습니다.');
+    } finally {
+      setIsSharingBatch(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full gap-6 overflow-hidden">
       {/* KPI Section */}
@@ -368,6 +440,32 @@ const IndividualSalesView: React.FC = () => {
               className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/10 w-64"
             />
           </div>
+
+          {/* 미공유 주문만 보기 토글 스위치 */}
+          <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-2 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors select-none">
+            <input 
+              type="checkbox"
+              checked={isOnlyUnshared}
+              onChange={e => setIsOnlyUnshared(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4"
+            />
+            <span className="text-xs text-slate-600 font-bold">미공유 주문만 보기</span>
+          </label>
+
+          {/* 소장님 일괄 공유 버튼 */}
+          <button
+            onClick={handleBatchShare}
+            disabled={selectedIds.size === 0 || isSharingBatch}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all outline-none",
+              selectedIds.size > 0
+                ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100 cursor-pointer"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            )}
+          >
+            <Share2 size={13} className="stroke-[2.5]" />
+            선택 항목 소장님께 공유 완료 처리 ({selectedIds.size}건)
+          </button>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -383,6 +481,14 @@ const IndividualSalesView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/80 sticky top-0 z-10">
               <tr>
+                <th className="px-6 py-4 w-12 text-center select-none">
+                  <input 
+                    type="checkbox"
+                    checked={filteredSales.length > 0 && filteredSales.every(s => selectedIds.has(s.id))}
+                    onChange={handleToggleSelectAll}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4"
+                  />
+                </th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">주문일자</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">주문자</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">연락처</th>
@@ -391,6 +497,7 @@ const IndividualSalesView: React.FC = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">총 결제금액</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">발송상태</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">수금 상태 / 미수금</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">소장님 공유</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">기타사항</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap text-right">관리</th>
               </tr>
@@ -398,6 +505,14 @@ const IndividualSalesView: React.FC = () => {
             <tbody className="divide-y divide-slate-50">
               {filteredSales.map((sale) => (
                 <tr key={sale.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4 text-center select-none">
+                    <input 
+                      type="checkbox"
+                      checked={selectedIds.has(sale.id)}
+                      onChange={() => handleToggleSelectOne(sale.id)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer w-4 h-4"
+                    />
+                  </td>
                   <td className="px-6 py-4 text-xs font-mono font-bold text-slate-400">{sale.orderDate}</td>
                   <td className="px-6 py-4">
                     <span className="text-xs font-black text-slate-700">{sale.orderer}</span>
@@ -450,6 +565,19 @@ const IndividualSalesView: React.FC = () => {
                       )}
                     </div>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {sale.isSharedWithManager ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-lg">
+                        <CheckCircle2 size={10} className="stroke-[3]" />
+                        공유 완료
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-50 text-slate-400 text-[10px] font-black rounded-lg border border-slate-100">
+                        <Clock size={10} className="stroke-[3]" />
+                        미공유
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-xs text-slate-400 italic truncate max-w-[150px]" title={sale.memo}>
                     {sale.memo || '-'}
                   </td>
@@ -477,7 +605,7 @@ const IndividualSalesView: React.FC = () => {
               ))}
               {filteredSales.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-20 text-center">
+                  <td colSpan={12} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center">
                         <ShoppingBag size={24} className="text-slate-300" />
