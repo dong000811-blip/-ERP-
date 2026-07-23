@@ -50,8 +50,8 @@ interface FirestoreContextType {
 
 const FirestoreContext = createContext<FirestoreContextType | undefined>(undefined);
 
-export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+export const FirestoreProvider: React.FC<{ children: React.ReactNode; overrideUser?: any }> = ({ children, overrideUser }) => {
+  const [currentUser, setCurrentUser] = useState<User | any>(overrideUser || null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<SalesTask[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -67,11 +67,15 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribeAuth();
-  }, []);
+    if (overrideUser) {
+      setCurrentUser(overrideUser);
+    } else {
+      const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+        if (user) setCurrentUser(user);
+      });
+      return () => unsubscribeAuth();
+    }
+  }, [overrideUser]);
 
   useEffect(() => {
     if (!currentUser) {

@@ -67,6 +67,7 @@ import {
 } from '../constants';
 import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
+import { clearUserSession } from '../lib/autoAuth';
 import { 
   MOCK_SHELTERS, 
   Shelter,
@@ -1294,7 +1295,9 @@ export default function ShelterDashboard() {
 
   const handleLogout = async () => {
     try {
+      clearUserSession();
       await signOut(auth);
+      window.location.reload();
     } catch (error) {
       console.error("Logout failed:", error);
     }
