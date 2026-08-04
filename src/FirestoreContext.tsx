@@ -101,75 +101,73 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode; overrideUs
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as Project));
           setProjects(docs.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')));
         },
-        (e) => handleFirestoreError(e, OperationType.GET, 'projects')
+        (e) => console.warn('[Firestore] projects read warning:', e)
       ),
       onSnapshot(query(collection(db, 'tasks'), where('userId', '==', uid)), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as SalesTask));
           setTasks(docs.sort((a, b) => (a.deadline || '').localeCompare(b.deadline || '')));
         },
-        (e) => handleFirestoreError(e, OperationType.GET, 'tasks')
+        (e) => console.warn('[Firestore] tasks read warning:', e)
       ),
       onSnapshot(query(collection(db, 'logs'), where('userId', '==', uid)), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as ActivityLog));
           setLogs(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
         },
-        (e) => handleFirestoreError(e, OperationType.GET, 'logs')
+        (e) => console.warn('[Firestore] logs read warning:', e)
       ),
       onSnapshot(query(collection(db, 'partners'), where('userId', '==', uid)), 
         (s) => setPartners(s.docs.map(d => ({ ...d.data(), id: d.id } as Partner))),
-        (e) => handleFirestoreError(e, OperationType.GET, 'partners')
+        (e) => console.warn('[Firestore] partners read warning:', e)
       ),
       onSnapshot(query(collection(db, 'products'), where('userId', '==', uid)), 
         (s) => setProducts(s.docs.map(d => ({ ...d.data(), id: d.id } as Product))),
-        (e) => handleFirestoreError(e, OperationType.GET, 'products')
+        (e) => console.warn('[Firestore] products read warning:', e)
       ),
       onSnapshot(query(collection(db, 'donations'), where('userId', '==', uid)), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as Donation));
           setDonations(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
         },
-        (e) => handleFirestoreError(e, OperationType.GET, 'donations')
+        (e) => console.warn('[Firestore] donations read warning:', e)
       ),
       onSnapshot(query(collection(db, 'deliveries'), where('userId', '==', uid)), 
         (s) => setDeliveries(s.docs.map(d => ({ ...d.data(), id: d.id } as Delivery))),
-        (e) => handleFirestoreError(e, OperationType.GET, 'deliveries')
+        (e) => console.warn('[Firestore] deliveries read warning:', e)
       ),
       onSnapshot(query(collection(db, 'inventory'), where('userId', '==', uid)), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as InventoryEntry));
           setInventory(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
         },
-        (e) => handleFirestoreError(e, OperationType.GET, 'inventory')
+        (e) => console.warn('[Firestore] inventory read warning:', e)
       ),
       onSnapshot(query(collection(db, 'settlements'), where('userId', '==', uid)), 
         (s) => setSettlements(s.docs.map(d => ({ ...d.data(), id: d.id }))),
-        (e) => handleFirestoreError(e, OperationType.GET, 'settlements')
+        (e) => console.warn('[Firestore] settlements read warning:', e)
       ),
       onSnapshot(query(collection(db, 'adjustments'), where('userId', '==', uid)), 
         (s) => setAdjustments(s.docs.map(d => ({ ...d.data(), id: d.id }))),
-        (e) => handleFirestoreError(e, OperationType.GET, 'adjustments')
+        (e) => console.warn('[Firestore] adjustments read warning:', e)
       ),
       onSnapshot(query(collection(db, 'individualOrders'), where('userId', '==', uid)), 
         (s) => setIndividualSales(s.docs.map(d => ({ ...d.data(), id: d.id }))),
-        (e) => handleFirestoreError(e, OperationType.GET, 'individualOrders')
+        (e) => console.warn('[Firestore] individualOrders read warning:', e)
       ),
       onSnapshot(query(collection(db, 'naverOrders')), 
         (s) => {
-          // Map data and ensure it's sorted by syncedAt or order date if available
           const orders = s.docs.map(d => ({ 
             ...d.data(), 
             id: d.id,
-            // Fallback fields for UI compatibility if needed
             customerName: d.data().ordererName,
             recipientPhone: d.data().ordererTelNo,
-            orderNumber: d.data().productOrderId, // Using productOrderId as orderNumber if needed
+            orderNumber: d.data().productOrderId,
             orderDate: d.data().syncedAt?.toDate?.()?.toISOString() || new Date().toISOString()
           }));
           setNaverOrders(orders);
         },
-        (e) => handleFirestoreError(e, OperationType.GET, 'naverOrders')
+        (e) => console.warn('[Firestore] naverOrders read warning:', e)
       )
     ];
 

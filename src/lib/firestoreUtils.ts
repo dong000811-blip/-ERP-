@@ -48,7 +48,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   console.error('Detailed Error Context:', serialized);
 
   if (errInfo.error.toLowerCase().includes('permission') || errInfo.error.toLowerCase().includes('insufficient')) {
-    alert(`[Firestore 권한 오류] ${path} 데이터에 대한 ${operationType} 권한이 없습니다. 보안 규칙을 확인하세요.`);
+    console.warn(`[Firestore 권한 경고] ${path} 데이터에 대한 ${operationType} 권한 문제 발생. (자동 세션 확인 중)`);
   }
 
   throw new Error(serialized);
