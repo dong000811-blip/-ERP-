@@ -84,7 +84,7 @@ export default function App() {
 
   return (
     <FirestoreProvider overrideUser={currentUser}>
-      <ShelterProvider>
+      <ShelterProvider overrideUser={currentUser}>
         {autoLoggedInMessage && (
           <div className="bg-emerald-600 text-white text-xs font-bold py-1.5 px-4 text-center flex items-center justify-center gap-2 shadow-sm animate-fade-in z-50 sticky top-0">
             <span>✨ {autoLoggedInMessage} 로그인 절차 없이 안전하게 자동 접속되었습니다.</span>

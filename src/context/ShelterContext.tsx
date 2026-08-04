@@ -31,30 +31,26 @@ interface ShelterContextType {
 
 const ShelterContext = createContext<ShelterContextType | undefined>(undefined);
 
-export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+export const ShelterProvider: React.FC<{ children: React.ReactNode; overrideUser?: any }> = ({ children, overrideUser }) => {
+  const [currentUser, setCurrentUser] = useState<User | any>(overrideUser || null);
   const [shelters, setShelters] = useState<Shelter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribeAuth();
-  }, []);
+    if (overrideUser) {
+      setCurrentUser(overrideUser);
+    } else {
+      const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+        if (user) setCurrentUser(user);
+      });
+      return () => unsubscribeAuth();
+    }
+  }, [overrideUser]);
 
   useEffect(() => {
-    if (!currentUser) {
-      setShelters([]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
-    const q = query(
-      collection(db, 'shelters'), 
-      where('userId', '==', currentUser.uid)
-    );
+    // Fetch all shared shelters in the ERP system regardless of userId filtering
+    const q = collection(db, 'shelters');
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const shelterData = snapshot.docs.map(doc => ({
@@ -63,15 +59,15 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })) as Shelter[];
       
       // Client-side sorting substitute for server-side orderBy
-      setShelters(shelterData.sort((a, b) => a.name.localeCompare(b.name)));
+      setShelters(shelterData.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
       setIsLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'shelters');
+      console.warn('[ShelterContext] Firestore read warning:', error);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, []);
 
   // Self-healing: Update coordinates for existing shelters that missing precise location
   useEffect(() => {

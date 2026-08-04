@@ -78,84 +78,69 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode; overrideUs
   }, [overrideUser]);
 
   useEffect(() => {
-    if (!currentUser) {
-      setProjects([]);
-      setTasks([]);
-      setLogs([]);
-      setPartners([]);
-      setProducts([]);
-      setDonations([]);
-      setDeliveries([]);
-      setInventory([]);
-      setSettlements([]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
-    const uid = currentUser.uid;
 
     const unsubscibers = [
-      onSnapshot(query(collection(db, 'projects'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'projects'), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as Project));
           setProjects(docs.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '')));
         },
         (e) => console.warn('[Firestore] projects read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'tasks'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'tasks'), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as SalesTask));
           setTasks(docs.sort((a, b) => (a.deadline || '').localeCompare(b.deadline || '')));
         },
         (e) => console.warn('[Firestore] tasks read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'logs'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'logs'), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as ActivityLog));
           setLogs(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
         },
         (e) => console.warn('[Firestore] logs read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'partners'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'partners'), 
         (s) => setPartners(s.docs.map(d => ({ ...d.data(), id: d.id } as Partner))),
         (e) => console.warn('[Firestore] partners read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'products'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'products'), 
         (s) => setProducts(s.docs.map(d => ({ ...d.data(), id: d.id } as Product))),
         (e) => console.warn('[Firestore] products read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'donations'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'donations'), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as Donation));
           setDonations(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
         },
         (e) => console.warn('[Firestore] donations read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'deliveries'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'deliveries'), 
         (s) => setDeliveries(s.docs.map(d => ({ ...d.data(), id: d.id } as Delivery))),
         (e) => console.warn('[Firestore] deliveries read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'inventory'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'inventory'), 
         (s) => {
           const docs = s.docs.map(d => ({ ...d.data(), id: d.id } as InventoryEntry));
           setInventory(docs.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
         },
         (e) => console.warn('[Firestore] inventory read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'settlements'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'settlements'), 
         (s) => setSettlements(s.docs.map(d => ({ ...d.data(), id: d.id }))),
         (e) => console.warn('[Firestore] settlements read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'adjustments'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'adjustments'), 
         (s) => setAdjustments(s.docs.map(d => ({ ...d.data(), id: d.id }))),
         (e) => console.warn('[Firestore] adjustments read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'individualOrders'), where('userId', '==', uid)), 
+      onSnapshot(collection(db, 'individualOrders'), 
         (s) => setIndividualSales(s.docs.map(d => ({ ...d.data(), id: d.id }))),
         (e) => console.warn('[Firestore] individualOrders read warning:', e)
       ),
-      onSnapshot(query(collection(db, 'naverOrders')), 
+      onSnapshot(collection(db, 'naverOrders'), 
         (s) => {
           const orders = s.docs.map(d => ({ 
             ...d.data(), 
@@ -171,13 +156,13 @@ export const FirestoreProvider: React.FC<{ children: React.ReactNode; overrideUs
       )
     ];
 
-    const timer = setTimeout(() => setIsLoading(false), 2000);
+    const timer = setTimeout(() => setIsLoading(false), 1000);
 
     return () => {
       unsubscibers.forEach(unsub => unsub());
       clearTimeout(timer);
     };
-  }, [currentUser]);
+  }, []);
 
   const addDocument = async (col: string, data: any) => {
     if (!currentUser) {
